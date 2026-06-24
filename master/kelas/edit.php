@@ -42,7 +42,7 @@ require_once "../../includes/sidebar.php";
 
 <main class="main-content">
     <div class="topbar">
-        <h1 class="page-title">Edit Kelas</h1>
+        <h1 class="page-title">Edit Kelas jir</h1>
 
         <div class="user-info">
             <div class="user-detail">
