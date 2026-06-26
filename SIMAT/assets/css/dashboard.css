@@ -1,0 +1,577 @@
+:root {
+    --primary: #123e78;
+    --primary-dark: #0b3164;
+    --accent: #12c5df;
+    --bg: #f4f7fb;
+    --text: #10213d;
+    --muted: #6c7a91;
+    --white: #ffffff;
+    --border: #dbe5f1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* =========================
+   LAYOUT UTAMA
+   ========================= */
+
+.dashboard-layout {
+    width: 100%;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    background: var(--bg);
+    align-items: start;
+}
+
+/* =========================
+   SIDEBAR
+   ========================= */
+
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+    padding: 24px 22px;
+    display: flex;
+    flex-direction: column;
+    color: var(--white);
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.outer-container{
+    position: relative;
+}
+
+.sidebar-brand {
+    margin-bottom: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.sidebar-logo {
+    width: 205px;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Kalau masih pakai tulisan manual SIMAT, ini fallback */
+.brand-title {
+    font-size: 46px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--white);
+}
+
+.brand-title span {
+    color: var(--accent);
+}
+
+.brand-subtitle {
+    font-size: 10px;
+    margin-top: 5px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.menu-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.84);
+    text-decoration: none;
+    padding: 13px 16px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.menu-link i {
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.menu-link:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+}
+
+.menu-link.active {
+    background: var(--accent);
+    color: #04172f;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 18px;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 100%;
+    padding: 13px 16px;
+    background: rgba(255, 255, 255, 0.10);
+    color: var(--white);
+    border-radius: 14px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: var(--white);
+}
+
+/* =========================
+   MAIN CONTENT
+   ========================= */
+
+.main-content {
+    min-width: 0;
+    /* width: 100%; */
+     margin-left: 260px;
+    min-height: 100vh;
+    padding: 28px;
+    overflow-x: hidden;
+}
+
+.topbar {
+    min-height: 76px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    box-shadow: 0 8px 25px rgba(16, 33, 61, 0.05);
+}
+
+.page-title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: max-content;
+}
+
+.user-detail {
+    line-height: 1.2;
+    text-align: right;
+}
+
+.user-name {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.user-role {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #04172f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+}
+
+/* =========================
+   CONTENT CARD
+   ========================= */
+
+.content-wrapper {
+    margin-top: 24px;
+}
+
+.welcome-card {
+    background: linear-gradient(135deg, #ffffff, #eaf8fb);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 26px;
+    box-shadow: 0 8px 25px rgba(16, 33, 61, 0.05);
+    margin-bottom: 24px;
+}
+
+.welcome-card h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 800;
+}
+
+.welcome-card p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px;
+    box-shadow: 0 8px 25px rgba(16, 33, 61, 0.05);
+}
+
+.stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    background: #e9f9fc;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.stat-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+/* =========================
+   TABLET / LAYAR SETENGAH
+   Sidebar tetap di kiri, tapi dibuat lebih kecil
+   ========================= */
+
+@media (max-width: 1200px) {
+    .stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .dashboard-layout {
+        grid-template-columns: 220px minmax(0, 1fr);
+    }
+
+    .sidebar {
+        width: 220px;
+        padding: 22px 18px;
+    }
+
+    .sidebar-logo {
+        width: 170px;
+    }
+
+    .main-content {
+        padding: 22px;
+         margin-left:2206px;
+    }
+
+    .menu-link {
+        padding: 12px 14px;
+        font-size: 13px;
+    }
+
+    .topbar {
+        padding: 16px 20px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+}
+
+/* =========================
+   LAYAR KECIL TAPI BUKAN HP
+   Sidebar jadi ikon saja agar content tidak gepeng
+   ========================= */
+
+@media (max-width: 820px) {
+    .dashboard-layout {
+        grid-template-columns: 86px minmax(0, 1fr);
+    }
+
+    .sidebar {
+        width: 86px;
+        padding: 18px 12px;
+        align-items: center;
+    }
+
+    .sidebar-brand {
+        margin-bottom: 28px;
+    }
+
+    .sidebar-logo {
+        width: 54px;
+    }
+
+    .brand-title {
+        font-size: 20px;
+    }
+
+    .brand-subtitle {
+        display: none;
+    }
+
+    .menu-link {
+        width: 58px;
+        height: 52px;
+        justify-content: center;
+        padding: 0;
+        border-radius: 16px;
+    }
+
+    .menu-link span {
+        display: none;
+    }
+
+    .menu-link i {
+        width: auto;
+        font-size: 18px;
+    }
+
+    .logout-btn {
+        width: 58px;
+        height: 52px;
+        padding: 0;
+        border-radius: 16px;
+    }
+
+    .logout-btn span {
+        display: none;
+    }
+
+    .main-content {
+        padding: 18px;
+        margin-left: 86px;
+    }
+
+    .topbar {
+        align-items: flex-start;
+    }
+
+    .user-name {
+        max-width: 160px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* =========================
+   HP
+   Sidebar pindah ke atas
+   ========================= */
+
+@media (max-width: 576px) {
+    .dashboard-layout {
+        display: block;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        position: relative;
+        width: 100%;
+        height: auto;
+        min-height: auto;
+        padding: 16px;
+        align-items: stretch;
+    }
+
+    .sidebar-brand {
+        margin-bottom: 16px;
+    }
+
+    .sidebar-logo {
+        width: 160px;
+        margin: 0 auto;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        overflow-x: scroll;
+        padding-bottom: 6px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .sidebar-menu::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+
+    .menu-link {
+        width: auto;
+        height: auto;
+        min-width: max-content;
+        white-space: nowrap;
+        padding: 11px 14px;
+        font-size: 13px;
+        border-radius: 14px;
+    }
+
+    .menu-link span {
+        display: inline;
+    }
+
+    .menu-link i {
+        width: 18px;
+        font-size: 14px;
+    }
+
+    .sidebar-footer {
+        margin-top: 12px;
+        padding-top: 0;
+    }
+
+    .logout-btn {
+        width: 100%;
+        height: auto;
+        padding: 12px;
+        font-size: 13px;
+    }
+
+    .logout-btn span {
+        display: inline;
+    }
+
+    .main-content {
+        width: 100%;
+        min-height: auto;
+        padding: 16px;
+        margin-left: 0px;
+    }
+
+    .topbar {
+        min-height: auto;
+        padding: 18px;
+        border-radius: 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .user-info {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .user-detail {
+        text-align: left;
+    }
+
+    .user-name {
+        max-width: 230px;
+    }
+
+    .content-wrapper {
+        margin-top: 18px;
+    }
+
+    .welcome-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .welcome-card h2 {
+        font-size: 21px;
+    }
+
+    .welcome-card p {
+        font-size: 14px;
+    }
+
+    .stat-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .stat-card {
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .stat-value {
+        font-size: 30px;
+    }
+}
