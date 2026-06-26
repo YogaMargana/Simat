@@ -3,7 +3,7 @@ require_once "../../config/koneksi.php";
 require_once "../../config/function.php";
 require_once "../../includes/auth_dashboard.php";
 
-// Pastikan hanya Kepala Prodi yang bisa akses
+// Pastikan hanya Kepala Prodi yang bisa akses //
 cek_role_dashboard("Kepala Prodi");
 
 $page_title = "Edit Periode Akademik";
