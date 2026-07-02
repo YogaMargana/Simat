@@ -15,12 +15,7 @@ $page_title = "Buat Pengajuan Jam Plus";
 $active_menu = "pengajuan_jam_plus";
 
 // Mengambil data kegiatan yang aktif untuk pilihan di form
-$data_kegiatan = [];
-$query_kegiatan = mysqli_query($koneksi, "SELECT id_kegiatan, nama_kegiatan FROM kegiatan WHERE status_kegiatan = 'Aktif' ORDER BY nama_kegiatan ASC");
-
-while ($row = mysqli_fetch_assoc($query_kegiatan)) {
-    $data_kegiatan[] = $row;
-}
+$data_kegiatan = ambil_data_procedure($koneksi, "CALL usp_select_kegiatan_aktif()");
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
@@ -55,20 +50,7 @@ require_once "../../includes/sidebar.php";
 
                 <form action="proses_tambah.php" method="post">
                     <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Kegiatan</label>
-                                <select name="id_kegiatan" class="form-select" required>
-                                    <option value="">-- Pilih Kegiatan --</option>
-                                    <?php foreach ($data_kegiatan as $kegiatan) { ?>
-                                        <option value="<?= $kegiatan['id_kegiatan']; ?>">
-                                            <?= aman($kegiatan['nama_kegiatan']); ?>
-                                        </option>
-                                    <?php } ?>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Jumlah Jam Plus</label>
                                 <div class="input-group">
@@ -77,9 +59,6 @@ require_once "../../includes/sidebar.php";
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Jenis Jam</label>
@@ -89,16 +68,38 @@ require_once "../../includes/sidebar.php";
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Sumber Jam</label>
-                                <select name="sumber_jam" class="form-select" required>
+                                <select name="sumber_jam" id="sumber_jam" class="form-select" required>
                                     <option value="">-- Pilih Sumber Jam --</option>
-                                    <option value="Prodi">Prodi - Jam masuk utuh</option>
-                                    <option value="Luar">Luar - Jam masuk 50%</option>
+                                    <option value="Prodi">Prodi - Tidak perlu memilih kegiatan</option>
+                                    <option value="Luar">Luar - Wajib memilih kegiatan</option>
                                 </select>
                                 <div class="form-text">
-                                    Jika sumber dari luar prodi, jam yang disetujui akan dihitung 50%.
+                                    Jika sumber jam berasal dari Prodi, kegiatan tidak perlu dipilih. 
+                                    Jika sumber jam berasal dari luar, kegiatan wajib dipilih.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3 d-none" id="wrapper_kegiatan">
+                                <label class="form-label fw-bold">Kegiatan</label>
+                                <select name="id_kegiatan" id="id_kegiatan" class="form-select">
+                                    <option value="">-- Pilih Kegiatan --</option>
+                                    <?php foreach ($data_kegiatan as $kegiatan) { ?>
+                                        <option value="<?= $kegiatan['id_kegiatan']; ?>">
+                                            <?= aman($kegiatan['nama_kegiatan']); ?>
+                                            - <?= aman($kegiatan['penyelenggara']); ?>
+                                            <?= !empty($kegiatan['tanggal_kegiatan']) ? ' - ' . date('d/m/Y', strtotime($kegiatan['tanggal_kegiatan'])) : ''; ?>
+                                        </option>
+                                    <?php } ?>
+                                </select>
+                                <div class="form-text">
+                                    Kegiatan hanya wajib dipilih jika sumber jam berasal dari luar.
                                 </div>
                             </div>
                         </div>
@@ -136,5 +137,29 @@ require_once "../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sumberJam = document.getElementById('sumber_jam');
+    const wrapperKegiatan = document.getElementById('wrapper_kegiatan');
+    const idKegiatan = document.getElementById('id_kegiatan');
+
+    function aturKegiatan() {
+        if (sumberJam.value === 'Luar') {
+            wrapperKegiatan.classList.remove('d-none');
+            idKegiatan.setAttribute('required', 'required');
+            idKegiatan.disabled = false;
+        } else {
+            wrapperKegiatan.classList.add('d-none');
+            idKegiatan.removeAttribute('required');
+            idKegiatan.value = '';
+            idKegiatan.disabled = true;
+        }
+    }
+
+    sumberJam.addEventListener('change', aturKegiatan);
+    aturKegiatan();
+});
+</script>
 
 <?php require_once "../../includes/dashboard_footer.php"; ?>

@@ -89,7 +89,13 @@ require_once "../../includes/sidebar.php";
                                 <tr>
                                     <td class="text-center"><?= $no++; ?></td>
                                     <td><?= aman($row['nama_pengaju']); ?><br><small class="text-muted"><?= aman($row['nim_pengaju']); ?></small></td>
-                                    <td><?= aman($row['nama_kegiatan']); ?></td>
+                                    <td>
+                                        <?php if ($row['sumber_jam'] == 'Luar') { ?>
+                                            <?= aman($row['nama_kegiatan']); ?>
+                                        <?php } else { ?>
+                                            -
+                                        <?php } ?>
+                                    </td>
                                     <td class="fw-bold text-primary">+<?= $row['jumlah_jam_plus']; ?></td>
                                     <td class="text-center">
                                         <?php if ($row['sumber_jam'] == "Prodi") { ?>

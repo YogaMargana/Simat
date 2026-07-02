@@ -98,8 +98,29 @@ require_once "../../includes/sidebar.php";
                             </tr>
                             <tr>
                                 <th>Kegiatan</th>
-                                <td>: <?= aman($pengajuan['nama_kegiatan']); ?></td>
+                                <td>
+                                    :
+                                    <?php if ($pengajuan['sumber_jam'] == 'Luar') { ?>
+                                        <?= aman($pengajuan['nama_kegiatan']); ?>
+                                    <?php } else { ?>
+                                        <span class="text-muted">Tidak menggunakan kegiatan</span>
+                                    <?php } ?>
+                                </td>
                             </tr>
+                        <?php if ($pengajuan['sumber_jam'] == 'Luar') { ?>
+                            <tr>
+                                <th>Penyelenggara</th>
+                                <td>: <?= aman($pengajuan['penyelenggara']); ?></td>
+                            </tr>
+
+                            <tr>
+                                <th>Tanggal Kegiatan</th>
+                                <td>
+                                    :
+                                    <?= !empty($pengajuan['tanggal_kegiatan']) ? date('d/m/Y', strtotime($pengajuan['tanggal_kegiatan'])) : '-'; ?>
+                                </td>
+                            </tr>
+                        <?php } ?>
                             <tr>
                                 <th>Pemberi Tugas</th>
                                 <td>: <?= aman($pengajuan['nama_pemberi']); ?></td>
