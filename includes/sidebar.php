@@ -106,6 +106,15 @@ if ($role == "Pengajar") {
 
         <?php } ?>
 
+        <?php if ($role == "PIC Kemahasiswaan") { ?>
+
+            <a href="/SIMAT/master/kegiatan/index.php" class="menu-link <?= $active_menu == 'kegiatan' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Data Kegiatan</span>
+            </a>
+
+        <?php } ?>
+
         <?php if ($role == "Mahasiswa") { ?>
 
             <a href="/SIMAT/transaksi/pengaduan_kerusakan_fasilitas/index.php" class="menu-link <?= $active_menu == 'pengaduan_fasilitas' ? 'active' : ''; ?>">
