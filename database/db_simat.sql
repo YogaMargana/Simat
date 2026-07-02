@@ -1,2411 +1,109 @@
--- phpMyAdmin SQL Dump
--- version 5.2.0
--- https://www.phpmyadmin.net/
---
--- Host: localhost:3306
--- Generation Time: Jun 29, 2026 at 01:37 PM
--- Server version: 8.0.30
--- PHP Version: 8.1.10
-
-SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-START TRANSACTION;
-SET time_zone = "+00:00";
-
+-- ============================================================
+-- DATABASE SIMAT - Versi siap import phpMyAdmin
+-- Kompatibel untuk Laragon/XAMPP/MariaDB/MySQL lokal
+-- Sumber: db_simat(4).sql
+-- Dibuat ulang: 2026-07-01 16:06:08
+-- ============================================================
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
 
---
--- Database: `db_simat`
---
-
-DELIMITER $$
---
--- Procedures
---
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
-    DECLARE v_role VARCHAR(30);
-    DECLARE v_id_mahasiswa INT;
-    DECLARE v_penerima_jobdesc VARCHAR(30);
-    DECLARE v_jumlah_diperlukan INT;
-    DECLARE v_jumlah_mengambil INT;
-    DECLARE v_status_jobdesc VARCHAR(20);
-    DECLARE v_total_jam_minus DECIMAL(10,2);
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
-    END IF;
-
-    SELECT 
-        role,
-        id_mahasiswa
-    INTO 
-        v_role,
-        v_id_mahasiswa
-    FROM pengguna
-    WHERE id_pengguna = p_id_pengguna;
-
-    IF v_role <> 'Mahasiswa' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Hanya mahasiswa yang dapat mendaftar bursa jobdesc';
-    END IF;
-
-    IF v_id_mahasiswa IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Akun mahasiswa tidak terhubung dengan data mahasiswa';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data bursa jobdesc tidak ditemukan';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM detail_pengguna_pada_bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-        AND id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kamu sudah mendaftar jobdesc ini';
-    END IF;
-
-    START TRANSACTION;
-
-    SELECT
-        penerima_jobdesc,
-        jumlah_mahasiswa_diperlukan,
-        jumlah_mahasiswa_mengambil,
-        status_jobdesc
-    INTO
-        v_penerima_jobdesc,
-        v_jumlah_diperlukan,
-        v_jumlah_mengambil,
-        v_status_jobdesc
-    FROM bursa_jobdesc
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-    FOR UPDATE;
-
-    IF v_status_jobdesc <> 'Dibuka' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jobdesc tidak sedang dibuka';
-    END IF;
-
-    IF v_jumlah_mengambil >= v_jumlah_diperlukan THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kuota jobdesc sudah penuh';
-    END IF;
-
-    IF v_penerima_jobdesc = 'Yang memiliki jam minus' THEN
-        SET v_total_jam_minus = ufn_total_jam_minus_mahasiswa(v_id_mahasiswa);
-
-        IF v_total_jam_minus <= 0 THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Jobdesc ini hanya untuk mahasiswa yang masih memiliki jam minus';
-        END IF;
-    END IF;
-
-    INSERT INTO detail_pengguna_pada_bursa_jobdesc (
-        id_bursa_jobdesc,
-        id_pengguna,
-        peran_pengguna
-    )
-    VALUES (
-        p_id_bursa_jobdesc,
-        p_id_pengguna,
-        'Penerima'
-    );
-
-    UPDATE bursa_jobdesc
-    SET
-        jumlah_mahasiswa_mengambil = jumlah_mahasiswa_mengambil + 1,
-        status_jobdesc = CASE
-            WHEN jumlah_mahasiswa_mengambil >= jumlah_mahasiswa_diperlukan THEN 'Dikerjakan'
-            ELSE 'Dibuka'
-        END
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
-
-    COMMIT;
-
-    SELECT 
-        'Pendaftaran bursa jobdesc berhasil' AS Pesan,
-        p_id_bursa_jobdesc AS id_bursa_jobdesc;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_kelas_pada_mata_kuliah
-        WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data penentuan pengajar tidak ditemukan';
-    END IF;
-
-    DELETE FROM detail_kelas_pada_mata_kuliah
-    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
-
-    SELECT
-        'Data pengajar mata kuliah kelas berhasil dihapus' AS Pesan,
-        p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(30), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
-    DECLARE v_id_bursa_jobdesc INT;
-    DECLARE v_role VARCHAR(30);
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
-    END IF;
-
-    SELECT role
-    INTO v_role
-    FROM pengguna
-    WHERE id_pengguna = p_id_pengguna;
-
-    IF v_role = 'Mahasiswa' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mahasiswa tidak dapat membuat bursa jobdesc';
-    END IF;
-
-    IF p_penerima_jobdesc NOT IN ('Semua mahasiswa', 'Yang memiliki jam minus') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pilihan penerima jobdesc tidak valid';
-    END IF;
-
-    START TRANSACTION;
-
-    INSERT INTO bursa_jobdesc (
-        deskripsi_jobdesc,
-        penerima_jobdesc,
-        jam_plus,
-        tanggal_pemberian_jobdesc,
-        jumlah_mahasiswa_diperlukan,
-        jumlah_mahasiswa_mengambil,
-        status_jobdesc
-    )
-    VALUES (
-        p_deskripsi_jobdesc,
-        p_penerima_jobdesc,
-        p_jam_plus,
-        p_tanggal_pemberian_jobdesc,
-        p_jumlah_mahasiswa_diperlukan,
-        0,
-        'Dibuka'
-    );
-
-    SET v_id_bursa_jobdesc = LAST_INSERT_ID();
-
-    INSERT INTO detail_pengguna_pada_bursa_jobdesc (
-        id_bursa_jobdesc,
-        id_pengguna,
-        peran_pengguna
-    )
-    VALUES (
-        v_id_bursa_jobdesc,
-        p_id_pengguna,
-        'Pemberi'
-    );
-
-    COMMIT;
-
-    SELECT 
-        'Data bursa jobdesc berhasil ditambahkan' AS Pesan,
-        v_id_bursa_jobdesc AS id_bursa_jobdesc_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
-    IF p_jumlah_fasilitas <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jumlah fasilitas harus lebih dari 0';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM kelas
-        WHERE id_kelas = p_id_kelas
-        AND status_kelas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM fasilitas
-        WHERE id_fasilitas = p_id_fasilitas
-        AND status_fasilitas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Fasilitas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_kelas = p_id_kelas
-        AND id_fasilitas = p_id_fasilitas
-        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Fasilitas ini sudah ditentukan pada kelas tersebut';
-    END IF;
-
-    INSERT INTO detail_fasilitas_pada_kelas (
-        id_kelas,
-        id_fasilitas,
-        jumlah_fasilitas,
-        status_detail_fasilitas_pada_kelas
-    )
-    VALUES (
-        p_id_kelas,
-        p_id_fasilitas,
-        p_jumlah_fasilitas,
-        'Aktif'
-    );
-
-    SELECT
-        'Data fasilitas kelas berhasil ditambahkan' AS Pesan,
-        LAST_INSERT_ID() AS id_detail_fasilitas_pada_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_peran_pengguna` VARCHAR(20))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-    
-    INSERT INTO detail_pengguna_pada_pengaduan_kerusakan_fasilitas (
-        id_pengaduan_kerusakan_fasilitas,
-        id_pengguna,
-        peran_pengguna
-    )
-    VALUES (
-        p_id_pengaduan_kerusakan_fasilitas,
-        p_id_pengguna,
-        p_peran_pengguna
-    );
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_fasilitas` (IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
-    IF p_nama_fasilitas IS NULL OR TRIM(p_nama_fasilitas) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Nama fasilitas wajib diisi';
-    END IF;
-
-    IF p_harga < 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Harga fasilitas tidak boleh kurang dari 0';
-    END IF;
-
-    INSERT INTO fasilitas (
-        nama_fasilitas,
-        harga,
-        status_fasilitas,
-        tanggal_pendataan
-    )
-    VALUES (
-        p_nama_fasilitas,
-        p_harga,
-        'Aktif',
-        NOW()
-    );
-
-    SELECT
-        'Data fasilitas berhasil ditambahkan' AS Pesan,
-        LAST_INSERT_ID() AS id_fasilitas_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_kelas` (IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    INSERT INTO kelas (
-        nama_kelas,
-        tingkat
-    )
-    VALUES (
-        p_nama_kelas,
-        p_tingkat
-    );
-
-    SELECT 
-        'Data kelas berhasil ditambahkan' AS Pesan,
-        LAST_INSERT_ID() AS id_kelas_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_mahasiswa` (IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
-    DECLARE v_id_mahasiswa_baru INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-    	ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-
-    INSERT INTO mahasiswa (
-        id_kelas,
-        id_periode_akademik,
-        nim,
-        nama_mahasiswa,
-        email,
-        no_hp
-    )
-    VALUES (
-        p_id_kelas,
-        p_id_periode_akademik,
-        p_nim,
-        p_nama_mahasiswa,
-        p_email,
-        p_no_hp
-    );
-    
-    SET v_id_mahasiswa_baru = LAST_INSERT_ID();
-    
-    UPDATE kelas AS a
-    SET jumlah_mahasiswa = jumlah_mahasiswa + 1
-    WHERE id_kelas = p_id_kelas;
-    
-    COMMIT;
-
-    SELECT 
-        'Data mahasiswa berhasil ditambahkan' AS Pesan,
-        v_id_mahasiswa_baru AS id_mahasiswa_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengaduan_kerusakan_fasilitas` (IN `p_id_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_deskripsi_kerusakan` TEXT, IN `p_bukti_kerusakan_url` VARCHAR(2048), IN `p_pelaku_kerusakan` VARCHAR(50))   BEGIN
-	DECLARE v_id_pengaduan_kerusakan_fasilitas INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-    	ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-
-    INSERT INTO pengaduan_kerusakan_fasilitas (
-        id_fasilitas,
-        deskripsi_kerusakan,
-        tanggal_pengaduan,
-        bukti_kerusakan_url,
-        pelaku_kerusakan
-    )
-    VALUES (
-        p_id_fasilitas,
-        p_deskripsi_kerusakan,
-        NOW(),
-        p_bukti_kerusakan_url,
-        p_pelaku_kerusakan
-    );
-    
-    SET v_id_pengaduan_kerusakan_fasilitas = LAST_INSERT_ID();
-
-    CALL usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas(
-    	v_id_pengaduan_kerusakan_fasilitas,
-        p_id_pengguna,
-        'Pelapor'
-    );
-
-    COMMIT;
-
-    SELECT 
-        'Data pengaduan kerusakan fasilitas berhasil ditambahkan' AS Pesan,
-        v_id_pengaduan_kerusakan_fasilitas AS id_pengaduan_kerusakan_fasilitas_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajar` (IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    INSERT INTO pengajar (
-        nip,
-        nama_pengajar,
-        email,
-        no_hp
-    )
-    VALUES (
-        p_nip,
-        p_nama_pengajar,
-        p_email,
-        p_no_hp
-    );
-
-    SELECT 
-        'Data pengajar berhasil ditambahkan' AS Pesan,
-        LAST_INSERT_ID() AS id_pengajar_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajar_mata_kuliah_kelas` (IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
-    DECLARE v_id_detail INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF p_id_pengajar_1 = p_id_pengajar_2 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 1 dan Pengajar 2 tidak boleh sama';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM kelas
-        WHERE id_kelas = p_id_kelas
-        AND status_kelas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM mata_kuliah
-        WHERE id_matakuliah = p_id_mata_kuliah
-        AND status_mata_kuliah = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mata kuliah tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar_1
-        AND status_pengajar = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 1 tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar_2
-        AND status_pengajar = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 2 tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM detail_kelas_pada_mata_kuliah
-        WHERE id_kelas = p_id_kelas
-        AND id_mata_kuliah = p_id_mata_kuliah
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mata kuliah ini sudah ditentukan pada kelas tersebut';
-    END IF;
-
-    START TRANSACTION;
-
-    INSERT INTO detail_kelas_pada_mata_kuliah
-    (
-        id_mata_kuliah,
-        id_kelas
-    )
-    VALUES
-    (
-        p_id_mata_kuliah,
-        p_id_kelas
-    );
-
-    SET v_id_detail = LAST_INSERT_ID();
-
-    INSERT INTO detail_pengajar_pada_mata_kuliah
-    (
-        id_detail_kelas_pada_mata_kuliah,
-        id_pengajar,
-        kedudukan_pengajar
-    )
-    VALUES
-    (
-        v_id_detail,
-        p_id_pengajar_1,
-        'Pengajar1'
-    ),
-    (
-        v_id_detail,
-        p_id_pengajar_2,
-        'Pengajar2'
-    );
-
-    COMMIT;
-
-    SELECT
-        'Data pengajar mata kuliah kelas berhasil ditambahkan' AS Pesan,
-        v_id_detail AS id_detail_kelas_pada_mata_kuliah;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajuan_jam_plus` (IN `p_id_pengguna` INT, IN `p_id_kegiatan` INT, IN `p_jumlah_jam` DECIMAL(6,2), IN `p_jenis_jam` VARCHAR(20), IN `p_sumber_jam` VARCHAR(10), IN `p_deskripsi` TEXT, IN `p_nama_pemberi` VARCHAR(50), IN `p_dokumen_url` VARCHAR(2048))   BEGIN
-    DECLARE v_id_pengajuan INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF p_jumlah_jam <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jumlah jam plus harus lebih dari 0';
-    END IF;
-
-    IF p_jenis_jam NOT IN ('Murni', 'Kompensasi') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jenis jam tidak valid';
-    END IF;
-
-    IF p_sumber_jam NOT IN ('Prodi', 'Luar') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Sumber jam tidak valid';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-        AND role = 'Mahasiswa'
-        AND status_akun = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengguna mahasiswa tidak valid atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM kegiatan
-        WHERE id_kegiatan = p_id_kegiatan
-        AND status_kegiatan = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kegiatan tidak ditemukan atau tidak aktif';
-    END IF;
-
-    START TRANSACTION;
-
-    INSERT INTO pengajuan_jam_plus (
-        id_kegiatan,
-        jumlah_jam_plus,
-        jenis_jam,
-        sumber_jam,
-        tanggal_pengajuan,
-        deskripsi_pekerjaan,
-        nama_pemberi,
-        dokumen_url,
-        status_pengajuan
-    ) VALUES (
-        p_id_kegiatan,
-        p_jumlah_jam,
-        p_jenis_jam,
-        p_sumber_jam,
-        NOW(),
-        p_deskripsi,
-        p_nama_pemberi,
-        p_dokumen_url,
-        'Menunggu Verifikasi'
-    );
-
-    SET v_id_pengajuan = LAST_INSERT_ID();
-
-    INSERT INTO detail_pengguna_pada_pengajuan_jam_plus (
-        id_pengajuan_jam_plus,
-        id_pengguna,
-        peran_pengguna
-    ) VALUES (
-        v_id_pengajuan,
-        p_id_pengguna,
-        'Pengaju'
-    );
-
-    COMMIT;
-
-    SELECT
-        'Pengajuan jam plus berhasil dikirim' AS Pesan,
-        v_id_pengajuan AS id_pengajuan_jam_plus;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengguna` (IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF p_role = 'Mahasiswa' THEN
-        IF p_id_mahasiswa IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role Mahasiswa wajib memiliki id_mahasiswa';
-        END IF;
-
-        IF p_id_pengajar IS NOT NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role Mahasiswa tidak boleh memiliki id_pengajar';
-        END IF;
-    ELSE
-        IF p_id_pengajar IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role selain Mahasiswa wajib memiliki id_pengajar';
-        END IF;
-
-        IF p_id_mahasiswa IS NOT NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role selain Mahasiswa tidak boleh memiliki id_mahasiswa';
-        END IF;
-    END IF;
-
-    INSERT INTO pengguna (
-        id_mahasiswa,
-        id_pengajar,
-        username,
-        password,
-        role
-    )
-    VALUES (
-        p_id_mahasiswa,
-        p_id_pengajar,
-        p_username,
-        p_password,
-        p_role
-    );
-
-    SELECT 
-        'Data pengguna berhasil ditambahkan' AS Pesan,
-        LAST_INSERT_ID() AS id_pengguna_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_periode_akademik` (IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
-    DECLARE v_id_periode_akademik INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF p_tahun_akademik IS NULL OR TRIM(p_tahun_akademik) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Tahun akademik wajib diisi';
-    END IF;
-
-    IF p_semester NOT IN ('Ganjil', 'Genap') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Semester tidak valid';
-    END IF;
-
-    IF p_status_periode NOT IN ('Aktif', 'Tidak Aktif') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status periode tidak valid';
-    END IF;
-
-    IF p_tanggal_mulai > p_tanggal_selesai THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai';
-    END IF;
-
-    START TRANSACTION;
-
-    IF p_status_periode = 'Aktif' THEN
-        UPDATE periode_akademik
-        SET status_periode = 'Tidak Aktif'
-        WHERE status_periode = 'Aktif';
-    END IF;
-
-    INSERT INTO periode_akademik (
-        tahun_akademik,
-        semester,
-        tanggal_mulai,
-        tanggal_selesai,
-        status_periode
-    )
-    VALUES (
-        p_tahun_akademik,
-        p_semester,
-        p_tanggal_mulai,
-        p_tanggal_selesai,
-        p_status_periode
-    );
-
-    SET v_id_periode_akademik = LAST_INSERT_ID();
-
-    COMMIT;
-
-    SELECT
-        'Data periode akademik berhasil ditambahkan' AS Pesan,
-        v_id_periode_akademik AS id_periode_akademik_baru;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_pulihkan_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
-        AND status_detail_fasilitas_pada_kelas = 'Rusak'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Fasilitas hanya bisa dipulihkan jika statusnya Rusak';
-    END IF;
-
-    UPDATE detail_fasilitas_pada_kelas
-    SET status_detail_fasilitas_pada_kelas = 'Aktif'
-    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
-
-    SELECT
-        'Status fasilitas kelas berhasil dipulihkan menjadi Aktif' AS Pesan,
-        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_bursa_jobdesc` ()   BEGIN
-    SELECT
-        bj.id_bursa_jobdesc,
-        bj.deskripsi_jobdesc,
-        bj.penerima_jobdesc,
-        bj.jam_plus,
-        bj.tanggal_pemberian_jobdesc,
-        bj.jumlah_mahasiswa_diperlukan,
-        bj.jumlah_mahasiswa_mengambil,
-        bj.bukti_selesai_url,
-        bj.status_jobdesc,
-
-        dp_pemberi.id_pengguna AS id_pemberi,
-        p_pemberi.username AS username_pemberi,
-        COALESCE(pg_pemberi.nama_pengajar, m_pemberi.nama_mahasiswa, p_pemberi.username) AS nama_pemberi,
-
-        data_penerima.nama_penerima
-
-    FROM bursa_jobdesc AS bj
-
-    LEFT JOIN detail_pengguna_pada_bursa_jobdesc AS dp_pemberi
-        ON bj.id_bursa_jobdesc = dp_pemberi.id_bursa_jobdesc
-        AND dp_pemberi.peran_pengguna = 'Pemberi'
-
-    LEFT JOIN pengguna AS p_pemberi
-        ON dp_pemberi.id_pengguna = p_pemberi.id_pengguna
-
-    LEFT JOIN pengajar AS pg_pemberi
-        ON p_pemberi.id_pengajar = pg_pemberi.id_pengajar
-
-    LEFT JOIN mahasiswa AS m_pemberi
-        ON p_pemberi.id_mahasiswa = m_pemberi.id_mahasiswa
-
-    LEFT JOIN (
-        SELECT
-            dp.id_bursa_jobdesc,
-            GROUP_CONCAT(
-                COALESCE(m.nama_mahasiswa, p.username)
-                SEPARATOR ', '
-            ) AS nama_penerima
-        FROM detail_pengguna_pada_bursa_jobdesc dp
-        JOIN pengguna p
-            ON dp.id_pengguna = p.id_pengguna
-        LEFT JOIN mahasiswa m
-            ON p.id_mahasiswa = m.id_mahasiswa
-        WHERE dp.peran_pengguna = 'Penerima'
-        GROUP BY dp.id_bursa_jobdesc
-    ) AS data_penerima
-        ON bj.id_bursa_jobdesc = data_penerima.id_bursa_jobdesc
-
-    ORDER BY bj.id_bursa_jobdesc DESC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas` ()   BEGIN
-    SELECT
-        id_fasilitas,
-        nama_fasilitas,
-        harga,
-        status_fasilitas,
-        tanggal_pendataan
-    FROM fasilitas
-    ORDER BY id_fasilitas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_aktif` ()   BEGIN
-    SELECT
-        id_fasilitas,
-        nama_fasilitas,
-        harga
-    FROM fasilitas
-    WHERE status_fasilitas = 'Aktif'
-    ORDER BY nama_fasilitas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_by_id` (IN `p_id_fasilitas` INT)   BEGIN
-    SELECT
-        id_fasilitas,
-        nama_fasilitas,
-        harga,
-        status_fasilitas,
-        tanggal_pendataan
-    FROM fasilitas
-    WHERE id_fasilitas = p_id_fasilitas
-    LIMIT 1;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_kelas` ()   BEGIN
-    SELECT
-        dfpk.id_detail_fasilitas_pada_kelas,
-        dfpk.id_kelas,
-        k.nama_kelas,
-        k.tingkat,
-
-        dfpk.id_fasilitas,
-        f.nama_fasilitas,
-        f.harga,
-
-        dfpk.jumlah_fasilitas,
-        dfpk.status_detail_fasilitas_pada_kelas
-    FROM detail_fasilitas_pada_kelas dfpk
-    JOIN kelas k
-        ON dfpk.id_kelas = k.id_kelas
-    JOIN fasilitas f
-        ON dfpk.id_fasilitas = f.id_fasilitas
-    WHERE k.status_kelas = 'Aktif'
-    AND f.status_fasilitas = 'Aktif'
-    AND dfpk.status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    ORDER BY k.nama_kelas ASC, f.nama_fasilitas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_kelas_by_id` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
-    SELECT
-        dfpk.id_detail_fasilitas_pada_kelas,
-        dfpk.id_kelas,
-        k.nama_kelas,
-        k.tingkat,
-
-        dfpk.id_fasilitas,
-        f.nama_fasilitas,
-
-        dfpk.jumlah_fasilitas,
-        dfpk.status_detail_fasilitas_pada_kelas
-    FROM detail_fasilitas_pada_kelas dfpk
-    JOIN kelas k
-        ON dfpk.id_kelas = k.id_kelas
-    JOIN fasilitas f
-        ON dfpk.id_fasilitas = f.id_fasilitas
-    WHERE dfpk.id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
-    AND k.status_kelas = 'Aktif'
-    AND f.status_fasilitas = 'Aktif'
-    AND dfpk.status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    LIMIT 1;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kelas` ()   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    SELECT
-        id_kelas,
-        nama_kelas,
-        tingkat,
-        jumlah_mahasiswa,
-        status_kelas
-    FROM kelas
-    ORDER BY id_kelas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
-    SELECT
-        id_kelas,
-        nama_kelas,
-        tingkat,
-        jumlah_mahasiswa,
-        status_kelas
-    FROM kelas
-    WHERE status_kelas = 'Aktif'
-    ORDER BY tingkat ASC, nama_kelas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mahasiswa` ()   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    SELECT
-        m.id_mahasiswa,
-        m.id_kelas,
-        k.nama_kelas,
-        k.tingkat,
-        m.id_periode_akademik,
-        pa.tahun_akademik,
-        pa.semester,
-        m.nim,
-        m.nama_mahasiswa,
-        m.email,
-        m.no_hp,
-        m.saldo_jam_minus_murni,
-        m.saldo_jam_minus_kompensasi,
-        m.saldo_jam_plus_murni,
-        m.saldo_jam_plus_kompensasi,
-        m.status_mahasiswa
-    FROM mahasiswa AS m
-    JOIN kelas AS k ON m.id_kelas = k.id_kelas
-    JOIN periode_akademik AS pa ON m.id_periode_akademik = pa.id_periode_akademik
-    ORDER BY m.id_mahasiswa ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mata_kuliah_aktif` ()   BEGIN
-    SELECT
-        id_matakuliah AS id_mata_kuliah,
-        nama_mata_kuliah,
-        kode_mata_kuliah,
-        sks,
-        semester,
-        status_mata_kuliah
-    FROM mata_kuliah
-    WHERE status_mata_kuliah = 'Aktif'
-    ORDER BY semester ASC, nama_mata_kuliah ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mata_kuliah_mahasiswa` (IN `p_id_pengguna` INT)   BEGIN
-    DECLARE v_id_mahasiswa INT;
-    DECLARE v_id_kelas INT;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-        AND role = 'Mahasiswa'
-        AND status_akun = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Akun mahasiswa tidak ditemukan atau tidak aktif';
-    END IF;
-
-    SELECT id_mahasiswa
-    INTO v_id_mahasiswa
-    FROM pengguna
-    WHERE id_pengguna = p_id_pengguna;
-
-    IF v_id_mahasiswa IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Akun ini tidak terhubung dengan data mahasiswa';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM mahasiswa
-        WHERE id_mahasiswa = v_id_mahasiswa
-        AND status_mahasiswa = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan atau tidak aktif';
-    END IF;
-
-    SELECT id_kelas
-    INTO v_id_kelas
-    FROM mahasiswa
-    WHERE id_mahasiswa = v_id_mahasiswa;
-
-    SELECT
-        k.nama_kelas,
-        k.tingkat,
-
-        mk.kode_mata_kuliah,
-        mk.nama_mata_kuliah,
-        mk.sks,
-        mk.semester,
-
-        p1.nama_pengajar AS nama_pengajar_1,
-        p2.nama_pengajar AS nama_pengajar_2
-
-    FROM detail_kelas_pada_mata_kuliah dkmk
-    JOIN kelas k
-        ON dkmk.id_kelas = k.id_kelas
-    JOIN mata_kuliah mk
-        ON dkmk.id_mata_kuliah = mk.id_matakuliah
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
-        AND dp1.kedudukan_pengajar = 'Pengajar1'
-    LEFT JOIN pengajar p1
-        ON dp1.id_pengajar = p1.id_pengajar
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
-        AND dp2.kedudukan_pengajar = 'Pengajar2'
-    LEFT JOIN pengajar p2
-        ON dp2.id_pengajar = p2.id_pengajar
-
-    WHERE dkmk.id_kelas = v_id_kelas
-    ORDER BY mk.semester ASC, mk.nama_mata_kuliah ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengaduan_kerusakan_fasilitas` ()   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    SELECT
-        pkf.id_pengaduan_kerusakan_fasilitas,
-        pkf.id_fasilitas,
-        f.nama_fasilitas,
-        pkf.deskripsi_kerusakan,
-        pkf.tanggal_pengaduan,
-        pkf.bukti_kerusakan_url,
-        pkf.pelaku_kerusakan,
-        pkf.status_pengaduan,
-
-        dp_pelapor.id_pengguna AS id_pelapor,
-        p_pelapor.username AS username_pelapor,
-        COALESCE(m_pelapor.nama_mahasiswa, pg_pelapor.nama_pengajar) AS nama_pelapor,
-
-        dp_verifikator.id_pengguna AS id_verifikator,
-        p_verifikator.username AS username_verifikator,
-        COALESCE(m_verifikator.nama_mahasiswa, pg_verifikator.nama_pengajar) AS nama_verifikator
-
-    FROM pengaduan_kerusakan_fasilitas AS pkf
-    JOIN fasilitas AS f 
-        ON pkf.id_fasilitas = f.id_fasilitas
-
-    LEFT JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas AS dp_pelapor
-        ON pkf.id_pengaduan_kerusakan_fasilitas = dp_pelapor.id_pengaduan_kerusakan_fasilitas
-        AND dp_pelapor.peran_pengguna = 'Pelapor'
-    LEFT JOIN pengguna AS p_pelapor
-        ON dp_pelapor.id_pengguna = p_pelapor.id_pengguna
-    LEFT JOIN mahasiswa AS m_pelapor
-        ON p_pelapor.id_mahasiswa = m_pelapor.id_mahasiswa
-    LEFT JOIN pengajar AS pg_pelapor
-        ON p_pelapor.id_pengajar = pg_pelapor.id_pengajar
-
-    LEFT JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas AS dp_verifikator
-        ON pkf.id_pengaduan_kerusakan_fasilitas = dp_verifikator.id_pengaduan_kerusakan_fasilitas
-        AND dp_verifikator.peran_pengguna = 'Verifikator'
-    LEFT JOIN pengguna AS p_verifikator
-        ON dp_verifikator.id_pengguna = p_verifikator.id_pengguna
-    LEFT JOIN mahasiswa AS m_verifikator
-        ON p_verifikator.id_mahasiswa = m_verifikator.id_mahasiswa
-    LEFT JOIN pengajar AS pg_verifikator
-        ON p_verifikator.id_pengajar = pg_verifikator.id_pengajar
-
-    ORDER BY pkf.id_pengaduan_kerusakan_fasilitas ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar` ()   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    SELECT
-        id_pengajar,
-        nip,
-        nama_pengajar,
-        email,
-        no_hp,
-        status_pengajar
-    FROM pengajar
-    ORDER BY id_pengajar ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_aktif` ()   BEGIN
-    SELECT
-        id_pengajar,
-        nip,
-        nama_pengajar,
-        email,
-        no_hp,
-        status_pengajar
-    FROM pengajar
-    WHERE status_pengajar = 'Aktif'
-    ORDER BY nama_pengajar ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_mata_kuliah_kelas` ()   BEGIN
-    SELECT
-        dkmk.id_detail_kelas_pada_mata_kuliah,
-
-        k.id_kelas,
-        k.nama_kelas,
-        k.tingkat,
-
-        mk.id_matakuliah AS id_mata_kuliah,
-        mk.kode_mata_kuliah,
-        mk.nama_mata_kuliah,
-        mk.sks,
-        mk.semester,
-
-        p1.id_pengajar AS id_pengajar_1,
-        p1.nama_pengajar AS nama_pengajar_1,
-
-        p2.id_pengajar AS id_pengajar_2,
-        p2.nama_pengajar AS nama_pengajar_2
-
-    FROM detail_kelas_pada_mata_kuliah dkmk
-    JOIN kelas k
-        ON dkmk.id_kelas = k.id_kelas
-    JOIN mata_kuliah mk
-        ON dkmk.id_mata_kuliah = mk.id_matakuliah
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
-        AND dp1.kedudukan_pengajar = 'Pengajar1'
-    LEFT JOIN pengajar p1
-        ON dp1.id_pengajar = p1.id_pengajar
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
-        AND dp2.kedudukan_pengajar = 'Pengajar2'
-    LEFT JOIN pengajar p2
-        ON dp2.id_pengajar = p2.id_pengajar
-
-    ORDER BY k.tingkat ASC, k.nama_kelas ASC, mk.semester ASC, mk.nama_mata_kuliah ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_mata_kuliah_kelas_by_id` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
-    SELECT
-        dkmk.id_detail_kelas_pada_mata_kuliah,
-
-        dkmk.id_kelas,
-        k.nama_kelas,
-        k.tingkat,
-
-        dkmk.id_mata_kuliah,
-        mk.kode_mata_kuliah,
-        mk.nama_mata_kuliah,
-        mk.sks,
-        mk.semester,
-
-        p1.id_pengajar AS id_pengajar_1,
-        p1.nama_pengajar AS nama_pengajar_1,
-
-        p2.id_pengajar AS id_pengajar_2,
-        p2.nama_pengajar AS nama_pengajar_2
-
-    FROM detail_kelas_pada_mata_kuliah dkmk
-    JOIN kelas k
-        ON dkmk.id_kelas = k.id_kelas
-    JOIN mata_kuliah mk
-        ON dkmk.id_mata_kuliah = mk.id_matakuliah
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
-        AND dp1.kedudukan_pengajar = 'Pengajar1'
-    LEFT JOIN pengajar p1
-        ON dp1.id_pengajar = p1.id_pengajar
-
-    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
-        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
-        AND dp2.kedudukan_pengajar = 'Pengajar2'
-    LEFT JOIN pengajar p2
-        ON dp2.id_pengajar = p2.id_pengajar
-
-    WHERE dkmk.id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajuan_jam_plus` ()   BEGIN
-    SELECT 
-        pjp.*,
-
-        CASE
-            WHEN pjp.sumber_jam = 'Luar' THEN pjp.jumlah_jam_plus * 0.5
-            ELSE pjp.jumlah_jam_plus
-        END AS jumlah_jam_diterima,
-
-        k.nama_kegiatan,
-
-        m_pengaju.nama_mahasiswa AS nama_pengaju,
-        m_pengaju.nim AS nim_pengaju,
-        u_pengaju.id_pengguna AS id_pengaju,
-
-        COALESCE(pg_verif.nama_pengajar, '-') AS nama_verifikator
-
-    FROM pengajuan_jam_plus pjp
-    JOIN kegiatan k 
-        ON pjp.id_kegiatan = k.id_kegiatan
-
-    LEFT JOIN detail_pengguna_pada_pengajuan_jam_plus dp_p 
-        ON pjp.id_pengajuan_jam_plus = dp_p.id_pengajuan_jam_plus
-        AND dp_p.peran_pengguna = 'Pengaju'
-
-    LEFT JOIN pengguna u_pengaju 
-        ON dp_p.id_pengguna = u_pengaju.id_pengguna
-
-    LEFT JOIN mahasiswa m_pengaju 
-        ON u_pengaju.id_mahasiswa = m_pengaju.id_mahasiswa
-
-    LEFT JOIN detail_pengguna_pada_pengajuan_jam_plus dp_v 
-        ON pjp.id_pengajuan_jam_plus = dp_v.id_pengajuan_jam_plus
-        AND dp_v.peran_pengguna = 'Verifikator'
-
-    LEFT JOIN pengguna u_verif 
-        ON dp_v.id_pengguna = u_verif.id_pengguna
-
-    LEFT JOIN pengajar pg_verif 
-        ON u_verif.id_pengajar = pg_verif.id_pengajar
-
-    ORDER BY pjp.id_pengajuan_jam_plus DESC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengguna` ()   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    SELECT
-        p.id_pengguna,
-        p.id_mahasiswa,
-        m.nim,
-        m.nama_mahasiswa,
-        p.id_pengajar,
-        pg.nip,
-        pg.nama_pengajar,
-        p.username,
-        p.role,
-        p.status_akun
-    FROM pengguna AS p
-    LEFT JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
-    LEFT JOIN pengajar AS pg ON p.id_pengajar = pg.id_pengajar
-    ORDER BY p.id_pengguna ASC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_periode_akademik` ()   BEGIN
-    SELECT
-        id_periode_akademik,
-        tahun_akademik,
-        semester,
-        tanggal_mulai,
-        tanggal_selesai,
-        status_periode
-    FROM periode_akademik
-    ORDER BY id_periode_akademik DESC;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_periode_akademik_by_id` (IN `p_id_periode_akademik` INT)   BEGIN
-    SELECT
-        id_periode_akademik,
-        tahun_akademik,
-        semester,
-        tanggal_mulai,
-        tanggal_selesai,
-        status_periode
-    FROM periode_akademik
-    WHERE id_periode_akademik = p_id_periode_akademik
-    LIMIT 1;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_selesaikan_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pemberi` INT)   BEGIN
-    DECLARE v_status_jobdesc VARCHAR(20);
-    DECLARE v_bukti_selesai_url TEXT;
-    DECLARE v_jam_plus DECIMAL(10,2);
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_pengguna_pada_bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-        AND id_pengguna = p_id_pemberi
-        AND peran_pengguna = 'Pemberi'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kamu bukan pemberi jobdesc ini';
-    END IF;
-
-    START TRANSACTION;
-
-    SELECT
-        status_jobdesc,
-        bukti_selesai_url,
-        jam_plus
-    INTO
-        v_status_jobdesc,
-        v_bukti_selesai_url,
-        v_jam_plus
-    FROM bursa_jobdesc
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-    FOR UPDATE;
-
-    IF v_status_jobdesc <> 'Dikerjakan' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jobdesc hanya dapat diselesaikan saat status Dikerjakan';
-    END IF;
-
-    IF v_bukti_selesai_url IS NULL OR TRIM(v_bukti_selesai_url) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Bukti selesai belum dikirim oleh mahasiswa';
-    END IF;
-
-    UPDATE mahasiswa m
-    JOIN pengguna p
-        ON m.id_mahasiswa = p.id_mahasiswa
-    JOIN detail_pengguna_pada_bursa_jobdesc dp
-        ON p.id_pengguna = dp.id_pengguna
-    SET m.saldo_jam_plus_kompensasi = COALESCE(m.saldo_jam_plus_kompensasi, 0) + v_jam_plus
-    WHERE dp.id_bursa_jobdesc = p_id_bursa_jobdesc
-    AND dp.peran_pengguna = 'Penerima';
-
-    UPDATE bursa_jobdesc
-    SET status_jobdesc = 'Selesai'
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
-
-    COMMIT;
-
-    SELECT
-        'Status bursa jobdesc berhasil diubah menjadi Selesai dan jam plus berhasil diberikan' AS Pesan,
-        p_id_bursa_jobdesc AS id_bursa_jobdesc;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_fasilitas` (IN `p_id_fasilitas` INT)   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM fasilitas
-        WHERE id_fasilitas = p_id_fasilitas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas tidak ditemukan';
-    END IF;
-
-    UPDATE fasilitas
-    SET status_fasilitas = 'Tidak Aktif'
-    WHERE id_fasilitas = p_id_fasilitas;
-
-    SELECT 
-        'Data fasilitas berhasil dihapus secara soft delete' AS Pesan,
-        p_id_fasilitas AS id_fasilitas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
-        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan atau sudah tidak aktif';
-    END IF;
-
-    UPDATE detail_fasilitas_pada_kelas
-    SET status_detail_fasilitas_pada_kelas = 'Tidak Aktif'
-    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
-
-    SELECT
-        'Data fasilitas kelas berhasil dihapus secara soft delete' AS Pesan,
-        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_kelas` (IN `p_id_kelas` INT)   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM kelas
-        WHERE id_kelas = p_id_kelas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data kelas tidak ditemukan';
-    END IF;
-
-    UPDATE kelas
-    SET status_kelas = 'Tidak Aktif'
-    WHERE id_kelas = p_id_kelas;
-
-    SELECT 
-        'Data kelas berhasil dihapus secara soft delete' AS Pesan,
-        p_id_kelas AS id_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_mahasiswa` (IN `p_id_mahasiswa` INT)   BEGIN
-	DECLARE v_id_kelas INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-    	ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM mahasiswa
-        WHERE id_mahasiswa = p_id_mahasiswa
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan';
-    END IF;
-    
-    IF EXISTS (
-        SELECT 1
-        FROM mahasiswa
-        WHERE id_mahasiswa = p_id_mahasiswa
-        AND status_mahasiswa = 'Tidak Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mahasiswa sudah tidak aktif';
-    END IF;
-    
-    START TRANSACTION;
-    
-    SELECT id_kelas
-    INTO v_id_kelas
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa;
-    
-    UPDATE kelas
-    SET jumlah_mahasiswa = jumlah_mahasiswa - 1
-    WHERE id_kelas = v_id_kelas;
-
-    UPDATE mahasiswa
-    SET status_mahasiswa = 'Tidak Aktif'
-    WHERE id_mahasiswa = p_id_mahasiswa;
-    
-    COMMIT;
-
-    SELECT 
-        'Data mahasiswa berhasil dihapus secara soft delete' AS Pesan,
-        p_id_mahasiswa AS id_mahasiswa;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_pengajar` (IN `p_id_pengajar` INT)   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengajar tidak ditemukan';
-    END IF;
-
-    UPDATE pengajar
-    SET status_pengajar = 'Tidak Aktif'
-    WHERE id_pengajar = p_id_pengajar;
-
-    SELECT 
-        'Data pengajar berhasil dihapus secara soft delete' AS Pesan,
-        p_id_pengajar AS id_pengajar;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_pengguna` (IN `p_id_pengguna` INT)   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
-    END IF;
-
-    UPDATE pengguna
-    SET status_akun = 'Tidak Aktif'
-    WHERE id_pengguna = p_id_pengguna;
-
-    SELECT 
-        'Data pengguna berhasil dihapus secara soft delete' AS Pesan,
-        p_id_pengguna AS id_pengguna;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_periode_akademik` (IN `p_id_periode_akademik` INT)   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM periode_akademik
-        WHERE id_periode_akademik = p_id_periode_akademik
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data periode akademik tidak ditemukan';
-    END IF;
-
-    UPDATE periode_akademik
-    SET status_periode = 'Tidak Aktif'
-    WHERE id_periode_akademik = p_id_periode_akademik;
-
-    SELECT
-        'Data periode akademik berhasil dinonaktifkan' AS Pesan,
-        p_id_periode_akademik AS id_periode_akademik;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_bukti_selesai_url_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT, IN `p_bukti_selesai_url` TEXT)   BEGIN
-    DECLARE v_role VARCHAR(30);
-    DECLARE v_status_jobdesc VARCHAR(20);
-    DECLARE v_bukti_selesai_url TEXT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
-    END IF;
-
-    SELECT role
-    INTO v_role
-    FROM pengguna
-    WHERE id_pengguna = p_id_pengguna;
-
-    IF v_role <> 'Mahasiswa' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Hanya mahasiswa yang dapat mengirim bukti selesai jobdesc';
-    END IF;
-
-    IF p_bukti_selesai_url IS NULL OR TRIM(p_bukti_selesai_url) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Link bukti selesai wajib diisi';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_pengguna_pada_bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-        AND id_pengguna = p_id_pengguna
-        AND peran_pengguna = 'Penerima'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kamu bukan penerima jobdesc ini';
-    END IF;
-
-    START TRANSACTION;
-
-    SELECT
-        status_jobdesc,
-        bukti_selesai_url
-    INTO
-        v_status_jobdesc,
-        v_bukti_selesai_url
-    FROM bursa_jobdesc
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-    FOR UPDATE;
-
-    IF v_status_jobdesc <> 'Dikerjakan' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Bukti hanya dapat dikirim saat jobdesc sedang dikerjakan';
-    END IF;
-
-    IF v_bukti_selesai_url IS NOT NULL AND TRIM(v_bukti_selesai_url) <> '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Bukti selesai jobdesc sudah pernah dikirim';
-    END IF;
-
-    UPDATE bursa_jobdesc
-    SET bukti_selesai_url = TRIM(p_bukti_selesai_url)
-    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
-
-    COMMIT;
-
-    SELECT
-        'Bukti selesai jobdesc berhasil dikirim' AS Pesan,
-        p_id_bursa_jobdesc AS id_bursa_jobdesc;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_detail_fasilitas_pada_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT, IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
-        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan atau sudah tidak aktif';
-    END IF;
-
-    IF p_jumlah_fasilitas <= 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jumlah fasilitas harus lebih dari 0';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM kelas
-        WHERE id_kelas = p_id_kelas
-        AND status_kelas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM fasilitas
-        WHERE id_fasilitas = p_id_fasilitas
-        AND status_fasilitas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Fasilitas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_kelas = p_id_kelas
-        AND id_fasilitas = p_id_fasilitas
-        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-        AND id_detail_fasilitas_pada_kelas <> p_id_detail_fasilitas_pada_kelas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Fasilitas ini sudah ditentukan pada kelas tersebut';
-    END IF;
-
-    UPDATE detail_fasilitas_pada_kelas
-    SET
-        id_kelas = p_id_kelas,
-        id_fasilitas = p_id_fasilitas,
-        jumlah_fasilitas = p_jumlah_fasilitas
-    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
-
-    SELECT
-        'Data fasilitas kelas berhasil diupdate' AS Pesan,
-        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_fasilitas` (IN `p_id_fasilitas` INT, IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM fasilitas
-        WHERE id_fasilitas = p_id_fasilitas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas tidak ditemukan';
-    END IF;
-
-    IF p_nama_fasilitas IS NULL OR TRIM(p_nama_fasilitas) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Nama fasilitas wajib diisi';
-    END IF;
-
-    IF p_harga < 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Harga fasilitas tidak boleh kurang dari 0';
-    END IF;
-
-    UPDATE fasilitas
-    SET
-        nama_fasilitas = p_nama_fasilitas,
-        harga = p_harga
-    WHERE id_fasilitas = p_id_fasilitas;
-
-    SELECT
-        'Data fasilitas berhasil diupdate' AS Pesan,
-        p_id_fasilitas AS id_fasilitas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_kelas` (IN `p_id_kelas` INT, IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM kelas
-        WHERE id_kelas = p_id_kelas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data kelas tidak ditemukan';
-    END IF;
-
-    UPDATE kelas
-    SET
-        nama_kelas = p_nama_kelas,
-        tingkat = p_tingkat
-    WHERE id_kelas = p_id_kelas;
-
-    SELECT 
-        'Data kelas berhasil diupdate' AS Pesan,
-        p_id_kelas AS id_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_mahasiswa` (IN `p_id_mahasiswa` INT, IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20), IN `p_status_mahasiswa` VARCHAR(20))   BEGIN
-    DECLARE v_id_kelas_lama INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-    	ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM mahasiswa
-        WHERE id_mahasiswa = p_id_mahasiswa
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan';
-    END IF;
-    
-    IF p_status_mahasiswa NOT IN ('Aktif', 'Lulus', 'Cuti') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status tidak valid';
-    END IF;
-    
-    START TRANSACTION;
-    
-    SELECT id_kelas
-    INTO v_id_kelas_lama
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa;
-
-    IF v_id_kelas_lama <> p_id_kelas THEN
-        UPDATE kelas
-        SET jumlah_mahasiswa = jumlah_mahasiswa - 1
-        WHERE id_kelas = v_id_kelas_lama;
-
-        UPDATE kelas
-        SET jumlah_mahasiswa = jumlah_mahasiswa + 1
-        WHERE id_kelas = p_id_kelas;
-    END IF;
-
-    UPDATE mahasiswa
-    SET
-        id_kelas = p_id_kelas,
-        id_periode_akademik = p_id_periode_akademik,
-        nim = p_nim,
-        nama_mahasiswa = p_nama_mahasiswa,
-        email = p_email,
-        no_hp = p_no_hp,
-        status_mahasiswa = p_status_mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa;
-    
-    COMMIT;
-
-    SELECT 
-        'Data mahasiswa berhasil diupdate' AS Pesan,
-        p_id_mahasiswa AS id_mahasiswa;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengajar` (IN `p_id_pengajar` INT, IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengajar tidak ditemukan';
-    END IF;
-
-    UPDATE pengajar
-    SET
-        nip = p_nip,
-        nama_pengajar = p_nama_pengajar,
-        email = p_email,
-        no_hp = p_no_hp
-    WHERE id_pengajar = p_id_pengajar;
-
-    SELECT 
-        'Data pengajar berhasil diupdate' AS Pesan,
-        p_id_pengajar AS id_pengajar;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF p_id_pengajar_1 = p_id_pengajar_2 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 1 dan Pengajar 2 tidak boleh sama';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_kelas_pada_mata_kuliah
-        WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data penentuan pengajar tidak ditemukan';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM kelas
-        WHERE id_kelas = p_id_kelas
-        AND status_kelas = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM mata_kuliah
-        WHERE id_matakuliah = p_id_mata_kuliah
-        AND status_mata_kuliah = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mata kuliah tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar_1
-        AND status_pengajar = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 1 tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengajar
-        WHERE id_pengajar = p_id_pengajar_2
-        AND status_pengajar = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajar 2 tidak ditemukan atau tidak aktif';
-    END IF;
-
-    IF EXISTS (
-        SELECT 1
-        FROM detail_kelas_pada_mata_kuliah
-        WHERE id_kelas = p_id_kelas
-        AND id_mata_kuliah = p_id_mata_kuliah
-        AND id_detail_kelas_pada_mata_kuliah <> p_id_detail_kelas_pada_mata_kuliah
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mata kuliah ini sudah ditentukan pada kelas tersebut';
-    END IF;
-
-    START TRANSACTION;
-
-    UPDATE detail_kelas_pada_mata_kuliah
-    SET
-        id_kelas = p_id_kelas,
-        id_mata_kuliah = p_id_mata_kuliah
-    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
-
-    DELETE FROM detail_pengajar_pada_mata_kuliah
-    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
-
-    INSERT INTO detail_pengajar_pada_mata_kuliah
-    (
-        id_detail_kelas_pada_mata_kuliah,
-        id_pengajar,
-        kedudukan_pengajar
-    )
-    VALUES
-    (
-        p_id_detail_kelas_pada_mata_kuliah,
-        p_id_pengajar_1,
-        'Pengajar1'
-    ),
-    (
-        p_id_detail_kelas_pada_mata_kuliah,
-        p_id_pengajar_2,
-        'Pengajar2'
-    );
-
-    COMMIT;
-
-    SELECT
-        'Data pengajar mata kuliah kelas berhasil diupdate' AS Pesan,
-        p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengguna` (IN `p_id_pengguna` INT, IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengguna
-        WHERE id_pengguna = p_id_pengguna
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
-    END IF;
-
-    IF p_role = 'Mahasiswa' THEN
-        IF p_id_mahasiswa IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role Mahasiswa wajib memiliki id_mahasiswa';
-        END IF;
-
-        IF p_id_pengajar IS NOT NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role Mahasiswa tidak boleh memiliki id_pengajar';
-        END IF;
-    ELSE
-        IF p_id_pengajar IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role selain Mahasiswa wajib memiliki id_pengajar';
-        END IF;
-        
-        IF p_id_mahasiswa IS NOT NULL THEN
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Role selain Mahasiswa tidak boleh memiliki id_mahasiswa';
-        END IF;
-    END IF;
-
-    UPDATE pengguna
-    SET
-        id_mahasiswa = p_id_mahasiswa,
-        id_pengajar = p_id_pengajar,
-        username = p_username,
-        password = p_password,
-        role = p_role
-    WHERE id_pengguna = p_id_pengguna;
-
-    SELECT 
-        'Data pengguna berhasil diupdate' AS Pesan,
-        p_id_pengguna AS id_pengguna;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_periode_akademik` (IN `p_id_periode_akademik` INT, IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM periode_akademik
-        WHERE id_periode_akademik = p_id_periode_akademik
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data periode akademik tidak ditemukan';
-    END IF;
-
-    IF p_tahun_akademik IS NULL OR TRIM(p_tahun_akademik) = '' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Tahun akademik wajib diisi';
-    END IF;
-
-    IF p_semester NOT IN ('Ganjil', 'Genap') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Semester tidak valid';
-    END IF;
-
-    IF p_status_periode NOT IN ('Aktif', 'Tidak Aktif') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status periode tidak valid';
-    END IF;
-
-    IF p_tanggal_mulai > p_tanggal_selesai THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai';
-    END IF;
-
-    START TRANSACTION;
-
-    IF p_status_periode = 'Aktif' THEN
-        UPDATE periode_akademik
-        SET status_periode = 'Tidak Aktif'
-        WHERE id_periode_akademik <> p_id_periode_akademik
-        AND status_periode = 'Aktif';
-    END IF;
-
-    UPDATE periode_akademik
-    SET
-        tahun_akademik = p_tahun_akademik,
-        semester = p_semester,
-        tanggal_mulai = p_tanggal_mulai,
-        tanggal_selesai = p_tanggal_selesai,
-        status_periode = p_status_periode
-    WHERE id_periode_akademik = p_id_periode_akademik;
-
-    COMMIT;
-
-    SELECT
-        'Data periode akademik berhasil diubah' AS Pesan,
-        p_id_periode_akademik AS id_periode_akademik;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
-	DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RESIGNAL;
-    END;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data bursa jobdesc tidak ditemukan';
-    END IF;
-    
-    IF NOT EXISTS (
-        SELECT 1 FROM detail_pengguna_pada_bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-        	AND id_pengguna = p_id_pengguna
-        	AND peran_pengguna = 'Pemberi'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengguna tidak melakukan bursa jobdesc ini, atau pengguna bukan pemberi jobdesc';
-    END IF;
-    
-    IF EXISTS (
-    	SELECT 1
-        FROM bursa_jobdesc
-        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
-        	AND (
-                status_jobdesc = 'Dibuka'
-        		OR bukti_selesai_url IS NULL
-            )
-    ) THEN
-    	SIGNAL SQLSTATE '45000'
-	    SET MESSAGE_TEXT = 'Bursa jobdesc belum dikerjakan';
-    ELSE
-	    UPDATE bursa_jobdesc
-    	SET status_jobdesc = 'Selesai'
-    	WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
-    END IF;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_detail_fasilitas_pada_kelas` (IN `p_id_pengguna` INT, IN `p_id_fasilitas` INT, IN `p_status_detail_fasilitas_pada_kelas` VARCHAR(20))   BEGIN
-    DECLARE v_id_kelas INT;
-
-    SET v_id_kelas = ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas(p_id_pengguna);
-
-    IF v_id_kelas IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'ID kelas tidak ditemukan dari pengguna';
-    END IF;
-
-    IF p_status_detail_fasilitas_pada_kelas NOT IN ('Aktif', 'Rusak') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status fasilitas pada kelas tidak valid';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_fasilitas_pada_kelas
-        WHERE id_kelas = v_id_kelas
-        AND id_fasilitas = p_id_fasilitas
-        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data fasilitas pada kelas tidak ditemukan atau sudah tidak aktif';
-    END IF;
-
-    UPDATE detail_fasilitas_pada_kelas
-    SET status_detail_fasilitas_pada_kelas = p_status_detail_fasilitas_pada_kelas
-    WHERE id_kelas = v_id_kelas
-    AND id_fasilitas = p_id_fasilitas
-    AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak');
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_status_pengaduan` VARCHAR(20))   BEGIN
-	DECLARE v_id_fasilitas INT;
-    DECLARE v_id_pengguna_pelapor INT;
-    
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-    	ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pengaduan_kerusakan_fasilitas
-        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengaduan kerusakan fasilitas tidak ditemukan';
-    END IF;
-    
-    IF p_status_pengaduan NOT IN ('Diterima', 'Ditolak') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status pengaduan tidak valid';
-    END IF;
-    
-    SELECT id_fasilitas
-    INTO v_id_fasilitas
-    FROM pengaduan_kerusakan_fasilitas
-    WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas;
-    
-    START TRANSACTION;
-
-    UPDATE pengaduan_kerusakan_fasilitas
-    SET
-        status_pengaduan = p_status_pengaduan
-    WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM detail_pengguna_pada_pengaduan_kerusakan_fasilitas
-        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
-        AND id_pengguna = p_id_pengguna
-        AND peran_pengguna = 'Verifikator'
-    ) THEN
-        CALL usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas(
-            p_id_pengaduan_kerusakan_fasilitas,
-            p_id_pengguna,
-            'Verifikator'
-        );
-    END IF;
-    
-    IF p_status_pengaduan = 'Diterima' THEN
-    	SELECT id_pengguna
-        INTO v_id_pengguna_pelapor
-        FROM detail_pengguna_pada_pengaduan_kerusakan_fasilitas
-        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
-        AND peran_pengguna = 'Pelapor'
-        LIMIT 1;
-        
-    	CALL usp_update_status_detail_fasilitas_pada_kelas(
-        	v_id_pengguna_pelapor,
-            v_id_fasilitas,
-            'Rusak'
-        );
-    END IF;
-    
-    COMMIT;
-
-    SELECT 
-        'status_pengaduan berhasil diupdate' AS Pesan,
-        p_id_pengaduan_kerusakan_fasilitas AS id_pengaduan_kerusakan_fasilitas,
-        p_status_pengaduan AS status_pengaduan;
-END$$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT, IN `p_id_verifikator` INT, IN `p_status` VARCHAR(20))   BEGIN
-    DECLARE v_id_mhs INT;
-    DECLARE v_jumlah_asli DECIMAL(6,2);
-    DECLARE v_jumlah_diterima DECIMAL(6,2);
-    DECLARE v_jenis VARCHAR(20);
-    DECLARE v_sumber VARCHAR(10);
-    DECLARE v_status_lama VARCHAR(30);
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    IF p_status NOT IN ('Disetujui', 'Ditolak') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Status verifikasi tidak valid';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengguna
-        WHERE id_pengguna = p_id_verifikator
-        AND role = 'PIC Tata Tertib'
-        AND status_akun = 'Aktif'
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Verifikator tidak valid atau bukan PIC Tata Tertib';
-    END IF;
-
-    IF NOT EXISTS (
-        SELECT 1
-        FROM pengajuan_jam_plus
-        WHERE id_pengajuan_jam_plus = p_id_pengajuan
-    ) THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengajuan tidak ditemukan';
-    END IF;
-
-    SELECT status_pengajuan
-    INTO v_status_lama
-    FROM pengajuan_jam_plus
-    WHERE id_pengajuan_jam_plus = p_id_pengajuan;
-
-    IF v_status_lama <> 'Menunggu Verifikasi' THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajuan ini sudah diverifikasi dan tidak dapat diproses ulang';
-    END IF;
-
-    START TRANSACTION;
-
-    UPDATE pengajuan_jam_plus
-    SET status_pengajuan = p_status
-    WHERE id_pengajuan_jam_plus = p_id_pengajuan;
-
-    DELETE FROM detail_pengguna_pada_pengajuan_jam_plus
-    WHERE id_pengajuan_jam_plus = p_id_pengajuan
-    AND peran_pengguna = 'Verifikator';
-
-    INSERT INTO detail_pengguna_pada_pengajuan_jam_plus (
-        id_pengajuan_jam_plus,
-        id_pengguna,
-        peran_pengguna
-    ) VALUES (
-        p_id_pengajuan,
-        p_id_verifikator,
-        'Verifikator'
-    );
-
-    IF p_status = 'Disetujui' THEN
-
-        SELECT
-            pjp.jumlah_jam_plus,
-            pjp.jenis_jam,
-            pjp.sumber_jam,
-            u.id_mahasiswa
-        INTO
-            v_jumlah_asli,
-            v_jenis,
-            v_sumber,
-            v_id_mhs
-        FROM pengajuan_jam_plus pjp
-        JOIN detail_pengguna_pada_pengajuan_jam_plus dp
-            ON pjp.id_pengajuan_jam_plus = dp.id_pengajuan_jam_plus
-        JOIN pengguna u
-            ON dp.id_pengguna = u.id_pengguna
-        WHERE pjp.id_pengajuan_jam_plus = p_id_pengajuan
-        AND dp.peran_pengguna = 'Pengaju'
-        LIMIT 1;
-
-        IF v_sumber = 'Luar' THEN
-            SET v_jumlah_diterima = v_jumlah_asli * 0.5;
-        ELSE
-            SET v_jumlah_diterima = v_jumlah_asli;
-        END IF;
-
-        IF v_jenis = 'Murni' THEN
-            UPDATE mahasiswa
-            SET saldo_jam_plus_murni = saldo_jam_plus_murni + v_jumlah_diterima
-            WHERE id_mahasiswa = v_id_mhs;
-        ELSEIF v_jenis = 'Kompensasi' THEN
-            UPDATE mahasiswa
-            SET saldo_jam_plus_kompensasi = saldo_jam_plus_kompensasi + v_jumlah_diterima
-            WHERE id_mahasiswa = v_id_mhs;
-        ELSE
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Jenis jam pada pengajuan tidak valid';
-        END IF;
-
-    END IF;
-
-    COMMIT;
-
-    SELECT
-        'Verifikasi pengajuan jam plus berhasil disimpan' AS Pesan,
-        p_id_pengajuan AS id_pengajuan_jam_plus,
-        p_status AS status_pengajuan;
-END$$
-
---
--- Functions
---
-CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT READS SQL DATA BEGIN
-    DECLARE v_id_kelas INT;
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND
-    BEGIN
-        SET v_id_kelas = NULL;
-    END;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RETURN NULL;
-    END;
-
-    SELECT m.id_kelas
-    INTO v_id_kelas
-    FROM pengguna AS p
-    JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
-    WHERE p.id_pengguna = p_id_pengguna
-    LIMIT 1;
-
-    RETURN v_id_kelas;
-END$$
-
-CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) READS SQL DATA BEGIN
-    DECLARE v_minus_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_plus_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-
-    DECLARE v_sisa_minus_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_sisa_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_sisa_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-
-    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND
-    SET v_data_ditemukan = 0;
-
-    SELECT
-        COALESCE(saldo_jam_minus_murni, 0),
-        COALESCE(saldo_jam_minus_kompensasi, 0),
-        COALESCE(saldo_jam_plus_murni, 0),
-        COALESCE(saldo_jam_plus_kompensasi, 0)
-    INTO
-        v_minus_murni,
-        v_minus_kompensasi,
-        v_plus_murni,
-        v_plus_kompensasi
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa
-    LIMIT 1;
-
-    IF v_data_ditemukan = 0 THEN
-        RETURN 0;
-    END IF;
-
-    SET v_sisa_minus_kompensasi = GREATEST(0, v_minus_kompensasi - v_plus_kompensasi);
-
-    SET v_sisa_plus_kompensasi = GREATEST(0, v_plus_kompensasi - v_minus_kompensasi);
-
-    SET v_sisa_minus_murni = GREATEST(0, v_minus_murni - v_plus_murni);
-
-    SET v_sisa_minus_murni = GREATEST(0, v_sisa_minus_murni - v_sisa_plus_kompensasi);
-
-    RETURN v_sisa_minus_murni + v_sisa_minus_kompensasi;
-END$$
-
-DELIMITER ;
+SET @OLD_SQL_MODE=@@SQL_MODE;
+SET SQL_MODE='NO_AUTO_VALUE_ON_ZERO';
+SET time_zone = '+00:00';
+
+CREATE DATABASE IF NOT EXISTS `db_simat`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_general_ci;
+
+USE `db_simat`;
+
+SET FOREIGN_KEY_CHECKS=0;
+
+-- Hapus routine lama agar import ulang tidak gagal karena nama sudah ada.
+DROP PROCEDURE IF EXISTS `usp_daftar_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_delete_pengajar_mata_kuliah_kelas`;
+DROP PROCEDURE IF EXISTS `usp_insert_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_insert_detail_fasilitas_pada_kelas`;
+DROP PROCEDURE IF EXISTS `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_insert_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_insert_kelas`;
+DROP PROCEDURE IF EXISTS `usp_insert_mahasiswa`;
+DROP PROCEDURE IF EXISTS `usp_insert_pengaduan_kerusakan_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_insert_pengajar`;
+DROP PROCEDURE IF EXISTS `usp_insert_pengajar_mata_kuliah_kelas`;
+DROP PROCEDURE IF EXISTS `usp_insert_pengajuan_jam_plus`;
+DROP PROCEDURE IF EXISTS `usp_insert_pengguna`;
+DROP PROCEDURE IF EXISTS `usp_insert_periode_akademik`;
+DROP PROCEDURE IF EXISTS `usp_pulihkan_fasilitas_kelas`;
+DROP PROCEDURE IF EXISTS `usp_select_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_select_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_select_fasilitas_aktif`;
+DROP PROCEDURE IF EXISTS `usp_select_fasilitas_by_id`;
+DROP PROCEDURE IF EXISTS `usp_select_fasilitas_kelas`;
+DROP PROCEDURE IF EXISTS `usp_select_fasilitas_kelas_by_id`;
+DROP PROCEDURE IF EXISTS `usp_select_kelas`;
+DROP PROCEDURE IF EXISTS `usp_select_kelas_aktif`;
+DROP PROCEDURE IF EXISTS `usp_select_mahasiswa`;
+DROP PROCEDURE IF EXISTS `usp_select_mata_kuliah_aktif`;
+DROP PROCEDURE IF EXISTS `usp_select_mata_kuliah_mahasiswa`;
+DROP PROCEDURE IF EXISTS `usp_select_pengaduan_kerusakan_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_select_pengajar`;
+DROP PROCEDURE IF EXISTS `usp_select_pengajar_aktif`;
+DROP PROCEDURE IF EXISTS `usp_select_pengajar_mata_kuliah_kelas`;
+DROP PROCEDURE IF EXISTS `usp_select_pengajar_mata_kuliah_kelas_by_id`;
+DROP PROCEDURE IF EXISTS `usp_select_pengajuan_jam_plus`;
+DROP PROCEDURE IF EXISTS `usp_select_pengguna`;
+DROP PROCEDURE IF EXISTS `usp_select_periode_akademik`;
+DROP PROCEDURE IF EXISTS `usp_select_periode_akademik_by_id`;
+DROP PROCEDURE IF EXISTS `usp_selesaikan_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_fasilitas_kelas`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_kelas`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_mahasiswa`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_pengajar`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_pengguna`;
+DROP PROCEDURE IF EXISTS `usp_soft_delete_periode_akademik`;
+DROP PROCEDURE IF EXISTS `usp_update_bukti_selesai_url_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_update_detail_fasilitas_pada_kelas`;
+DROP PROCEDURE IF EXISTS `usp_update_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_update_kelas`;
+DROP PROCEDURE IF EXISTS `usp_update_mahasiswa`;
+DROP PROCEDURE IF EXISTS `usp_update_pengajar`;
+DROP PROCEDURE IF EXISTS `usp_update_pengajar_mata_kuliah_kelas`;
+DROP PROCEDURE IF EXISTS `usp_update_pengguna`;
+DROP PROCEDURE IF EXISTS `usp_update_periode_akademik`;
+DROP PROCEDURE IF EXISTS `usp_update_status_bursa_jobdesc`;
+DROP PROCEDURE IF EXISTS `usp_update_status_detail_fasilitas_pada_kelas`;
+DROP PROCEDURE IF EXISTS `usp_update_status_pengaduan_kerusakan_fasilitas`;
+DROP PROCEDURE IF EXISTS `usp_update_status_pengajuan_jam_plus`;
+DROP FUNCTION IF EXISTS `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas`;
+DROP FUNCTION IF EXISTS `ufn_total_jam_minus_mahasiswa`;
+
+-- Hapus tabel lama agar file bisa di-import ulang tanpa error duplicate table.
+DROP TABLE IF EXISTS `periode_akademik`;
+DROP TABLE IF EXISTS `pengguna`;
+DROP TABLE IF EXISTS `pengajuan_jam_plus`;
+DROP TABLE IF EXISTS `pengajar`;
+DROP TABLE IF EXISTS `pengaduan_kerusakan_fasilitas`;
+DROP TABLE IF EXISTS `pemberian_jam_minus`;
+DROP TABLE IF EXISTS `mata_kuliah`;
+DROP TABLE IF EXISTS `mahasiswa`;
+DROP TABLE IF EXISTS `kelas`;
+DROP TABLE IF EXISTS `kegiatan`;
+DROP TABLE IF EXISTS `fasilitas`;
+DROP TABLE IF EXISTS `detail_pengguna_pada_pengajuan_jam_plus`;
+DROP TABLE IF EXISTS `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`;
+DROP TABLE IF EXISTS `detail_pengguna_pada_pemberian_jam_minus`;
+DROP TABLE IF EXISTS `detail_pengguna_pada_bursa_jobdesc`;
+DROP TABLE IF EXISTS `detail_pengajar_pada_mata_kuliah`;
+DROP TABLE IF EXISTS `detail_kelas_pada_mata_kuliah`;
+DROP TABLE IF EXISTS `detail_fasilitas_pada_kelas`;
+DROP TABLE IF EXISTS `bursa_jobdesc`;
+
+START TRANSACTION;
 
 -- --------------------------------------------------------
 
@@ -2666,7 +364,8 @@ INSERT INTO `fasilitas` (`id_fasilitas`, `nama_fasilitas`, `harga`, `status_fasi
 CREATE TABLE `kegiatan` (
   `id_kegiatan` int NOT NULL,
   `nama_kegiatan` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_kegiatan` datetime NOT NULL,
+  `penyelenggara` enum('ASTRAtech','BEM','MPM','HIMMA','UKM') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_kegiatan` date DEFAULT NULL,
   `status_kegiatan` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -2674,8 +373,8 @@ CREATE TABLE `kegiatan` (
 -- Dumping data for table `kegiatan`
 --
 
-INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `tanggal_kegiatan`, `status_kegiatan`) VALUES
-(1, 'ASTRA', '2026-06-25 15:59:47', 'Aktif');
+INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `penyelenggara`, `tanggal_kegiatan`, `status_kegiatan`) VALUES
+(1, 'ASTRA', 'ASTRAtech', NULL, 'Aktif');
 
 -- --------------------------------------------------------
 
@@ -3273,7 +972,2398 @@ ALTER TABLE `pengajuan_jam_plus`
 ALTER TABLE `pengguna`
   ADD CONSTRAINT `fk_pengguna_mahasiswa` FOREIGN KEY (`id_mahasiswa`) REFERENCES `mahasiswa` (`id_mahasiswa`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pengguna_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- ============================================================
+-- Stored Function dan Stored Procedure
+-- DEFINER dihapus agar aman di Laragon/XAMPP.
+-- ============================================================
+
+DELIMITER $$
+
+CREATE FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT READS SQL DATA BEGIN
+    DECLARE v_id_kelas INT;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+    BEGIN
+        SET v_id_kelas = NULL;
+    END;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RETURN NULL;
+    END;
+
+    SELECT m.id_kelas
+    INTO v_id_kelas
+    FROM pengguna AS p
+    JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
+    WHERE p.id_pengguna = p_id_pengguna
+    LIMIT 1;
+
+    RETURN v_id_kelas;
+END$$
+
+CREATE FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) READS SQL DATA BEGIN
+    DECLARE v_minus_murni DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_plus_murni DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
+
+    DECLARE v_sisa_minus_murni DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_sisa_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
+    DECLARE v_sisa_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
+
+    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+    SET v_data_ditemukan = 0;
+
+    SELECT
+        COALESCE(saldo_jam_minus_murni, 0),
+        COALESCE(saldo_jam_minus_kompensasi, 0),
+        COALESCE(saldo_jam_plus_murni, 0),
+        COALESCE(saldo_jam_plus_kompensasi, 0)
+    INTO
+        v_minus_murni,
+        v_minus_kompensasi,
+        v_plus_murni,
+        v_plus_kompensasi
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa
+    LIMIT 1;
+
+    IF v_data_ditemukan = 0 THEN
+        RETURN 0;
+    END IF;
+
+    SET v_sisa_minus_kompensasi = GREATEST(0, v_minus_kompensasi - v_plus_kompensasi);
+
+    SET v_sisa_plus_kompensasi = GREATEST(0, v_plus_kompensasi - v_minus_kompensasi);
+
+    SET v_sisa_minus_murni = GREATEST(0, v_minus_murni - v_plus_murni);
+
+    SET v_sisa_minus_murni = GREATEST(0, v_sisa_minus_murni - v_sisa_plus_kompensasi);
+
+    RETURN v_sisa_minus_murni + v_sisa_minus_kompensasi;
+END$$
+
+CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
+    DECLARE v_role VARCHAR(30);
+    DECLARE v_id_mahasiswa INT;
+    DECLARE v_penerima_jobdesc VARCHAR(30);
+    DECLARE v_jumlah_diperlukan INT;
+    DECLARE v_jumlah_mengambil INT;
+    DECLARE v_status_jobdesc VARCHAR(20);
+    DECLARE v_total_jam_minus DECIMAL(10,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+    END IF;
+
+    SELECT 
+        role,
+        id_mahasiswa
+    INTO 
+        v_role,
+        v_id_mahasiswa
+    FROM pengguna
+    WHERE id_pengguna = p_id_pengguna;
+
+    IF v_role <> 'Mahasiswa' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hanya mahasiswa yang dapat mendaftar bursa jobdesc';
+    END IF;
+
+    IF v_id_mahasiswa IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Akun mahasiswa tidak terhubung dengan data mahasiswa';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data bursa jobdesc tidak ditemukan';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM detail_pengguna_pada_bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+        AND id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kamu sudah mendaftar jobdesc ini';
+    END IF;
+
+    START TRANSACTION;
+
+    SELECT
+        penerima_jobdesc,
+        jumlah_mahasiswa_diperlukan,
+        jumlah_mahasiswa_mengambil,
+        status_jobdesc
+    INTO
+        v_penerima_jobdesc,
+        v_jumlah_diperlukan,
+        v_jumlah_mengambil,
+        v_status_jobdesc
+    FROM bursa_jobdesc
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+    FOR UPDATE;
+
+    IF v_status_jobdesc <> 'Dibuka' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jobdesc tidak sedang dibuka';
+    END IF;
+
+    IF v_jumlah_mengambil >= v_jumlah_diperlukan THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kuota jobdesc sudah penuh';
+    END IF;
+
+    IF v_penerima_jobdesc = 'Yang memiliki jam minus' THEN
+        SET v_total_jam_minus = ufn_total_jam_minus_mahasiswa(v_id_mahasiswa);
+
+        IF v_total_jam_minus <= 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Jobdesc ini hanya untuk mahasiswa yang masih memiliki jam minus';
+        END IF;
+    END IF;
+
+    INSERT INTO detail_pengguna_pada_bursa_jobdesc (
+        id_bursa_jobdesc,
+        id_pengguna,
+        peran_pengguna
+    )
+    VALUES (
+        p_id_bursa_jobdesc,
+        p_id_pengguna,
+        'Penerima'
+    );
+
+    UPDATE bursa_jobdesc
+    SET
+        jumlah_mahasiswa_mengambil = jumlah_mahasiswa_mengambil + 1,
+        status_jobdesc = CASE
+            WHEN jumlah_mahasiswa_mengambil >= jumlah_mahasiswa_diperlukan THEN 'Dikerjakan'
+            ELSE 'Dibuka'
+        END
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
+
+    COMMIT;
+
+    SELECT 
+        'Pendaftaran bursa jobdesc berhasil' AS Pesan,
+        p_id_bursa_jobdesc AS id_bursa_jobdesc;
+END$$
+
+CREATE PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_kelas_pada_mata_kuliah
+        WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data penentuan pengajar tidak ditemukan';
+    END IF;
+
+    DELETE FROM detail_kelas_pada_mata_kuliah
+    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
+
+    SELECT
+        'Data pengajar mata kuliah kelas berhasil dihapus' AS Pesan,
+        p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
+END$$
+
+CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(30), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
+    DECLARE v_id_bursa_jobdesc INT;
+    DECLARE v_role VARCHAR(30);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+    END IF;
+
+    SELECT role
+    INTO v_role
+    FROM pengguna
+    WHERE id_pengguna = p_id_pengguna;
+
+    IF v_role = 'Mahasiswa' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mahasiswa tidak dapat membuat bursa jobdesc';
+    END IF;
+
+    IF p_penerima_jobdesc NOT IN ('Semua mahasiswa', 'Yang memiliki jam minus') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pilihan penerima jobdesc tidak valid';
+    END IF;
+
+    START TRANSACTION;
+
+    INSERT INTO bursa_jobdesc (
+        deskripsi_jobdesc,
+        penerima_jobdesc,
+        jam_plus,
+        tanggal_pemberian_jobdesc,
+        jumlah_mahasiswa_diperlukan,
+        jumlah_mahasiswa_mengambil,
+        status_jobdesc
+    )
+    VALUES (
+        p_deskripsi_jobdesc,
+        p_penerima_jobdesc,
+        p_jam_plus,
+        p_tanggal_pemberian_jobdesc,
+        p_jumlah_mahasiswa_diperlukan,
+        0,
+        'Dibuka'
+    );
+
+    SET v_id_bursa_jobdesc = LAST_INSERT_ID();
+
+    INSERT INTO detail_pengguna_pada_bursa_jobdesc (
+        id_bursa_jobdesc,
+        id_pengguna,
+        peran_pengguna
+    )
+    VALUES (
+        v_id_bursa_jobdesc,
+        p_id_pengguna,
+        'Pemberi'
+    );
+
+    COMMIT;
+
+    SELECT 
+        'Data bursa jobdesc berhasil ditambahkan' AS Pesan,
+        v_id_bursa_jobdesc AS id_bursa_jobdesc_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
+    IF p_jumlah_fasilitas <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jumlah fasilitas harus lebih dari 0';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM kelas
+        WHERE id_kelas = p_id_kelas
+        AND status_kelas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM fasilitas
+        WHERE id_fasilitas = p_id_fasilitas
+        AND status_fasilitas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fasilitas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_kelas = p_id_kelas
+        AND id_fasilitas = p_id_fasilitas
+        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fasilitas ini sudah ditentukan pada kelas tersebut';
+    END IF;
+
+    INSERT INTO detail_fasilitas_pada_kelas (
+        id_kelas,
+        id_fasilitas,
+        jumlah_fasilitas,
+        status_detail_fasilitas_pada_kelas
+    )
+    VALUES (
+        p_id_kelas,
+        p_id_fasilitas,
+        p_jumlah_fasilitas,
+        'Aktif'
+    );
+
+    SELECT
+        'Data fasilitas kelas berhasil ditambahkan' AS Pesan,
+        LAST_INSERT_ID() AS id_detail_fasilitas_pada_kelas;
+END$$
+
+CREATE PROCEDURE `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_peran_pengguna` VARCHAR(20))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+    
+    INSERT INTO detail_pengguna_pada_pengaduan_kerusakan_fasilitas (
+        id_pengaduan_kerusakan_fasilitas,
+        id_pengguna,
+        peran_pengguna
+    )
+    VALUES (
+        p_id_pengaduan_kerusakan_fasilitas,
+        p_id_pengguna,
+        p_peran_pengguna
+    );
+END$$
+
+CREATE PROCEDURE `usp_insert_fasilitas` (IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
+    IF p_nama_fasilitas IS NULL OR TRIM(p_nama_fasilitas) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Nama fasilitas wajib diisi';
+    END IF;
+
+    IF p_harga < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Harga fasilitas tidak boleh kurang dari 0';
+    END IF;
+
+    INSERT INTO fasilitas (
+        nama_fasilitas,
+        harga,
+        status_fasilitas,
+        tanggal_pendataan
+    )
+    VALUES (
+        p_nama_fasilitas,
+        p_harga,
+        'Aktif',
+        NOW()
+    );
+
+    SELECT
+        'Data fasilitas berhasil ditambahkan' AS Pesan,
+        LAST_INSERT_ID() AS id_fasilitas_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_kelas` (IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    INSERT INTO kelas (
+        nama_kelas,
+        tingkat
+    )
+    VALUES (
+        p_nama_kelas,
+        p_tingkat
+    );
+
+    SELECT 
+        'Data kelas berhasil ditambahkan' AS Pesan,
+        LAST_INSERT_ID() AS id_kelas_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_mahasiswa` (IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+    DECLARE v_id_mahasiswa_baru INT;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+    	ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+
+    INSERT INTO mahasiswa (
+        id_kelas,
+        id_periode_akademik,
+        nim,
+        nama_mahasiswa,
+        email,
+        no_hp
+    )
+    VALUES (
+        p_id_kelas,
+        p_id_periode_akademik,
+        p_nim,
+        p_nama_mahasiswa,
+        p_email,
+        p_no_hp
+    );
+    
+    SET v_id_mahasiswa_baru = LAST_INSERT_ID();
+    
+    UPDATE kelas AS a
+    SET jumlah_mahasiswa = jumlah_mahasiswa + 1
+    WHERE id_kelas = p_id_kelas;
+    
+    COMMIT;
+
+    SELECT 
+        'Data mahasiswa berhasil ditambahkan' AS Pesan,
+        v_id_mahasiswa_baru AS id_mahasiswa_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_pengaduan_kerusakan_fasilitas` (IN `p_id_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_deskripsi_kerusakan` TEXT, IN `p_bukti_kerusakan_url` VARCHAR(2048), IN `p_pelaku_kerusakan` VARCHAR(50))   BEGIN
+	DECLARE v_id_pengaduan_kerusakan_fasilitas INT;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+    	ROLLBACK;
+        RESIGNAL;
+    END;
+    
+    START TRANSACTION;
+
+    INSERT INTO pengaduan_kerusakan_fasilitas (
+        id_fasilitas,
+        deskripsi_kerusakan,
+        tanggal_pengaduan,
+        bukti_kerusakan_url,
+        pelaku_kerusakan
+    )
+    VALUES (
+        p_id_fasilitas,
+        p_deskripsi_kerusakan,
+        NOW(),
+        p_bukti_kerusakan_url,
+        p_pelaku_kerusakan
+    );
+    
+    SET v_id_pengaduan_kerusakan_fasilitas = LAST_INSERT_ID();
+
+    CALL usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas(
+    	v_id_pengaduan_kerusakan_fasilitas,
+        p_id_pengguna,
+        'Pelapor'
+    );
+
+    COMMIT;
+
+    SELECT 
+        'Data pengaduan kerusakan fasilitas berhasil ditambahkan' AS Pesan,
+        v_id_pengaduan_kerusakan_fasilitas AS id_pengaduan_kerusakan_fasilitas_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_pengajar` (IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    INSERT INTO pengajar (
+        nip,
+        nama_pengajar,
+        email,
+        no_hp
+    )
+    VALUES (
+        p_nip,
+        p_nama_pengajar,
+        p_email,
+        p_no_hp
+    );
+
+    SELECT 
+        'Data pengajar berhasil ditambahkan' AS Pesan,
+        LAST_INSERT_ID() AS id_pengajar_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_pengajar_mata_kuliah_kelas` (IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
+    DECLARE v_id_detail INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF p_id_pengajar_1 = p_id_pengajar_2 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 1 dan Pengajar 2 tidak boleh sama';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM kelas
+        WHERE id_kelas = p_id_kelas
+        AND status_kelas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM mata_kuliah
+        WHERE id_matakuliah = p_id_mata_kuliah
+        AND status_mata_kuliah = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mata kuliah tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar_1
+        AND status_pengajar = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 1 tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar_2
+        AND status_pengajar = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 2 tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM detail_kelas_pada_mata_kuliah
+        WHERE id_kelas = p_id_kelas
+        AND id_mata_kuliah = p_id_mata_kuliah
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mata kuliah ini sudah ditentukan pada kelas tersebut';
+    END IF;
+
+    START TRANSACTION;
+
+    INSERT INTO detail_kelas_pada_mata_kuliah
+    (
+        id_mata_kuliah,
+        id_kelas
+    )
+    VALUES
+    (
+        p_id_mata_kuliah,
+        p_id_kelas
+    );
+
+    SET v_id_detail = LAST_INSERT_ID();
+
+    INSERT INTO detail_pengajar_pada_mata_kuliah
+    (
+        id_detail_kelas_pada_mata_kuliah,
+        id_pengajar,
+        kedudukan_pengajar
+    )
+    VALUES
+    (
+        v_id_detail,
+        p_id_pengajar_1,
+        'Pengajar1'
+    ),
+    (
+        v_id_detail,
+        p_id_pengajar_2,
+        'Pengajar2'
+    );
+
+    COMMIT;
+
+    SELECT
+        'Data pengajar mata kuliah kelas berhasil ditambahkan' AS Pesan,
+        v_id_detail AS id_detail_kelas_pada_mata_kuliah;
+END$$
+
+CREATE PROCEDURE `usp_insert_pengajuan_jam_plus` (IN `p_id_pengguna` INT, IN `p_id_kegiatan` INT, IN `p_jumlah_jam` DECIMAL(6,2), IN `p_jenis_jam` VARCHAR(20), IN `p_sumber_jam` VARCHAR(10), IN `p_deskripsi` TEXT, IN `p_nama_pemberi` VARCHAR(50), IN `p_dokumen_url` VARCHAR(2048))   BEGIN
+    DECLARE v_id_pengajuan INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF p_jumlah_jam <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jumlah jam plus harus lebih dari 0';
+    END IF;
+
+    IF p_jenis_jam NOT IN ('Murni', 'Kompensasi') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jenis jam tidak valid';
+    END IF;
+
+    IF p_sumber_jam NOT IN ('Prodi', 'Luar') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Sumber jam tidak valid';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+        AND role = 'Mahasiswa'
+        AND status_akun = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengguna mahasiswa tidak valid atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM kegiatan
+        WHERE id_kegiatan = p_id_kegiatan
+        AND status_kegiatan = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kegiatan tidak ditemukan atau tidak aktif';
+    END IF;
+
+    START TRANSACTION;
+
+    INSERT INTO pengajuan_jam_plus (
+        id_kegiatan,
+        jumlah_jam_plus,
+        jenis_jam,
+        sumber_jam,
+        tanggal_pengajuan,
+        deskripsi_pekerjaan,
+        nama_pemberi,
+        dokumen_url,
+        status_pengajuan
+    ) VALUES (
+        p_id_kegiatan,
+        p_jumlah_jam,
+        p_jenis_jam,
+        p_sumber_jam,
+        NOW(),
+        p_deskripsi,
+        p_nama_pemberi,
+        p_dokumen_url,
+        'Menunggu Verifikasi'
+    );
+
+    SET v_id_pengajuan = LAST_INSERT_ID();
+
+    INSERT INTO detail_pengguna_pada_pengajuan_jam_plus (
+        id_pengajuan_jam_plus,
+        id_pengguna,
+        peran_pengguna
+    ) VALUES (
+        v_id_pengajuan,
+        p_id_pengguna,
+        'Pengaju'
+    );
+
+    COMMIT;
+
+    SELECT
+        'Pengajuan jam plus berhasil dikirim' AS Pesan,
+        v_id_pengajuan AS id_pengajuan_jam_plus;
+END$$
+
+CREATE PROCEDURE `usp_insert_pengguna` (IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF p_role = 'Mahasiswa' THEN
+        IF p_id_mahasiswa IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role Mahasiswa wajib memiliki id_mahasiswa';
+        END IF;
+
+        IF p_id_pengajar IS NOT NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role Mahasiswa tidak boleh memiliki id_pengajar';
+        END IF;
+    ELSE
+        IF p_id_pengajar IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role selain Mahasiswa wajib memiliki id_pengajar';
+        END IF;
+
+        IF p_id_mahasiswa IS NOT NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role selain Mahasiswa tidak boleh memiliki id_mahasiswa';
+        END IF;
+    END IF;
+
+    INSERT INTO pengguna (
+        id_mahasiswa,
+        id_pengajar,
+        username,
+        password,
+        role
+    )
+    VALUES (
+        p_id_mahasiswa,
+        p_id_pengajar,
+        p_username,
+        p_password,
+        p_role
+    );
+
+    SELECT 
+        'Data pengguna berhasil ditambahkan' AS Pesan,
+        LAST_INSERT_ID() AS id_pengguna_baru;
+END$$
+
+CREATE PROCEDURE `usp_insert_periode_akademik` (IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
+    DECLARE v_id_periode_akademik INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF p_tahun_akademik IS NULL OR TRIM(p_tahun_akademik) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Tahun akademik wajib diisi';
+    END IF;
+
+    IF p_semester NOT IN ('Ganjil', 'Genap') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Semester tidak valid';
+    END IF;
+
+    IF p_status_periode NOT IN ('Aktif', 'Tidak Aktif') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status periode tidak valid';
+    END IF;
+
+    IF p_tanggal_mulai > p_tanggal_selesai THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai';
+    END IF;
+
+    START TRANSACTION;
+
+    IF p_status_periode = 'Aktif' THEN
+        UPDATE periode_akademik
+        SET status_periode = 'Tidak Aktif'
+        WHERE status_periode = 'Aktif';
+    END IF;
+
+    INSERT INTO periode_akademik (
+        tahun_akademik,
+        semester,
+        tanggal_mulai,
+        tanggal_selesai,
+        status_periode
+    )
+    VALUES (
+        p_tahun_akademik,
+        p_semester,
+        p_tanggal_mulai,
+        p_tanggal_selesai,
+        p_status_periode
+    );
+
+    SET v_id_periode_akademik = LAST_INSERT_ID();
+
+    COMMIT;
+
+    SELECT
+        'Data periode akademik berhasil ditambahkan' AS Pesan,
+        v_id_periode_akademik AS id_periode_akademik_baru;
+END$$
+
+CREATE PROCEDURE `usp_pulihkan_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
+        AND status_detail_fasilitas_pada_kelas = 'Rusak'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fasilitas hanya bisa dipulihkan jika statusnya Rusak';
+    END IF;
+
+    UPDATE detail_fasilitas_pada_kelas
+    SET status_detail_fasilitas_pada_kelas = 'Aktif'
+    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
+
+    SELECT
+        'Status fasilitas kelas berhasil dipulihkan menjadi Aktif' AS Pesan,
+        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
+END$$
+
+CREATE PROCEDURE `usp_select_bursa_jobdesc` ()   BEGIN
+    SELECT
+        bj.id_bursa_jobdesc,
+        bj.deskripsi_jobdesc,
+        bj.penerima_jobdesc,
+        bj.jam_plus,
+        bj.tanggal_pemberian_jobdesc,
+        bj.jumlah_mahasiswa_diperlukan,
+        bj.jumlah_mahasiswa_mengambil,
+        bj.bukti_selesai_url,
+        bj.status_jobdesc,
+
+        dp_pemberi.id_pengguna AS id_pemberi,
+        p_pemberi.username AS username_pemberi,
+        COALESCE(pg_pemberi.nama_pengajar, m_pemberi.nama_mahasiswa, p_pemberi.username) AS nama_pemberi,
+
+        data_penerima.nama_penerima
+
+    FROM bursa_jobdesc AS bj
+
+    LEFT JOIN detail_pengguna_pada_bursa_jobdesc AS dp_pemberi
+        ON bj.id_bursa_jobdesc = dp_pemberi.id_bursa_jobdesc
+        AND dp_pemberi.peran_pengguna = 'Pemberi'
+
+    LEFT JOIN pengguna AS p_pemberi
+        ON dp_pemberi.id_pengguna = p_pemberi.id_pengguna
+
+    LEFT JOIN pengajar AS pg_pemberi
+        ON p_pemberi.id_pengajar = pg_pemberi.id_pengajar
+
+    LEFT JOIN mahasiswa AS m_pemberi
+        ON p_pemberi.id_mahasiswa = m_pemberi.id_mahasiswa
+
+    LEFT JOIN (
+        SELECT
+            dp.id_bursa_jobdesc,
+            GROUP_CONCAT(
+                COALESCE(m.nama_mahasiswa, p.username)
+                SEPARATOR ', '
+            ) AS nama_penerima
+        FROM detail_pengguna_pada_bursa_jobdesc dp
+        JOIN pengguna p
+            ON dp.id_pengguna = p.id_pengguna
+        LEFT JOIN mahasiswa m
+            ON p.id_mahasiswa = m.id_mahasiswa
+        WHERE dp.peran_pengguna = 'Penerima'
+        GROUP BY dp.id_bursa_jobdesc
+    ) AS data_penerima
+        ON bj.id_bursa_jobdesc = data_penerima.id_bursa_jobdesc
+
+    ORDER BY bj.id_bursa_jobdesc DESC;
+END$$
+
+CREATE PROCEDURE `usp_select_fasilitas` ()   BEGIN
+    SELECT
+        id_fasilitas,
+        nama_fasilitas,
+        harga,
+        status_fasilitas,
+        tanggal_pendataan
+    FROM fasilitas
+    ORDER BY id_fasilitas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_fasilitas_aktif` ()   BEGIN
+    SELECT
+        id_fasilitas,
+        nama_fasilitas,
+        harga
+    FROM fasilitas
+    WHERE status_fasilitas = 'Aktif'
+    ORDER BY nama_fasilitas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_fasilitas_by_id` (IN `p_id_fasilitas` INT)   BEGIN
+    SELECT
+        id_fasilitas,
+        nama_fasilitas,
+        harga,
+        status_fasilitas,
+        tanggal_pendataan
+    FROM fasilitas
+    WHERE id_fasilitas = p_id_fasilitas
+    LIMIT 1;
+END$$
+
+CREATE PROCEDURE `usp_select_fasilitas_kelas` ()   BEGIN
+    SELECT
+        dfpk.id_detail_fasilitas_pada_kelas,
+        dfpk.id_kelas,
+        k.nama_kelas,
+        k.tingkat,
+
+        dfpk.id_fasilitas,
+        f.nama_fasilitas,
+        f.harga,
+
+        dfpk.jumlah_fasilitas,
+        dfpk.status_detail_fasilitas_pada_kelas
+    FROM detail_fasilitas_pada_kelas dfpk
+    JOIN kelas k
+        ON dfpk.id_kelas = k.id_kelas
+    JOIN fasilitas f
+        ON dfpk.id_fasilitas = f.id_fasilitas
+    WHERE k.status_kelas = 'Aktif'
+    AND f.status_fasilitas = 'Aktif'
+    AND dfpk.status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    ORDER BY k.nama_kelas ASC, f.nama_fasilitas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_fasilitas_kelas_by_id` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+    SELECT
+        dfpk.id_detail_fasilitas_pada_kelas,
+        dfpk.id_kelas,
+        k.nama_kelas,
+        k.tingkat,
+
+        dfpk.id_fasilitas,
+        f.nama_fasilitas,
+
+        dfpk.jumlah_fasilitas,
+        dfpk.status_detail_fasilitas_pada_kelas
+    FROM detail_fasilitas_pada_kelas dfpk
+    JOIN kelas k
+        ON dfpk.id_kelas = k.id_kelas
+    JOIN fasilitas f
+        ON dfpk.id_fasilitas = f.id_fasilitas
+    WHERE dfpk.id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
+    AND k.status_kelas = 'Aktif'
+    AND f.status_fasilitas = 'Aktif'
+    AND dfpk.status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    LIMIT 1;
+END$$
+
+CREATE PROCEDURE `usp_select_kelas` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        id_kelas,
+        nama_kelas,
+        tingkat,
+        jumlah_mahasiswa,
+        status_kelas
+    FROM kelas
+    ORDER BY id_kelas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
+    SELECT
+        id_kelas,
+        nama_kelas,
+        tingkat,
+        jumlah_mahasiswa,
+        status_kelas
+    FROM kelas
+    WHERE status_kelas = 'Aktif'
+    ORDER BY tingkat ASC, nama_kelas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_mahasiswa` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        m.id_mahasiswa,
+        m.id_kelas,
+        k.nama_kelas,
+        k.tingkat,
+        m.id_periode_akademik,
+        pa.tahun_akademik,
+        pa.semester,
+        m.nim,
+        m.nama_mahasiswa,
+        m.email,
+        m.no_hp,
+        m.saldo_jam_minus_murni,
+        m.saldo_jam_minus_kompensasi,
+        m.saldo_jam_plus_murni,
+        m.saldo_jam_plus_kompensasi,
+        m.status_mahasiswa
+    FROM mahasiswa AS m
+    JOIN kelas AS k ON m.id_kelas = k.id_kelas
+    JOIN periode_akademik AS pa ON m.id_periode_akademik = pa.id_periode_akademik
+    ORDER BY m.id_mahasiswa ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_mata_kuliah_aktif` ()   BEGIN
+    SELECT
+        id_matakuliah AS id_mata_kuliah,
+        nama_mata_kuliah,
+        kode_mata_kuliah,
+        sks,
+        semester,
+        status_mata_kuliah
+    FROM mata_kuliah
+    WHERE status_mata_kuliah = 'Aktif'
+    ORDER BY semester ASC, nama_mata_kuliah ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_mata_kuliah_mahasiswa` (IN `p_id_pengguna` INT)   BEGIN
+    DECLARE v_id_mahasiswa INT;
+    DECLARE v_id_kelas INT;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+        AND role = 'Mahasiswa'
+        AND status_akun = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Akun mahasiswa tidak ditemukan atau tidak aktif';
+    END IF;
+
+    SELECT id_mahasiswa
+    INTO v_id_mahasiswa
+    FROM pengguna
+    WHERE id_pengguna = p_id_pengguna;
+
+    IF v_id_mahasiswa IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Akun ini tidak terhubung dengan data mahasiswa';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM mahasiswa
+        WHERE id_mahasiswa = v_id_mahasiswa
+        AND status_mahasiswa = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan atau tidak aktif';
+    END IF;
+
+    SELECT id_kelas
+    INTO v_id_kelas
+    FROM mahasiswa
+    WHERE id_mahasiswa = v_id_mahasiswa;
+
+    SELECT
+        k.nama_kelas,
+        k.tingkat,
+
+        mk.kode_mata_kuliah,
+        mk.nama_mata_kuliah,
+        mk.sks,
+        mk.semester,
+
+        p1.nama_pengajar AS nama_pengajar_1,
+        p2.nama_pengajar AS nama_pengajar_2
+
+    FROM detail_kelas_pada_mata_kuliah dkmk
+    JOIN kelas k
+        ON dkmk.id_kelas = k.id_kelas
+    JOIN mata_kuliah mk
+        ON dkmk.id_mata_kuliah = mk.id_matakuliah
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
+        AND dp1.kedudukan_pengajar = 'Pengajar1'
+    LEFT JOIN pengajar p1
+        ON dp1.id_pengajar = p1.id_pengajar
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
+        AND dp2.kedudukan_pengajar = 'Pengajar2'
+    LEFT JOIN pengajar p2
+        ON dp2.id_pengajar = p2.id_pengajar
+
+    WHERE dkmk.id_kelas = v_id_kelas
+    ORDER BY mk.semester ASC, mk.nama_mata_kuliah ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengaduan_kerusakan_fasilitas` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        pkf.id_pengaduan_kerusakan_fasilitas,
+        pkf.id_fasilitas,
+        f.nama_fasilitas,
+        pkf.deskripsi_kerusakan,
+        pkf.tanggal_pengaduan,
+        pkf.bukti_kerusakan_url,
+        pkf.pelaku_kerusakan,
+        pkf.status_pengaduan,
+
+        dp_pelapor.id_pengguna AS id_pelapor,
+        p_pelapor.username AS username_pelapor,
+        COALESCE(m_pelapor.nama_mahasiswa, pg_pelapor.nama_pengajar) AS nama_pelapor,
+
+        dp_verifikator.id_pengguna AS id_verifikator,
+        p_verifikator.username AS username_verifikator,
+        COALESCE(m_verifikator.nama_mahasiswa, pg_verifikator.nama_pengajar) AS nama_verifikator
+
+    FROM pengaduan_kerusakan_fasilitas AS pkf
+    JOIN fasilitas AS f 
+        ON pkf.id_fasilitas = f.id_fasilitas
+
+    LEFT JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas AS dp_pelapor
+        ON pkf.id_pengaduan_kerusakan_fasilitas = dp_pelapor.id_pengaduan_kerusakan_fasilitas
+        AND dp_pelapor.peran_pengguna = 'Pelapor'
+    LEFT JOIN pengguna AS p_pelapor
+        ON dp_pelapor.id_pengguna = p_pelapor.id_pengguna
+    LEFT JOIN mahasiswa AS m_pelapor
+        ON p_pelapor.id_mahasiswa = m_pelapor.id_mahasiswa
+    LEFT JOIN pengajar AS pg_pelapor
+        ON p_pelapor.id_pengajar = pg_pelapor.id_pengajar
+
+    LEFT JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas AS dp_verifikator
+        ON pkf.id_pengaduan_kerusakan_fasilitas = dp_verifikator.id_pengaduan_kerusakan_fasilitas
+        AND dp_verifikator.peran_pengguna = 'Verifikator'
+    LEFT JOIN pengguna AS p_verifikator
+        ON dp_verifikator.id_pengguna = p_verifikator.id_pengguna
+    LEFT JOIN mahasiswa AS m_verifikator
+        ON p_verifikator.id_mahasiswa = m_verifikator.id_mahasiswa
+    LEFT JOIN pengajar AS pg_verifikator
+        ON p_verifikator.id_pengajar = pg_verifikator.id_pengajar
+
+    ORDER BY pkf.id_pengaduan_kerusakan_fasilitas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengajar` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        id_pengajar,
+        nip,
+        nama_pengajar,
+        email,
+        no_hp,
+        status_pengajar
+    FROM pengajar
+    ORDER BY id_pengajar ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengajar_aktif` ()   BEGIN
+    SELECT
+        id_pengajar,
+        nip,
+        nama_pengajar,
+        email,
+        no_hp,
+        status_pengajar
+    FROM pengajar
+    WHERE status_pengajar = 'Aktif'
+    ORDER BY nama_pengajar ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas` ()   BEGIN
+    SELECT
+        dkmk.id_detail_kelas_pada_mata_kuliah,
+
+        k.id_kelas,
+        k.nama_kelas,
+        k.tingkat,
+
+        mk.id_matakuliah AS id_mata_kuliah,
+        mk.kode_mata_kuliah,
+        mk.nama_mata_kuliah,
+        mk.sks,
+        mk.semester,
+
+        p1.id_pengajar AS id_pengajar_1,
+        p1.nama_pengajar AS nama_pengajar_1,
+
+        p2.id_pengajar AS id_pengajar_2,
+        p2.nama_pengajar AS nama_pengajar_2
+
+    FROM detail_kelas_pada_mata_kuliah dkmk
+    JOIN kelas k
+        ON dkmk.id_kelas = k.id_kelas
+    JOIN mata_kuliah mk
+        ON dkmk.id_mata_kuliah = mk.id_matakuliah
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
+        AND dp1.kedudukan_pengajar = 'Pengajar1'
+    LEFT JOIN pengajar p1
+        ON dp1.id_pengajar = p1.id_pengajar
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
+        AND dp2.kedudukan_pengajar = 'Pengajar2'
+    LEFT JOIN pengajar p2
+        ON dp2.id_pengajar = p2.id_pengajar
+
+    ORDER BY k.tingkat ASC, k.nama_kelas ASC, mk.semester ASC, mk.nama_mata_kuliah ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas_by_id` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
+    SELECT
+        dkmk.id_detail_kelas_pada_mata_kuliah,
+
+        dkmk.id_kelas,
+        k.nama_kelas,
+        k.tingkat,
+
+        dkmk.id_mata_kuliah,
+        mk.kode_mata_kuliah,
+        mk.nama_mata_kuliah,
+        mk.sks,
+        mk.semester,
+
+        p1.id_pengajar AS id_pengajar_1,
+        p1.nama_pengajar AS nama_pengajar_1,
+
+        p2.id_pengajar AS id_pengajar_2,
+        p2.nama_pengajar AS nama_pengajar_2
+
+    FROM detail_kelas_pada_mata_kuliah dkmk
+    JOIN kelas k
+        ON dkmk.id_kelas = k.id_kelas
+    JOIN mata_kuliah mk
+        ON dkmk.id_mata_kuliah = mk.id_matakuliah
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp1
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp1.id_detail_kelas_pada_mata_kuliah
+        AND dp1.kedudukan_pengajar = 'Pengajar1'
+    LEFT JOIN pengajar p1
+        ON dp1.id_pengajar = p1.id_pengajar
+
+    LEFT JOIN detail_pengajar_pada_mata_kuliah dp2
+        ON dkmk.id_detail_kelas_pada_mata_kuliah = dp2.id_detail_kelas_pada_mata_kuliah
+        AND dp2.kedudukan_pengajar = 'Pengajar2'
+    LEFT JOIN pengajar p2
+        ON dp2.id_pengajar = p2.id_pengajar
+
+    WHERE dkmk.id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
+END$$
+
+CREATE PROCEDURE `usp_select_pengajuan_jam_plus` ()   BEGIN
+    SELECT 
+        pjp.*,
+
+        CASE
+            WHEN pjp.sumber_jam = 'Luar' THEN pjp.jumlah_jam_plus * 0.5
+            ELSE pjp.jumlah_jam_plus
+        END AS jumlah_jam_diterima,
+
+        k.nama_kegiatan,
+
+        m_pengaju.nama_mahasiswa AS nama_pengaju,
+        m_pengaju.nim AS nim_pengaju,
+        u_pengaju.id_pengguna AS id_pengaju,
+
+        COALESCE(pg_verif.nama_pengajar, '-') AS nama_verifikator
+
+    FROM pengajuan_jam_plus pjp
+    JOIN kegiatan k 
+        ON pjp.id_kegiatan = k.id_kegiatan
+
+    LEFT JOIN detail_pengguna_pada_pengajuan_jam_plus dp_p 
+        ON pjp.id_pengajuan_jam_plus = dp_p.id_pengajuan_jam_plus
+        AND dp_p.peran_pengguna = 'Pengaju'
+
+    LEFT JOIN pengguna u_pengaju 
+        ON dp_p.id_pengguna = u_pengaju.id_pengguna
+
+    LEFT JOIN mahasiswa m_pengaju 
+        ON u_pengaju.id_mahasiswa = m_pengaju.id_mahasiswa
+
+    LEFT JOIN detail_pengguna_pada_pengajuan_jam_plus dp_v 
+        ON pjp.id_pengajuan_jam_plus = dp_v.id_pengajuan_jam_plus
+        AND dp_v.peran_pengguna = 'Verifikator'
+
+    LEFT JOIN pengguna u_verif 
+        ON dp_v.id_pengguna = u_verif.id_pengguna
+
+    LEFT JOIN pengajar pg_verif 
+        ON u_verif.id_pengajar = pg_verif.id_pengajar
+
+    ORDER BY pjp.id_pengajuan_jam_plus DESC;
+END$$
+
+CREATE PROCEDURE `usp_select_pengguna` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        p.id_pengguna,
+        p.id_mahasiswa,
+        m.nim,
+        m.nama_mahasiswa,
+        p.id_pengajar,
+        pg.nip,
+        pg.nama_pengajar,
+        p.username,
+        p.role,
+        p.status_akun
+    FROM pengguna AS p
+    LEFT JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
+    LEFT JOIN pengajar AS pg ON p.id_pengajar = pg.id_pengajar
+    ORDER BY p.id_pengguna ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_periode_akademik` ()   BEGIN
+    SELECT
+        id_periode_akademik,
+        tahun_akademik,
+        semester,
+        tanggal_mulai,
+        tanggal_selesai,
+        status_periode
+    FROM periode_akademik
+    ORDER BY id_periode_akademik DESC;
+END$$
+
+CREATE PROCEDURE `usp_select_periode_akademik_by_id` (IN `p_id_periode_akademik` INT)   BEGIN
+    SELECT
+        id_periode_akademik,
+        tahun_akademik,
+        semester,
+        tanggal_mulai,
+        tanggal_selesai,
+        status_periode
+    FROM periode_akademik
+    WHERE id_periode_akademik = p_id_periode_akademik
+    LIMIT 1;
+END$$
+
+CREATE PROCEDURE `usp_selesaikan_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pemberi` INT)   BEGIN
+    DECLARE v_status_jobdesc VARCHAR(20);
+    DECLARE v_bukti_selesai_url TEXT;
+    DECLARE v_jam_plus DECIMAL(10,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_pengguna_pada_bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+        AND id_pengguna = p_id_pemberi
+        AND peran_pengguna = 'Pemberi'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kamu bukan pemberi jobdesc ini';
+    END IF;
+
+    START TRANSACTION;
+
+    SELECT
+        status_jobdesc,
+        bukti_selesai_url,
+        jam_plus
+    INTO
+        v_status_jobdesc,
+        v_bukti_selesai_url,
+        v_jam_plus
+    FROM bursa_jobdesc
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+    FOR UPDATE;
+
+    IF v_status_jobdesc <> 'Dikerjakan' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jobdesc hanya dapat diselesaikan saat status Dikerjakan';
+    END IF;
+
+    IF v_bukti_selesai_url IS NULL OR TRIM(v_bukti_selesai_url) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Bukti selesai belum dikirim oleh mahasiswa';
+    END IF;
+
+    UPDATE mahasiswa m
+    JOIN pengguna p
+        ON m.id_mahasiswa = p.id_mahasiswa
+    JOIN detail_pengguna_pada_bursa_jobdesc dp
+        ON p.id_pengguna = dp.id_pengguna
+    SET m.saldo_jam_plus_kompensasi = COALESCE(m.saldo_jam_plus_kompensasi, 0) + v_jam_plus
+    WHERE dp.id_bursa_jobdesc = p_id_bursa_jobdesc
+    AND dp.peran_pengguna = 'Penerima';
+
+    UPDATE bursa_jobdesc
+    SET status_jobdesc = 'Selesai'
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
+
+    COMMIT;
+
+    SELECT
+        'Status bursa jobdesc berhasil diubah menjadi Selesai dan jam plus berhasil diberikan' AS Pesan,
+        p_id_bursa_jobdesc AS id_bursa_jobdesc;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_fasilitas` (IN `p_id_fasilitas` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM fasilitas
+        WHERE id_fasilitas = p_id_fasilitas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas tidak ditemukan';
+    END IF;
+
+    UPDATE fasilitas
+    SET status_fasilitas = 'Tidak Aktif'
+    WHERE id_fasilitas = p_id_fasilitas;
+
+    SELECT 
+        'Data fasilitas berhasil dihapus secara soft delete' AS Pesan,
+        p_id_fasilitas AS id_fasilitas;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
+        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan atau sudah tidak aktif';
+    END IF;
+
+    UPDATE detail_fasilitas_pada_kelas
+    SET status_detail_fasilitas_pada_kelas = 'Tidak Aktif'
+    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
+
+    SELECT
+        'Data fasilitas kelas berhasil dihapus secara soft delete' AS Pesan,
+        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_kelas` (IN `p_id_kelas` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM kelas
+        WHERE id_kelas = p_id_kelas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data kelas tidak ditemukan';
+    END IF;
+
+    UPDATE kelas
+    SET status_kelas = 'Tidak Aktif'
+    WHERE id_kelas = p_id_kelas;
+
+    SELECT 
+        'Data kelas berhasil dihapus secara soft delete' AS Pesan,
+        p_id_kelas AS id_kelas;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_mahasiswa` (IN `p_id_mahasiswa` INT)   BEGIN
+	DECLARE v_id_kelas INT;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+    	ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM mahasiswa
+        WHERE id_mahasiswa = p_id_mahasiswa
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan';
+    END IF;
+    
+    IF EXISTS (
+        SELECT 1
+        FROM mahasiswa
+        WHERE id_mahasiswa = p_id_mahasiswa
+        AND status_mahasiswa = 'Tidak Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mahasiswa sudah tidak aktif';
+    END IF;
+    
+    START TRANSACTION;
+    
+    SELECT id_kelas
+    INTO v_id_kelas
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa;
+    
+    UPDATE kelas
+    SET jumlah_mahasiswa = jumlah_mahasiswa - 1
+    WHERE id_kelas = v_id_kelas;
+
+    UPDATE mahasiswa
+    SET status_mahasiswa = 'Tidak Aktif'
+    WHERE id_mahasiswa = p_id_mahasiswa;
+    
+    COMMIT;
+
+    SELECT 
+        'Data mahasiswa berhasil dihapus secara soft delete' AS Pesan,
+        p_id_mahasiswa AS id_mahasiswa;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_pengajar` (IN `p_id_pengajar` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengajar tidak ditemukan';
+    END IF;
+
+    UPDATE pengajar
+    SET status_pengajar = 'Tidak Aktif'
+    WHERE id_pengajar = p_id_pengajar;
+
+    SELECT 
+        'Data pengajar berhasil dihapus secara soft delete' AS Pesan,
+        p_id_pengajar AS id_pengajar;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_pengguna` (IN `p_id_pengguna` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+    END IF;
+
+    UPDATE pengguna
+    SET status_akun = 'Tidak Aktif'
+    WHERE id_pengguna = p_id_pengguna;
+
+    SELECT 
+        'Data pengguna berhasil dihapus secara soft delete' AS Pesan,
+        p_id_pengguna AS id_pengguna;
+END$$
+
+CREATE PROCEDURE `usp_soft_delete_periode_akademik` (IN `p_id_periode_akademik` INT)   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM periode_akademik
+        WHERE id_periode_akademik = p_id_periode_akademik
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data periode akademik tidak ditemukan';
+    END IF;
+
+    UPDATE periode_akademik
+    SET status_periode = 'Tidak Aktif'
+    WHERE id_periode_akademik = p_id_periode_akademik;
+
+    SELECT
+        'Data periode akademik berhasil dinonaktifkan' AS Pesan,
+        p_id_periode_akademik AS id_periode_akademik;
+END$$
+
+CREATE PROCEDURE `usp_update_bukti_selesai_url_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT, IN `p_bukti_selesai_url` TEXT)   BEGIN
+    DECLARE v_role VARCHAR(30);
+    DECLARE v_status_jobdesc VARCHAR(20);
+    DECLARE v_bukti_selesai_url TEXT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+    END IF;
+
+    SELECT role
+    INTO v_role
+    FROM pengguna
+    WHERE id_pengguna = p_id_pengguna;
+
+    IF v_role <> 'Mahasiswa' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Hanya mahasiswa yang dapat mengirim bukti selesai jobdesc';
+    END IF;
+
+    IF p_bukti_selesai_url IS NULL OR TRIM(p_bukti_selesai_url) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Link bukti selesai wajib diisi';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_pengguna_pada_bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+        AND id_pengguna = p_id_pengguna
+        AND peran_pengguna = 'Penerima'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kamu bukan penerima jobdesc ini';
+    END IF;
+
+    START TRANSACTION;
+
+    SELECT
+        status_jobdesc,
+        bukti_selesai_url
+    INTO
+        v_status_jobdesc,
+        v_bukti_selesai_url
+    FROM bursa_jobdesc
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+    FOR UPDATE;
+
+    IF v_status_jobdesc <> 'Dikerjakan' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Bukti hanya dapat dikirim saat jobdesc sedang dikerjakan';
+    END IF;
+
+    IF v_bukti_selesai_url IS NOT NULL AND TRIM(v_bukti_selesai_url) <> '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Bukti selesai jobdesc sudah pernah dikirim';
+    END IF;
+
+    UPDATE bursa_jobdesc
+    SET bukti_selesai_url = TRIM(p_bukti_selesai_url)
+    WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
+
+    COMMIT;
+
+    SELECT
+        'Bukti selesai jobdesc berhasil dikirim' AS Pesan,
+        p_id_bursa_jobdesc AS id_bursa_jobdesc;
+END$$
+
+CREATE PROCEDURE `usp_update_detail_fasilitas_pada_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT, IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas
+        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas kelas tidak ditemukan atau sudah tidak aktif';
+    END IF;
+
+    IF p_jumlah_fasilitas <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jumlah fasilitas harus lebih dari 0';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM kelas
+        WHERE id_kelas = p_id_kelas
+        AND status_kelas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM fasilitas
+        WHERE id_fasilitas = p_id_fasilitas
+        AND status_fasilitas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fasilitas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_kelas = p_id_kelas
+        AND id_fasilitas = p_id_fasilitas
+        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+        AND id_detail_fasilitas_pada_kelas <> p_id_detail_fasilitas_pada_kelas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Fasilitas ini sudah ditentukan pada kelas tersebut';
+    END IF;
+
+    UPDATE detail_fasilitas_pada_kelas
+    SET
+        id_kelas = p_id_kelas,
+        id_fasilitas = p_id_fasilitas,
+        jumlah_fasilitas = p_jumlah_fasilitas
+    WHERE id_detail_fasilitas_pada_kelas = p_id_detail_fasilitas_pada_kelas;
+
+    SELECT
+        'Data fasilitas kelas berhasil diupdate' AS Pesan,
+        p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
+END$$
+
+CREATE PROCEDURE `usp_update_fasilitas` (IN `p_id_fasilitas` INT, IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM fasilitas
+        WHERE id_fasilitas = p_id_fasilitas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas tidak ditemukan';
+    END IF;
+
+    IF p_nama_fasilitas IS NULL OR TRIM(p_nama_fasilitas) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Nama fasilitas wajib diisi';
+    END IF;
+
+    IF p_harga < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Harga fasilitas tidak boleh kurang dari 0';
+    END IF;
+
+    UPDATE fasilitas
+    SET
+        nama_fasilitas = p_nama_fasilitas,
+        harga = p_harga
+    WHERE id_fasilitas = p_id_fasilitas;
+
+    SELECT
+        'Data fasilitas berhasil diupdate' AS Pesan,
+        p_id_fasilitas AS id_fasilitas;
+END$$
+
+CREATE PROCEDURE `usp_update_kelas` (IN `p_id_kelas` INT, IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM kelas
+        WHERE id_kelas = p_id_kelas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data kelas tidak ditemukan';
+    END IF;
+
+    UPDATE kelas
+    SET
+        nama_kelas = p_nama_kelas,
+        tingkat = p_tingkat
+    WHERE id_kelas = p_id_kelas;
+
+    SELECT 
+        'Data kelas berhasil diupdate' AS Pesan,
+        p_id_kelas AS id_kelas;
+END$$
+
+CREATE PROCEDURE `usp_update_mahasiswa` (IN `p_id_mahasiswa` INT, IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20), IN `p_status_mahasiswa` VARCHAR(20))   BEGIN
+    DECLARE v_id_kelas_lama INT;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+    	ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM mahasiswa
+        WHERE id_mahasiswa = p_id_mahasiswa
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data mahasiswa tidak ditemukan';
+    END IF;
+    
+    IF p_status_mahasiswa NOT IN ('Aktif', 'Lulus', 'Cuti') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status tidak valid';
+    END IF;
+    
+    START TRANSACTION;
+    
+    SELECT id_kelas
+    INTO v_id_kelas_lama
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa;
+
+    IF v_id_kelas_lama <> p_id_kelas THEN
+        UPDATE kelas
+        SET jumlah_mahasiswa = jumlah_mahasiswa - 1
+        WHERE id_kelas = v_id_kelas_lama;
+
+        UPDATE kelas
+        SET jumlah_mahasiswa = jumlah_mahasiswa + 1
+        WHERE id_kelas = p_id_kelas;
+    END IF;
+
+    UPDATE mahasiswa
+    SET
+        id_kelas = p_id_kelas,
+        id_periode_akademik = p_id_periode_akademik,
+        nim = p_nim,
+        nama_mahasiswa = p_nama_mahasiswa,
+        email = p_email,
+        no_hp = p_no_hp,
+        status_mahasiswa = p_status_mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa;
+    
+    COMMIT;
+
+    SELECT 
+        'Data mahasiswa berhasil diupdate' AS Pesan,
+        p_id_mahasiswa AS id_mahasiswa;
+END$$
+
+CREATE PROCEDURE `usp_update_pengajar` (IN `p_id_pengajar` INT, IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengajar tidak ditemukan';
+    END IF;
+
+    UPDATE pengajar
+    SET
+        nip = p_nip,
+        nama_pengajar = p_nama_pengajar,
+        email = p_email,
+        no_hp = p_no_hp
+    WHERE id_pengajar = p_id_pengajar;
+
+    SELECT 
+        'Data pengajar berhasil diupdate' AS Pesan,
+        p_id_pengajar AS id_pengajar;
+END$$
+
+CREATE PROCEDURE `usp_update_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF p_id_pengajar_1 = p_id_pengajar_2 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 1 dan Pengajar 2 tidak boleh sama';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_kelas_pada_mata_kuliah
+        WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data penentuan pengajar tidak ditemukan';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM kelas
+        WHERE id_kelas = p_id_kelas
+        AND status_kelas = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Kelas tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM mata_kuliah
+        WHERE id_matakuliah = p_id_mata_kuliah
+        AND status_mata_kuliah = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mata kuliah tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar_1
+        AND status_pengajar = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 1 tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengajar
+        WHERE id_pengajar = p_id_pengajar_2
+        AND status_pengajar = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajar 2 tidak ditemukan atau tidak aktif';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1
+        FROM detail_kelas_pada_mata_kuliah
+        WHERE id_kelas = p_id_kelas
+        AND id_mata_kuliah = p_id_mata_kuliah
+        AND id_detail_kelas_pada_mata_kuliah <> p_id_detail_kelas_pada_mata_kuliah
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mata kuliah ini sudah ditentukan pada kelas tersebut';
+    END IF;
+
+    START TRANSACTION;
+
+    UPDATE detail_kelas_pada_mata_kuliah
+    SET
+        id_kelas = p_id_kelas,
+        id_mata_kuliah = p_id_mata_kuliah
+    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
+
+    DELETE FROM detail_pengajar_pada_mata_kuliah
+    WHERE id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
+
+    INSERT INTO detail_pengajar_pada_mata_kuliah
+    (
+        id_detail_kelas_pada_mata_kuliah,
+        id_pengajar,
+        kedudukan_pengajar
+    )
+    VALUES
+    (
+        p_id_detail_kelas_pada_mata_kuliah,
+        p_id_pengajar_1,
+        'Pengajar1'
+    ),
+    (
+        p_id_detail_kelas_pada_mata_kuliah,
+        p_id_pengajar_2,
+        'Pengajar2'
+    );
+
+    COMMIT;
+
+    SELECT
+        'Data pengajar mata kuliah kelas berhasil diupdate' AS Pesan,
+        p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
+END$$
+
+CREATE PROCEDURE `usp_update_pengguna` (IN `p_id_pengguna` INT, IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengguna
+        WHERE id_pengguna = p_id_pengguna
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+    END IF;
+
+    IF p_role = 'Mahasiswa' THEN
+        IF p_id_mahasiswa IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role Mahasiswa wajib memiliki id_mahasiswa';
+        END IF;
+
+        IF p_id_pengajar IS NOT NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role Mahasiswa tidak boleh memiliki id_pengajar';
+        END IF;
+    ELSE
+        IF p_id_pengajar IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role selain Mahasiswa wajib memiliki id_pengajar';
+        END IF;
+        
+        IF p_id_mahasiswa IS NOT NULL THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Role selain Mahasiswa tidak boleh memiliki id_mahasiswa';
+        END IF;
+    END IF;
+
+    UPDATE pengguna
+    SET
+        id_mahasiswa = p_id_mahasiswa,
+        id_pengajar = p_id_pengajar,
+        username = p_username,
+        password = p_password,
+        role = p_role
+    WHERE id_pengguna = p_id_pengguna;
+
+    SELECT 
+        'Data pengguna berhasil diupdate' AS Pesan,
+        p_id_pengguna AS id_pengguna;
+END$$
+
+CREATE PROCEDURE `usp_update_periode_akademik` (IN `p_id_periode_akademik` INT, IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM periode_akademik
+        WHERE id_periode_akademik = p_id_periode_akademik
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data periode akademik tidak ditemukan';
+    END IF;
+
+    IF p_tahun_akademik IS NULL OR TRIM(p_tahun_akademik) = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Tahun akademik wajib diisi';
+    END IF;
+
+    IF p_semester NOT IN ('Ganjil', 'Genap') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Semester tidak valid';
+    END IF;
+
+    IF p_status_periode NOT IN ('Aktif', 'Tidak Aktif') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status periode tidak valid';
+    END IF;
+
+    IF p_tanggal_mulai > p_tanggal_selesai THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Tanggal mulai tidak boleh lebih besar dari tanggal selesai';
+    END IF;
+
+    START TRANSACTION;
+
+    IF p_status_periode = 'Aktif' THEN
+        UPDATE periode_akademik
+        SET status_periode = 'Tidak Aktif'
+        WHERE id_periode_akademik <> p_id_periode_akademik
+        AND status_periode = 'Aktif';
+    END IF;
+
+    UPDATE periode_akademik
+    SET
+        tahun_akademik = p_tahun_akademik,
+        semester = p_semester,
+        tanggal_mulai = p_tanggal_mulai,
+        tanggal_selesai = p_tanggal_selesai,
+        status_periode = p_status_periode
+    WHERE id_periode_akademik = p_id_periode_akademik;
+
+    COMMIT;
+
+    SELECT
+        'Data periode akademik berhasil diubah' AS Pesan,
+        p_id_periode_akademik AS id_periode_akademik;
+END$$
+
+CREATE PROCEDURE `usp_update_status_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
+	DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data bursa jobdesc tidak ditemukan';
+    END IF;
+    
+    IF NOT EXISTS (
+        SELECT 1 FROM detail_pengguna_pada_bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+        	AND id_pengguna = p_id_pengguna
+        	AND peran_pengguna = 'Pemberi'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengguna tidak melakukan bursa jobdesc ini, atau pengguna bukan pemberi jobdesc';
+    END IF;
+    
+    IF EXISTS (
+    	SELECT 1
+        FROM bursa_jobdesc
+        WHERE id_bursa_jobdesc = p_id_bursa_jobdesc
+        	AND (
+                status_jobdesc = 'Dibuka'
+        		OR bukti_selesai_url IS NULL
+            )
+    ) THEN
+    	SIGNAL SQLSTATE '45000'
+	    SET MESSAGE_TEXT = 'Bursa jobdesc belum dikerjakan';
+    ELSE
+	    UPDATE bursa_jobdesc
+    	SET status_jobdesc = 'Selesai'
+    	WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
+    END IF;
+END$$
+
+CREATE PROCEDURE `usp_update_status_detail_fasilitas_pada_kelas` (IN `p_id_pengguna` INT, IN `p_id_fasilitas` INT, IN `p_status_detail_fasilitas_pada_kelas` VARCHAR(20))   BEGIN
+    DECLARE v_id_kelas INT;
+
+    SET v_id_kelas = ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas(p_id_pengguna);
+
+    IF v_id_kelas IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'ID kelas tidak ditemukan dari pengguna';
+    END IF;
+
+    IF p_status_detail_fasilitas_pada_kelas NOT IN ('Aktif', 'Rusak') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status fasilitas pada kelas tidak valid';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_fasilitas_pada_kelas
+        WHERE id_kelas = v_id_kelas
+        AND id_fasilitas = p_id_fasilitas
+        AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak')
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data fasilitas pada kelas tidak ditemukan atau sudah tidak aktif';
+    END IF;
+
+    UPDATE detail_fasilitas_pada_kelas
+    SET status_detail_fasilitas_pada_kelas = p_status_detail_fasilitas_pada_kelas
+    WHERE id_kelas = v_id_kelas
+    AND id_fasilitas = p_id_fasilitas
+    AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak');
+END$$
+
+CREATE PROCEDURE `usp_update_status_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_status_pengaduan` VARCHAR(20))   BEGIN
+	DECLARE v_id_fasilitas INT;
+    DECLARE v_id_pengguna_pelapor INT;
+    
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+    	ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM pengaduan_kerusakan_fasilitas
+        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengaduan kerusakan fasilitas tidak ditemukan';
+    END IF;
+    
+    IF p_status_pengaduan NOT IN ('Diterima', 'Ditolak') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status pengaduan tidak valid';
+    END IF;
+    
+    SELECT id_fasilitas
+    INTO v_id_fasilitas
+    FROM pengaduan_kerusakan_fasilitas
+    WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas;
+    
+    START TRANSACTION;
+
+    UPDATE pengaduan_kerusakan_fasilitas
+    SET
+        status_pengaduan = p_status_pengaduan
+    WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM detail_pengguna_pada_pengaduan_kerusakan_fasilitas
+        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
+        AND id_pengguna = p_id_pengguna
+        AND peran_pengguna = 'Verifikator'
+    ) THEN
+        CALL usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas(
+            p_id_pengaduan_kerusakan_fasilitas,
+            p_id_pengguna,
+            'Verifikator'
+        );
+    END IF;
+    
+    IF p_status_pengaduan = 'Diterima' THEN
+    	SELECT id_pengguna
+        INTO v_id_pengguna_pelapor
+        FROM detail_pengguna_pada_pengaduan_kerusakan_fasilitas
+        WHERE id_pengaduan_kerusakan_fasilitas = p_id_pengaduan_kerusakan_fasilitas
+        AND peran_pengguna = 'Pelapor'
+        LIMIT 1;
+        
+    	CALL usp_update_status_detail_fasilitas_pada_kelas(
+        	v_id_pengguna_pelapor,
+            v_id_fasilitas,
+            'Rusak'
+        );
+    END IF;
+    
+    COMMIT;
+
+    SELECT 
+        'status_pengaduan berhasil diupdate' AS Pesan,
+        p_id_pengaduan_kerusakan_fasilitas AS id_pengaduan_kerusakan_fasilitas,
+        p_status_pengaduan AS status_pengaduan;
+END$$
+
+CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT, IN `p_id_verifikator` INT, IN `p_status` VARCHAR(20))   BEGIN
+    DECLARE v_id_mhs INT;
+    DECLARE v_jumlah_asli DECIMAL(6,2);
+    DECLARE v_jumlah_diterima DECIMAL(6,2);
+    DECLARE v_jenis VARCHAR(20);
+    DECLARE v_sumber VARCHAR(10);
+    DECLARE v_status_lama VARCHAR(30);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+
+    IF p_status NOT IN ('Disetujui', 'Ditolak') THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Status verifikasi tidak valid';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengguna
+        WHERE id_pengguna = p_id_verifikator
+        AND role = 'PIC Tata Tertib'
+        AND status_akun = 'Aktif'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Verifikator tidak valid atau bukan PIC Tata Tertib';
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pengajuan_jam_plus
+        WHERE id_pengajuan_jam_plus = p_id_pengajuan
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Data pengajuan tidak ditemukan';
+    END IF;
+
+    SELECT status_pengajuan
+    INTO v_status_lama
+    FROM pengajuan_jam_plus
+    WHERE id_pengajuan_jam_plus = p_id_pengajuan;
+
+    IF v_status_lama <> 'Menunggu Verifikasi' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Pengajuan ini sudah diverifikasi dan tidak dapat diproses ulang';
+    END IF;
+
+    START TRANSACTION;
+
+    UPDATE pengajuan_jam_plus
+    SET status_pengajuan = p_status
+    WHERE id_pengajuan_jam_plus = p_id_pengajuan;
+
+    DELETE FROM detail_pengguna_pada_pengajuan_jam_plus
+    WHERE id_pengajuan_jam_plus = p_id_pengajuan
+    AND peran_pengguna = 'Verifikator';
+
+    INSERT INTO detail_pengguna_pada_pengajuan_jam_plus (
+        id_pengajuan_jam_plus,
+        id_pengguna,
+        peran_pengguna
+    ) VALUES (
+        p_id_pengajuan,
+        p_id_verifikator,
+        'Verifikator'
+    );
+
+    IF p_status = 'Disetujui' THEN
+
+        SELECT
+            pjp.jumlah_jam_plus,
+            pjp.jenis_jam,
+            pjp.sumber_jam,
+            u.id_mahasiswa
+        INTO
+            v_jumlah_asli,
+            v_jenis,
+            v_sumber,
+            v_id_mhs
+        FROM pengajuan_jam_plus pjp
+        JOIN detail_pengguna_pada_pengajuan_jam_plus dp
+            ON pjp.id_pengajuan_jam_plus = dp.id_pengajuan_jam_plus
+        JOIN pengguna u
+            ON dp.id_pengguna = u.id_pengguna
+        WHERE pjp.id_pengajuan_jam_plus = p_id_pengajuan
+        AND dp.peran_pengguna = 'Pengaju'
+        LIMIT 1;
+
+        IF v_sumber = 'Luar' THEN
+            SET v_jumlah_diterima = v_jumlah_asli * 0.5;
+        ELSE
+            SET v_jumlah_diterima = v_jumlah_asli;
+        END IF;
+
+        IF v_jenis = 'Murni' THEN
+            UPDATE mahasiswa
+            SET saldo_jam_plus_murni = saldo_jam_plus_murni + v_jumlah_diterima
+            WHERE id_mahasiswa = v_id_mhs;
+        ELSEIF v_jenis = 'Kompensasi' THEN
+            UPDATE mahasiswa
+            SET saldo_jam_plus_kompensasi = saldo_jam_plus_kompensasi + v_jumlah_diterima
+            WHERE id_mahasiswa = v_id_mhs;
+        ELSE
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Jenis jam pada pengajuan tidak valid';
+        END IF;
+
+    END IF;
+
+    COMMIT;
+
+    SELECT
+        'Verifikasi pengajuan jam plus berhasil disimpan' AS Pesan,
+        p_id_pengajuan AS id_pengajuan_jam_plus,
+        p_status AS status_pengajuan;
+END$$
+
+DELIMITER ;
+
+
 COMMIT;
+
+SET FOREIGN_KEY_CHECKS=1;
+SET SQL_MODE=@OLD_SQL_MODE;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
