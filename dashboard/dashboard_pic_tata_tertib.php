@@ -8,12 +8,26 @@ cek_role_dashboard("PIC Tata Tertib");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-$total_pengguna = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengguna"))['total'];
-$total_mahasiswa = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM mahasiswa"))['total'];
-$total_pengajar = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengajar"))['total'];
-$total_fasilitas = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM fasilitas"))['total'];
-$total_pengaduan = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengaduan_kerusakan_fasilitas"))['total'];
-$pengaduan_menunggu = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengaduan_kerusakan_fasilitas WHERE status_pengaduan = 'Menunggu Verifikasi'"))['total'];
+$id_pengguna = $_SESSION['id_pengguna'];
+$jobdesc_saya = mysqli_fetch_assoc(mysqli_query($koneksi,
+    "SELECT COUNT(DISTINCT bj.id_bursa_jobdesc) AS total FROM bursa_jobdesc bj
+     JOIN detail_pengguna_pada_bursa_jobdesc dpbj
+     ON bj.id_bursa_jobdesc = dpbj.id_bursa_jobdesc
+     WHERE dpbj.id_pengguna = '$id_pengguna'
+     AND dpbj.peran_pengguna = 'Pemberi'"
+))['total'];
+
+$id_pengguna = $_SESSION['id_pengguna'];
+$jam_plus_menunggu = mysqli_fetch_assoc(mysqli_query(
+    $koneksi,
+    "SELECT COUNT(*) AS total
+     FROM pengajuan_jam_plus pjp
+     JOIN detail_pengguna_pada_pengajuan_jam_plus dpjp
+     ON pjp.id_pengajuan_jam_plus = dpjp.id_pengajuan_jam_plus
+     WHERE dpjp.id_pengguna = '$id_pengguna'
+     AND dpjp.peran_pengguna = 'Verifikator'
+     AND pjp.status_pengajuan = 'Menunggu Verifikasi'"
+))['total'];
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -34,8 +48,47 @@ require_once "../includes/dashboard_header.php";
                 </div>
             </div>
         </div>
-    
+
         <div class="content-wrapper">
+            <div class="welcome-card">
+                <h2 class="fw-bold mb-2">Selamat Datang, <?= $_SESSION['username']; ?> 🎓</h2>
+                <p class="text-muted mb-0">
+                    Kelola aktivitas Bursa Jobdesc dan Pengajuan Jam Plus melalui sistem ini.
+                </p>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                        </div>
+                        <div class="stat-label">Jobdesc Saya</div>
+                        <h3 class="stat-value"><?= $jobdesc_saya; ?></h3>
+                        <div class="stat-desc">Data jobdesc yang saya buat</div>
+                    </div>
+                </div>
+
+                <!-- <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="stat-label">Menunggu Verifikasi</div>
+                        <h3 class="stat-value"><?= $jam_plus_menunggu; ?></h3>
+                        <div class="stat-desc">Pengajuan Jam Plus yang belum diverifikasi</div>
+                    </div>
+                </div>  -->
+            </div>
+        </div>       
+    </main>
+</div>
+
+        
+
+        
+    
+        <!-- <div class="content-wrapper">
             <div class="welcome-card">
                 <h2>Selamat Datang di SIMAT</h2>
                 <p>Kelola data pengguna, mahasiswa, pengajar, fasilitas, dan pengaduan kerusakan fasilitas melalui sistem ini.</p>
@@ -98,6 +151,6 @@ require_once "../includes/dashboard_header.php";
             </div>
         </div>
     </main>
-</div>
+</div> -->
 
 <?php require_once "../includes/dashboard_footer.php"; ?>
