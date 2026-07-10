@@ -122,15 +122,7 @@ require_once "../../includes/sidebar.php";
                                                     </a>
                                                 </div>
                                             <?php } else { ?>
-                                                <div class="d-inline-flex gap-1 flex-nowrap">
-                                                    <button type="button" class="btn btn-secondary btn-sm" disabled>
-                                                        <i class="fa-solid fa-pen-to-square"></i>
-                                                    </button>
-
-                                                    <button type="button" class="btn btn-secondary btn-sm" disabled>
-                                                        <i class="fa-solid fa-trash"></i>
-                                                    </button>
-                                                </div>
+                                                -
                                             <?php } ?>
                                         </td>
                                     </tr>

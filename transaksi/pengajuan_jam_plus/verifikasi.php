@@ -26,11 +26,13 @@ $stmt = mysqli_prepare($koneksi, "
     SELECT
         pjp.*,
         k.nama_kegiatan,
+        k.penyelenggara,
+        k.tanggal_kegiatan,
         m.nama_mahasiswa,
         m.nim,
         p.username AS username_pengaju
     FROM pengajuan_jam_plus pjp
-    JOIN kegiatan k ON pjp.id_kegiatan = k.id_kegiatan
+    LEFT JOIN kegiatan k ON pjp.id_kegiatan = k.id_kegiatan
     JOIN detail_pengguna_pada_pengajuan_jam_plus dp ON pjp.id_pengajuan_jam_plus = dp.id_pengajuan_jam_plus
     JOIN pengguna p ON dp.id_pengguna = p.id_pengguna
     JOIN mahasiswa m ON p.id_mahasiswa = m.id_mahasiswa

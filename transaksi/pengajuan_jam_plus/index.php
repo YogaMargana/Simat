@@ -81,7 +81,9 @@ require_once "../../includes/sidebar.php";
                                 <th class="text-center">Jenis</th>
                                 <th class="text-center">Tanggal</th>
                                 <th class="text-center">Status</th>
-                                <th class="text-center">Aksi</th>
+                                <?php if ($role == "PIC Tata Tertib") { ?>
+                                    <th class="text-center">Aksi</th>
+                                <?php } ?>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,13 +120,15 @@ require_once "../../includes/sidebar.php";
                                             <span class="badge bg-danger">Ditolak</span>
                                         <?php } ?>
                                     </td>
-                                    <td class="text-center">
-                                        <?php if ($role == "PIC Tata Tertib" && $row['status_pengajuan'] == "Menunggu Verifikasi") { ?>
-                                            <a href="verifikasi.php?id=<?= $row['id_pengajuan_jam_plus']; ?>" class="btn btn-primary btn-sm">Verifikasi</a>
-                                        <?php } else { ?>
-                                            <span class="text-muted small">-</span>
-                                        <?php } ?>
-                                    </td>
+                                    <?php if ($role == "PIC Tata Tertib") { ?>
+                                        <td class="text-center">
+                                            <?php if ($role == "PIC Tata Tertib" && $row['status_pengajuan'] == "Menunggu Verifikasi") { ?>
+                                                <a href="verifikasi.php?id=<?= $row['id_pengajuan_jam_plus']; ?>" class="btn btn-primary btn-sm">Verifikasi</a>
+                                            <?php } else { ?>
+                                                <span class="text-muted small">-</span>
+                                            <?php } ?>
+                                        </td>
+                                    <?php } ?>
                                 </tr>
                             <?php } } else { ?>
                                 <tr><td colspan="10" class="text-center py-4">Belum ada data.</td></tr>

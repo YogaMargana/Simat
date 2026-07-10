@@ -52,4 +52,33 @@ function ambil_data_procedure($koneksi, $sql)
 
     return $data;
 }
+
+function buat_csrf_token(): string
+{
+    if (
+        !isset($_SESSION['csrf_token']) ||
+        !is_string($_SESSION['csrf_token'])
+    ) {
+        $_SESSION['csrf_token'] =
+            bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+function validasi_csrf_token(?string $token): bool
+{
+    if (
+        !isset($_SESSION['csrf_token']) ||
+        !is_string($_SESSION['csrf_token']) ||
+        !is_string($token)
+    ) {
+        return false;
+    }
+
+    return hash_equals(
+        $_SESSION['csrf_token'],
+        $token
+    );
+}
 ?>

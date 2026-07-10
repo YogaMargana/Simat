@@ -97,12 +97,46 @@ if ($role == "Pengajar") {
 
         <?php if ($role == "PIC Tata Tertib") { ?>
 
-        <!-- Sidebar Pengajuan Jam Plus -->
-            <a href="/SIMAT/transaksi/pengajuan_jam_plus/index.php" class="menu-link <?= $active_menu == 'pengajuan_jam_plus' ? 'active' : ''; ?>">
+            <!-- Pengajuan Jam Plus -->
+            <a
+                href="/SIMAT/transaksi/pengajuan_jam_plus/index.php"
+
+                class="menu-link
+                <?= $active_menu == 'pengajuan_jam_plus'
+                    ? 'active'
+                    : ''; ?>"
+            >
                 <i class="fa-solid fa-circle-plus"></i>
+
                 <span>Pengajuan Jam Plus</span>
             </a>
-        <!-- Sidebar Pengajuan Jam Plus -->
+
+            <!-- Pemberian Jam Minus -->
+            <a
+                href="/SIMAT/transaksi/pemberian_jam_minus/index.php"
+
+                class="menu-link
+                <?= $active_menu == 'pemberian_jam_minus'
+                    ? 'active'
+                    : ''; ?>"
+            >
+                <i class="fa-solid fa-circle-minus"></i>
+
+                <span>Pemberian Jam Minus</span>
+            </a>
+
+            <!-- Laporan Total Jam Mahasiswa -->
+            <a
+                href="/SIMAT/laporan/total_jam_mahasiswa/index.php"
+                class="menu-link
+                <?= $active_menu == 'laporan_total_jam_mahasiswa'
+                    ? 'active'
+                    : ''; ?>"
+            >
+                <i class="fa-solid fa-file-pdf"></i>
+
+                <span>Laporan Total Jam</span>
+            </a>
 
         <?php } ?>
 
