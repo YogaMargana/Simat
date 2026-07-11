@@ -15,4 +15,16 @@ function cek_role_dashboard($role_diizinkan)
         exit;
     }
 }
+
+function cek_role_bukan_mahasiswa()
+{
+    if (
+        !isset($_SESSION['role']) ||
+        $_SESSION['role'] == '' ||
+        $_SESSION['role'] == 'Mahasiswa'
+    ) {
+        header("Location: /SIMAT/index.php");
+        exit;
+    }
+}
 ?>
