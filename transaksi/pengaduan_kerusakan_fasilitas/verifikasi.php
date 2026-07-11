@@ -3,7 +3,7 @@ require_once "../../config/koneksi.php";
 require_once "../../config/function.php";
 require_once "../../includes/auth_dashboard.php";
 
-cek_role_dashboard("Mahasiswa");
+cek_role_dashboard("PIC Aset Fasilitas");
 
 $page_title = "Verifikasi Pengaduan";
 $active_menu = "pengaduan_fasilitas";

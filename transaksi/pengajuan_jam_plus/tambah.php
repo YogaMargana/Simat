@@ -54,7 +54,7 @@ require_once "../../includes/sidebar.php";
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Jumlah Jam Plus</label>
                                 <div class="input-group">
-                                    <input type="number" name="jumlah_jam_plus" class="form-control" step="0.01" min="0.01" placeholder="0.00" required>
+                                    <input type="number" name="jumlah_jam_plus" class="form-control" step="0.1" min="0.1" max="100.0" placeholder="0.0" required>
                                     <span class="input-group-text">Jam</span>
                                 </div>
                             </div>

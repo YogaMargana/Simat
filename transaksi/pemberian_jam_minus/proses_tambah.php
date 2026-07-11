@@ -44,26 +44,6 @@ if (!isset($_POST['simpan'])) {
 }
 
 /* ===================================
-   CSRF
-   =================================== */
-if (
-    !validasi_csrf_token(
-        $_POST['csrf_token']
-        ?? null
-    )
-) {
-    header(
-        "Location: tambah.php?error="
-        . urlencode(
-            "Permintaan tidak valid. "
-            . "Silakan ulangi kembali."
-        )
-    );
-
-    exit;
-}
-
-/* ===================================
    DATA UMUM
    =================================== */
 $id_pemberi =
@@ -94,7 +74,7 @@ $deskripsi = '';
 
 $jenis_jam_input = '';
 
-$jumlah_jam_minus_input = 0.00;
+$jumlah_jam_minus_input = 0.0;
 
 /* ===================================
    VALIDASI UMUM
@@ -152,12 +132,7 @@ if ($kategori === 'Akademik') {
         );
 
     $jumlah_jam_minus_input =
-        (float) (
-            $_POST[
-                'jumlah_jam_minus_akademik'
-            ]
-            ?? 0
-        );
+        round((float) ($_POST['jumlah_jam_minus_akademik'] ?? 0), 1);
 
     if ($id_detail_mata_kuliah <= 0) {
 
@@ -264,12 +239,7 @@ if ($kategori === 'Lainnya') {
         );
 
     $jumlah_jam_minus_input =
-        (float) (
-            $_POST[
-                'jumlah_jam_minus_lainnya'
-            ]
-            ?? 0
-        );
+        round((float) ($_POST['jumlah_jam_minus_lainnya'] ?? 0), 1);
 
     if ($deskripsi === '') {
 

@@ -17,7 +17,7 @@ if (!isset($_POST['simpan'])) {
 $id_pengguna = $_SESSION['id_pengguna'];
 $deskripsi_jobdesc = trim($_POST['deskripsi_jobdesc'] ?? '');
 $penerima_jobdesc = trim($_POST['penerima_jobdesc'] ?? '');
-$jam_plus = $_POST['jam_plus'] ?? '';
+$jam_plus = round((float) ($_POST['jam_plus'] ?? 0), 1);
 $tanggal_pemberian_jobdesc = $_POST['tanggal_pemberian_jobdesc'] ?? '';
 $jumlah_mahasiswa_diperlukan = $_POST['jumlah_mahasiswa_diperlukan'] ?? '';
 
@@ -32,7 +32,17 @@ if (
     exit;
 }
 
-if (!in_array($penerima_jobdesc, ['Semua mahasiswa', 'Yang memiliki jam minus'])) {
+if ($jam_plus <= 0) {
+    header("Location: tambah.php?error=" . urlencode("Jam plus harus lebih dari 0."));
+    exit;
+}
+
+if ($jam_plus > 100) {
+    header("Location: tambah.php?error=" . urlencode("Jam plus harus lebih kecil sama dengan 100."));
+    exit;
+}
+
+if (!in_array($penerima_jobdesc, ['Semua Mahasiswa', 'Mahasiswa dengan Jam Minus'], true)) {
     header("Location: tambah.php?error=" . urlencode("Pilihan penerima jobdesc tidak valid."));
     exit;
 }

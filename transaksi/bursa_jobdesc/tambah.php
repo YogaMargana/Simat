@@ -47,8 +47,8 @@ require_once "../../includes/sidebar.php";
                         <label class="form-label">Penerima Jobdesc</label>
                         <select name="penerima_jobdesc" class="form-select" required>
                             <option value="">-- Pilih Penerima Jobdesc --</option>
-                            <option value="Semua mahasiswa">Semua mahasiswa</option>
-                            <option value="Yang memiliki jam minus">Yang memiliki jam minus</option>
+                            <option value="Semua Mahasiswa">Semua Mahasiswa</option>
+                            <option value="Mahasiswa dengan Jam Minus">Mahasiswa dengan Jam Minus</option>
                         </select>
                         <small class="text-muted">
                             Pilih siapa saja yang boleh mengambil jobdesc ini.
@@ -57,7 +57,7 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-3">
                         <label class="form-label">Jam Plus</label>
-                        <input type="number" name="jam_plus" class="form-control" min="0.5" step="0.5" required>
+                        <input type="number" name="jam_plus" class="form-control" min="0.1" max="100.0" step="0.1" placeholder="0.0" required>
                     </div>
 
                     <div class="mb-3">

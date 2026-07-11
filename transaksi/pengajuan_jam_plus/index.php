@@ -98,7 +98,9 @@ require_once "../../includes/sidebar.php";
                                             -
                                         <?php } ?>
                                     </td>
-                                    <td class="fw-bold text-primary">+<?= $row['jumlah_jam_plus']; ?></td>
+                                    <td class="fw-bold text-primary">
+                                        +<?= format_jam($row['jumlah_jam_plus']); ?>
+                                    </td>
                                     <td class="text-center">
                                         <?php if ($row['sumber_jam'] == "Prodi") { ?>
                                             <span class="badge bg-primary">Prodi</span>
@@ -107,7 +109,7 @@ require_once "../../includes/sidebar.php";
                                         <?php } ?>
                                     </td>
                                     <td class="fw-bold text-success">
-                                        +<?= number_format($row['jumlah_jam_diterima'], 2); ?>
+                                        +<?= format_jam($row['jumlah_jam_diterima']); ?>
                                     </td>
                                     <td class="text-center"><span class="badge border text-dark"><?= $row['jenis_jam']; ?></span></td>
                                     <td><?= date('d/m/Y', strtotime($row['tanggal_pengajuan'])); ?></td>

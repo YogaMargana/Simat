@@ -13,7 +13,7 @@ if (!isset($_POST['simpan'])) {
 }
 
 $id_pengguna        = (int) $_SESSION['id_pengguna'];
-$jumlah_jam_plus    = (float) ($_POST['jumlah_jam_plus'] ?? 0);
+$jumlah_jam_plus    = round((float) ($_POST['jumlah_jam_plus'] ?? 0), 1);
 $jenis_jam          = $_POST['jenis_jam'] ?? '';
 $sumber_jam         = $_POST['sumber_jam'] ?? '';
 $deskripsi          = trim($_POST['deskripsi_pekerjaan'] ?? '');
@@ -38,6 +38,16 @@ if ($sumber_jam == 'Luar') {
 
 if ($jumlah_jam_plus <= 0) {
     header("Location: tambah.php?error=" . urlencode("Jumlah jam plus harus lebih dari 0."));
+    exit;
+}
+
+if (fmod($jumlah_jam_plus * 10, 1) != 0.0) {
+    header("Location: tambah.php?error=" . urlencode("Jumlah jam plus hanya boleh memiliki 1 angka di belakang koma."));
+    exit;
+}
+
+if ($jumlah_jam_plus > 100) {
+    header("Location: tambah.php?error=" . urlencode("Jumlah jam plus harus lebih kecil sama dengan 100."));
     exit;
 }
 

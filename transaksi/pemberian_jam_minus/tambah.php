@@ -91,15 +91,6 @@ require_once "../../includes/sidebar.php";
                     id="form_pemberian_jam_minus"
                 >
 
-                    <input
-                        type="hidden"
-                        name="csrf_token"
-
-                        value="<?= aman(
-                            buat_csrf_token()
-                        ); ?>"
-                    >
-
                     <div class="mb-3">
 
                         <label class="form-label fw-bold">
@@ -272,13 +263,13 @@ require_once "../../includes/sidebar.php";
 
                                             class="form-control"
 
-                                            min="0.01"
+                                            min="0.1"
 
-                                            max="99999999.99"
+                                            max="100.0"
 
-                                            step="0.01"
+                                            step="0.1"
 
-                                            placeholder="0.00"
+                                            placeholder="0.0"
                                         >
 
                                         <span class="input-group-text">
@@ -362,13 +353,7 @@ require_once "../../includes/sidebar.php";
 
                                                 -
 
-                                                Rp<?= number_format(
-                                                    (float)
-                                                    $fasilitas['harga'],
-                                                    0,
-                                                    ',',
-                                                    '.'
-                                                ); ?>
+                                                Rp<?= format_jam($fasilitas['harga']); ?>
 
                                                 -
 
@@ -512,13 +497,13 @@ require_once "../../includes/sidebar.php";
 
                                             class="form-control"
 
-                                            min="0.01"
+                                            min="0.1"
 
-                                            max="99999999.99"
+                                            max="100.0"
 
-                                            step="0.01"
+                                            step="0.1"
 
-                                            placeholder="0.00"
+                                            placeholder="0.0"
                                         >
 
                                         <span class="input-group-text">

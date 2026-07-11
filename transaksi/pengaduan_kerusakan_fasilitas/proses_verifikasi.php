@@ -2,7 +2,7 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
-cek_role_dashboard("Mahasiswa");
+cek_role_dashboard("PIC Aset Fasilitas");
 
 if (!isset($_POST['verifikasi'])) {
     header("Location: index.php");

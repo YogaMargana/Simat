@@ -2,7 +2,7 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
-cek_role_dashboard("PIC Aset Fasilitas");
+cek_role_dashboard("Mahasiswa");
 
 if (!isset($_POST['simpan'])) {
     header("Location: index.php");

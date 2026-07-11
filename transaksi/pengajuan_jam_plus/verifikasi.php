@@ -133,14 +133,14 @@ require_once "../../includes/sidebar.php";
                         <table class="table table-sm table-borderless">
                             <?php
                             $jumlah_jam_diterima = $pengajuan['sumber_jam'] == 'Luar'
-                                ? $pengajuan['jumlah_jam_plus'] * 0.5
-                                : $pengajuan['jumlah_jam_plus'];
+                                ? round($pengajuan['jumlah_jam_plus'] * 0.5, 1)
+                                : round($pengajuan['jumlah_jam_plus'], 1);
                             ?>
 
                             <tr>
                                 <th style="width: 150px;">Jam Diajukan</th>
                                 <td class="fw-bold text-primary">
-                                    : +<?= number_format($pengajuan['jumlah_jam_plus'], 2); ?> Jam
+                                    : +<?= format_jam($pengajuan['jumlah_jam_plus']); ?> Jam
                                 </td>
                             </tr>
 
@@ -160,7 +160,7 @@ require_once "../../includes/sidebar.php";
                             <tr>
                                 <th>Jam Diterima</th>
                                 <td class="fw-bold text-success">
-                                    : +<?= number_format($jumlah_jam_diterima, 2); ?> Jam
+                                    : +<?= format_jam($jumlah_jam_diterima); ?> Jam
                                 </td>
                             </tr>
 

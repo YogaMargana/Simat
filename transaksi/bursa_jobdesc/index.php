@@ -146,10 +146,14 @@ require_once "../../includes/sidebar.php";
                                         <td><?= aman($jobdesc['deskripsi_jobdesc']); ?></td>
 
                                         <td class="text-center">
-                                            <?php if ($jobdesc['penerima_jobdesc'] == "Semua mahasiswa") { ?>
-                                                <span class="badge bg-info text-dark">Semua mahasiswa</span>
+                                            <?php if ($jobdesc['penerima_jobdesc'] == "Semua Mahasiswa") { ?>
+                                                <span class="badge bg-info text-dark">Semua Mahasiswa</span>
+                                            <?php } elseif ($jobdesc['penerima_jobdesc'] == "Mahasiswa dengan Jam Minus") { ?>
+                                                <span class="badge bg-warning text-dark">Mahasiswa dengan Jam Minus</span>
                                             <?php } else { ?>
-                                                <span class="badge bg-warning text-dark">Yang memiliki jam minus</span>
+                                                <span class="badge bg-secondary">
+                                                    <?= aman($jobdesc['penerima_jobdesc']); ?>
+                                                </span>
                                             <?php } ?>
                                         </td>
 
@@ -160,7 +164,7 @@ require_once "../../includes/sidebar.php";
                                             </small>
                                         </td>
 
-                                        <td class="text-center"><?= aman($jobdesc['jam_plus']); ?></td>
+                                        <td class="text-center"><?= format_jam($jobdesc['jam_plus']); ?></td>
 
                                         <td><?= aman($jobdesc['tanggal_pemberian_jobdesc']); ?></td>
 
@@ -204,11 +208,11 @@ require_once "../../includes/sidebar.php";
                                                     $jumlah_mengambil = (int) ($jobdesc['jumlah_mahasiswa_mengambil'] ?? 0);
                                                     $jumlah_diperlukan = (int) ($jobdesc['jumlah_mahasiswa_diperlukan'] ?? 0);
                                                     $bukti_selesai_url = trim($jobdesc['bukti_selesai_url'] ?? '');
-                                                    $penerima_jobdesc = $jobdesc['penerima_jobdesc'] ?? 'Semua mahasiswa';
+                                                    $penerima_jobdesc = $jobdesc['penerima_jobdesc'] ?? 'Semua Mahasiswa';
 
                                                     $boleh_daftar_berdasarkan_jam = true;
 
-                                                    if ($penerima_jobdesc == "Yang memiliki jam minus" && $total_jam_minus_saya <= 0) {
+                                                    if ($penerima_jobdesc == "Mahasiswa dengan Jam Minus" && $total_jam_minus_saya <= 0) {
                                                         $boleh_daftar_berdasarkan_jam = false;
                                                     }
                                                     ?>
