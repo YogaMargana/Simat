@@ -31,10 +31,19 @@ if ($role == "Pengajar") {
 
         <?php if ($role != "") { ?>
 
-        <a href="/SIMAT/transaksi/bursa_jobdesc/index.php" class="menu-link <?= $active_menu == 'bursa_jobdesc' ? 'active' : ''; ?>">
-            <i class="fa-solid fa-briefcase"></i>
-            <span>Bursa Jobdesc</span>
-        </a>
+            <a href="/SIMAT/transaksi/bursa_jobdesc/index.php" class="menu-link <?= $active_menu == 'bursa_jobdesc' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Bursa Jobdesc</span>
+            </a>
+
+        <?php } ?>
+
+        <?php if ($role != "" && $role != "Mahasiswa") { ?>
+
+            <a href="/SIMAT/laporan/bursa_jobdesc/index.php" class="menu-link <?= $active_menu == 'laporan_bursa_jobdesc' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Laporan Bursa Jobdesc</span>
+            </a>
 
         <?php } ?>
 
@@ -92,6 +101,11 @@ if ($role == "Pengajar") {
                 <span>Fasilitas Kelas</span>
             </a>
         <!-- Sidebar Fasilitas Kelas -->
+
+            <a href="/SIMAT/laporan/pengaduan_fasilitas/index.php" class="menu-link <?= $active_menu == 'laporan_pengaduan_fasilitas' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-file-lines"></i>
+                <span>Laporan Pengaduan</span>
+            </a>
 
         <?php } ?>
 
