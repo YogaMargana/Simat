@@ -48,11 +48,6 @@ function pdf_text($text)
     return $converted;
 }
 
-function format_jam_pdf($nilai)
-{
-    return number_format((float) $nilai, 2, ',', '.');
-}
-
 class PDFLaporanTotalJamMahasiswa extends FPDF
 {
     public function Header()
@@ -137,9 +132,9 @@ if (count($data_laporan) > 0) {
         $pdf->Cell(35, 7, pdf_text($row["nim"]), 1, 0, "C");
         $pdf->Cell(75, 7, pdf_text($row["nama_mahasiswa"]), 1, 0, "L");
         $pdf->Cell(30, 7, pdf_text($row["nama_kelas"]), 1, 0, "C");
-        $pdf->Cell(42, 7, format_jam_pdf($row["total_jam_kompensasi"]), 1, 0, "R");
-        $pdf->Cell(42, 7, format_jam_pdf($row["total_jam_murni"]), 1, 0, "R");
-        $pdf->Cell(42, 7, format_jam_pdf($row["total_jam_mahasiswa"]), 1, 1, "R");
+        $pdf->Cell(42, 7, format_jam($row["total_jam_kompensasi"]), 1, 0, "R");
+        $pdf->Cell(42, 7, format_jam($row["total_jam_murni"]), 1, 0, "R");
+        $pdf->Cell(42, 7, format_jam($row["total_jam_mahasiswa"]), 1, 1, "R");
     }
 } else {
     $pdf->Cell(276, 8, pdf_text("Belum ada data mahasiswa aktif."), 1, 1, "C");

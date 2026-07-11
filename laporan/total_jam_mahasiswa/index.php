@@ -36,11 +36,6 @@ if ($query) {
     $error_laporan = mysqli_error($koneksi);
 }
 
-function format_jam_laporan($nilai)
-{
-    return number_format((float) $nilai, 1, ',', '.');
-}
-
 function class_total_jam($nilai)
 {
     $nilai = (float) $nilai;
@@ -184,15 +179,15 @@ require_once "../../includes/sidebar.php";
                                         </td>
 
                                         <td class="text-end fw-bold <?= class_total_jam($row['total_jam_kompensasi']); ?>">
-                                            <?= format_jam_laporan($row['total_jam_kompensasi']); ?>
+                                            <?= format_jam($row['total_jam_kompensasi']); ?>
                                         </td>
 
                                         <td class="text-end fw-bold <?= class_total_jam($row['total_jam_murni']); ?>">
-                                            <?= format_jam_laporan($row['total_jam_murni']); ?>
+                                            <?= format_jam($row['total_jam_murni']); ?>
                                         </td>
 
                                         <td class="text-end fw-bold <?= class_total_jam($row['total_jam_mahasiswa']); ?>">
-                                            <?= format_jam_laporan($row['total_jam_mahasiswa']); ?>
+                                            <?= format_jam($row['total_jam_mahasiswa']); ?>
                                         </td>
 
                                     </tr>
