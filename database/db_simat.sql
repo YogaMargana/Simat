@@ -1,1135 +1,45 @@
--- db_simat - phpMyAdmin/XAMPP/Laragon compatible import
--- Converted from the uploaded phpMyAdmin dump
--- Changes: removed DEFINER, added CREATE DATABASE/USE, reordered routines after tables, removed view stand-in table
+-- phpMyAdmin SQL Dump
+-- version 5.2.0
+-- https://www.phpmyadmin.net/
+--
+-- Host: localhost:3306
+-- Generation Time: Jul 11, 2026 at 09:26 PM
+-- Server version: 8.0.30
+-- PHP Version: 8.1.10
+--
+-- Versi kompatibel import lokal untuk XAMPP/Laragon
+-- Perubahan: hapus DEFINER, tambah DROP/CREATE/USE database, nonaktifkan FK saat import.
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
 SET time_zone = "+00:00";
-SET NAMES utf8mb4;
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `db_simat`
+--
+
+/*!40101 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS */;
+SET FOREIGN_KEY_CHECKS=0;
 
 DROP DATABASE IF EXISTS `db_simat`;
-CREATE DATABASE `db_simat` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+CREATE DATABASE IF NOT EXISTS `db_simat` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `db_simat`;
 
-SET FOREIGN_KEY_CHECKS = 0;
 
--- Table structure for table `bursa_jobdesc`
---
-
-CREATE TABLE `bursa_jobdesc` (
-  `id_bursa_jobdesc` int NOT NULL,
-  `deskripsi_jobdesc` text COLLATE utf8mb4_general_ci NOT NULL,
-  `penerima_jobdesc` enum('Semua mahasiswa','Yang memiliki jam minus') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Semua mahasiswa',
-  `jam_plus` decimal(6,2) NOT NULL,
-  `tanggal_pemberian_jobdesc` datetime NOT NULL,
-  `jumlah_mahasiswa_diperlukan` int NOT NULL,
-  `jumlah_mahasiswa_mengambil` int NOT NULL DEFAULT '0',
-  `bukti_selesai_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_jobdesc` enum('Dibuka','Dikerjakan','Selesai') COLLATE utf8mb4_general_ci DEFAULT 'Dibuka'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `bursa_jobdesc`
---
-
-INSERT INTO `bursa_jobdesc` (`id_bursa_jobdesc`, `deskripsi_jobdesc`, `penerima_jobdesc`, `jam_plus`, `tanggal_pemberian_jobdesc`, `jumlah_mahasiswa_diperlukan`, `jumlah_mahasiswa_mengambil`, `bukti_selesai_url`, `status_jobdesc`) VALUES
-(1, 'wertg34', 'Semua mahasiswa', '20.00', '2026-06-18 18:46:00', 2, 2, 'https://halo', 'Selesai'),
-(2, 'Membersihkan tendik', 'Semua mahasiswa', '20.00', '2026-06-19 22:20:00', 10, 10, 'https://halo', 'Selesai'),
-(3, 'Perbaiki laptop', 'Semua mahasiswa', '10.00', '2026-06-20 00:00:00', 2, 2, 'https://halo', 'Selesai'),
-(4, 'Cari ikan', 'Yang memiliki jam minus', '90.00', '2026-06-27 04:40:00', 2, 2, 'a', 'Selesai'),
-(5, 'hdsufodsf', 'Semua mahasiswa', '20.00', '2026-06-19 08:36:00', 2, 2, 'selesai cik', 'Selesai'),
-(6, 'Rapihkan Tendik', 'Semua mahasiswa', '1.00', '2026-07-09 18:35:00', 3, 3, 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Selesai');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_fasilitas_pada_kelas`
---
-
-CREATE TABLE `detail_fasilitas_pada_kelas` (
-  `id_detail_fasilitas_pada_kelas` int NOT NULL,
-  `id_kelas` int NOT NULL,
-  `id_fasilitas` int NOT NULL,
-  `jumlah_fasilitas` int DEFAULT '1',
-  `status_detail_fasilitas_pada_kelas` enum('Aktif','Rusak','Tidak Aktif') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_fasilitas_pada_kelas`
---
-
-INSERT INTO `detail_fasilitas_pada_kelas` (`id_detail_fasilitas_pada_kelas`, `id_kelas`, `id_fasilitas`, `jumlah_fasilitas`, `status_detail_fasilitas_pada_kelas`) VALUES
-(1, 1, 6, 80, 'Aktif'),
-(2, 1, 7, 1, 'Aktif'),
-(3, 2, 8, 3, 'Aktif'),
-(4, 5, 5, 20, 'Aktif'),
-(5, 1, 8, 20, 'Aktif'),
-(6, 2, 5, 20, 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_kelas_pada_mata_kuliah`
---
-
-CREATE TABLE `detail_kelas_pada_mata_kuliah` (
-  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
-  `id_mata_kuliah` int NOT NULL,
-  `id_kelas` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_kelas_pada_mata_kuliah`
---
-
-INSERT INTO `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`, `id_mata_kuliah`, `id_kelas`) VALUES
-(2, 2, 1),
-(4, 2, 2),
-(3, 3, 2),
-(5, 1, 5),
-(7, 4, 5),
-(6, 5, 5);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_pengajar_pada_mata_kuliah`
---
-
-CREATE TABLE `detail_pengajar_pada_mata_kuliah` (
-  `id_detail_pengajar_pada_mata_kuliah` int NOT NULL,
-  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
-  `id_pengajar` int NOT NULL,
-  `kedudukan_pengajar` enum('Pengajar1','Pengajar2') COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_pengajar_pada_mata_kuliah`
---
-
-INSERT INTO `detail_pengajar_pada_mata_kuliah` (`id_detail_pengajar_pada_mata_kuliah`, `id_detail_kelas_pada_mata_kuliah`, `id_pengajar`, `kedudukan_pengajar`) VALUES
-(11, 2, 3, 'Pengajar1'),
-(12, 2, 5, 'Pengajar2'),
-(13, 3, 5, 'Pengajar1'),
-(14, 3, 1, 'Pengajar2'),
-(15, 4, 1, 'Pengajar1'),
-(16, 4, 3, 'Pengajar2'),
-(17, 5, 3, 'Pengajar1'),
-(18, 5, 2, 'Pengajar2'),
-(19, 6, 2, 'Pengajar1'),
-(20, 6, 4, 'Pengajar2'),
-(21, 7, 4, 'Pengajar1'),
-(22, 7, 5, 'Pengajar2');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_pengguna_pada_bursa_jobdesc`
---
-
-CREATE TABLE `detail_pengguna_pada_bursa_jobdesc` (
-  `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL,
-  `id_bursa_jobdesc` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_pengguna_pada_bursa_jobdesc`
---
-
-INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa_jobdesc`, `id_bursa_jobdesc`, `id_pengguna`, `peran_pengguna`) VALUES
-(1, 1, 2, 'Pemberi'),
-(3, 2, 6, 'Pemberi'),
-(4, 2, 7, 'Penerima'),
-(5, 2, 9, 'Penerima'),
-(6, 2, 10, 'Penerima'),
-(7, 2, 12, 'Penerima'),
-(8, 2, 13, 'Penerima'),
-(9, 2, 14, 'Penerima'),
-(10, 2, 15, 'Penerima'),
-(11, 2, 16, 'Penerima'),
-(12, 2, 17, 'Penerima'),
-(13, 2, 18, 'Penerima'),
-(14, 1, 9, 'Penerima'),
-(15, 1, 7, 'Penerima'),
-(16, 3, 6, 'Pemberi'),
-(17, 4, 2, 'Pemberi'),
-(18, 4, 7, 'Penerima'),
-(19, 4, 15, 'Penerima'),
-(20, 3, 19, 'Penerima'),
-(21, 3, 16, 'Penerima'),
-(22, 5, 2, 'Pemberi'),
-(23, 5, 9, 'Penerima'),
-(24, 5, 10, 'Penerima'),
-(25, 6, 6, 'Pemberi'),
-(26, 6, 9, 'Penerima'),
-(27, 6, 19, 'Penerima'),
-(28, 6, 7, 'Penerima');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_pengguna_pada_pemberian_jam_minus`
---
-
-CREATE TABLE `detail_pengguna_pada_pemberian_jam_minus` (
-  `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL,
-  `id_pemberian_jam_minus` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_pengguna_pada_pemberian_jam_minus`
---
-
-INSERT INTO `detail_pengguna_pada_pemberian_jam_minus` (`id_detail_pengguna_pada_pemberian_jam_minus`, `id_pemberian_jam_minus`, `id_pengguna`, `peran_pengguna`) VALUES
-(1, 1, 3, 'Pemberi'),
-(2, 1, 7, 'Penerima'),
-(3, 2, 3, 'Pemberi'),
-(4, 2, 9, 'Penerima'),
-(5, 3, 3, 'Pemberi'),
-(6, 3, 16, 'Penerima');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
---
-
-CREATE TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (
-  `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pelapor','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
---
-
-INSERT INTO `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`, `id_pengaduan_kerusakan_fasilitas`, `id_pengguna`, `peran_pengguna`) VALUES
-(1, 1, 1, 'Pelapor'),
-(2, 2, 1, 'Pelapor'),
-(3, 2, 4, 'Verifikator'),
-(4, 3, 7, 'Pelapor'),
-(5, 4, 7, 'Pelapor'),
-(6, 3, 4, 'Verifikator'),
-(7, 4, 4, 'Verifikator'),
-(8, 5, 7, 'Pelapor'),
-(9, 5, 4, 'Verifikator'),
-(10, 6, 9, 'Pelapor'),
-(11, 6, 4, 'Verifikator'),
-(13, 1, 4, 'Verifikator'),
-(14, 7, 7, 'Pelapor');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `detail_pengguna_pada_pengajuan_jam_plus`
---
-
-CREATE TABLE `detail_pengguna_pada_pengajuan_jam_plus` (
-  `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL,
-  `id_pengajuan_jam_plus` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pengaju','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `detail_pengguna_pada_pengajuan_jam_plus`
---
-
-INSERT INTO `detail_pengguna_pada_pengajuan_jam_plus` (`id_detail_pengguna_pada_pengajuan_jam_plus`, `id_pengajuan_jam_plus`, `id_pengguna`, `peran_pengguna`) VALUES
-(1, 1, 19, 'Pengaju'),
-(2, 1, 3, 'Verifikator'),
-(3, 2, 9, 'Pengaju'),
-(4, 3, 9, 'Pengaju'),
-(5, 2, 3, 'Verifikator'),
-(6, 3, 3, 'Verifikator'),
-(7, 4, 19, 'Pengaju'),
-(8, 5, 19, 'Pengaju'),
-(9, 6, 19, 'Pengaju'),
-(10, 7, 9, 'Pengaju'),
-(11, 8, 9, 'Pengaju'),
-(12, 8, 3, 'Verifikator');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `fasilitas`
---
-
-CREATE TABLE `fasilitas` (
-  `id_fasilitas` int NOT NULL,
-  `nama_fasilitas` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `harga` decimal(15,2) DEFAULT '0.00',
-  `status_fasilitas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif',
-  `tanggal_pendataan` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `fasilitas`
---
-
-INSERT INTO `fasilitas` (`id_fasilitas`, `nama_fasilitas`, `harga`, `status_fasilitas`, `tanggal_pendataan`) VALUES
-(1, 'Proyektor Kelas', '4500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(2, 'AC Kelas', '3500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(3, 'Komputer Lab', '8500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(4, 'Kursi Kelas', '350000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(5, 'Papan Tulis', '750000.00', 'Aktif', '2026-06-08 22:50:43'),
-(6, 'Bangku', '100000.00', 'Tidak Aktif', '2026-06-11 23:44:46'),
-(7, 'Kursi', '120000.00', 'Tidak Aktif', '2026-06-17 19:24:58'),
-(8, 'Kursi Kelas', '170000.00', 'Aktif', '2026-06-17 19:30:39');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `kegiatan`
---
-
-CREATE TABLE `kegiatan` (
-  `id_kegiatan` int NOT NULL,
-  `nama_kegiatan` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `penyelenggara` enum('ASTRAtech','BEM','MPM','HIMMA','UKM') COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_kegiatan` date DEFAULT NULL,
-  `status_kegiatan` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `kegiatan`
---
-
-INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `penyelenggara`, `tanggal_kegiatan`, `status_kegiatan`) VALUES
-(1, 'ASTRA', 'ASTRAtech', NULL, 'Tidak Aktif'),
-(2, 'Donor Darah', 'BEM', '2026-07-15', 'Aktif'),
-(3, 'Novastech', 'ASTRAtech', '2026-07-23', 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `kelas`
---
-
-CREATE TABLE `kelas` (
-  `id_kelas` int NOT NULL,
-  `nama_kelas` varchar(5) COLLATE utf8mb4_general_ci NOT NULL,
-  `tingkat` enum('1','2','3','4') COLLATE utf8mb4_general_ci NOT NULL,
-  `jumlah_mahasiswa` int DEFAULT '0',
-  `status_kelas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `kelas`
---
-
-INSERT INTO `kelas` (`id_kelas`, `nama_kelas`, `tingkat`, `jumlah_mahasiswa`, `status_kelas`) VALUES
-(1, 'TR1C', '1', 3, 'Aktif'),
-(2, 'TR1B', '1', 4, 'Aktif'),
-(3, 'TR1K', '2', 0, 'Tidak Aktif'),
-(4, 'IUGHS', '1', 0, 'Tidak Aktif'),
-(5, 'TR1A', '1', 6, 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mahasiswa`
---
-
-CREATE TABLE `mahasiswa` (
-  `id_mahasiswa` int NOT NULL,
-  `id_kelas` int NOT NULL,
-  `id_periode_akademik` int NOT NULL,
-  `nim` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  `nama_mahasiswa` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `saldo_jam_minus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_minus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_plus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_plus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `status_mahasiswa` enum('Aktif','Tidak Aktif','Lulus','Cuti') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `mahasiswa`
---
-
-INSERT INTO `mahasiswa` (`id_mahasiswa`, `id_kelas`, `id_periode_akademik`, `nim`, `nama_mahasiswa`, `email`, `no_hp`, `saldo_jam_minus_murni`, `saldo_jam_minus_kompensasi`, `saldo_jam_plus_murni`, `saldo_jam_plus_kompensasi`, `status_mahasiswa`) VALUES
-(1, 1, 1, '032025001', 'Yoga Margana', 'yoga@simat.test', '081111111111', '7.0', '0.0', '1.0', '1.0', 'Aktif'),
-(2, 1, 1, '032025002', 'Fahri Aprilian', 'fahri@simat.test', '082222222222', '0.0', '1.0', '0.0', '1.0', 'Aktif'),
-(3, 1, 1, '032025003', 'Nabilah Putri', 'nabilah@simat.test', '083333333333', '3.0', '0.0', '0.0', '0.0', 'Aktif'),
-(4, 1, 1, '0987692345', 'Marganaa', 'marganayoga891@gmail.com', '089088752369', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
-(5, 2, 1, '0920250039', 'Mikael', 'mikael@gmail.com', '081298394420', '0.0', '1750.0', '20.0', '26.0', 'Aktif'),
-(6, 2, 1, '0920250035', 'Ridzal', 'Ridzal@gmail.com', '085477325643', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
-(7, 5, 1, '1', 'Mazt', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(8, 5, 1, '2', 'Daffa', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(9, 5, 1, '3', 'Rijal', '', '', '0.0', '4250.0', '0.0', '0.0', 'Aktif'),
-(10, 5, 1, '4', 'Adit', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(11, 5, 1, '5', 'Jonathan', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(12, 5, 1, '6', 'Irsyad', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(13, 2, 1, '9', 'Hailkal', '', '', '0.0', '0.0', '100.0', '1.0', 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `mata_kuliah`
---
-
-CREATE TABLE `mata_kuliah` (
-  `id_matakuliah` int NOT NULL,
-  `nama_mata_kuliah` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
-  `kode_mata_kuliah` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
-  `sks` int NOT NULL,
-  `semester` enum('1','2','3','4','5','6','7','8') COLLATE utf8mb4_general_ci NOT NULL,
-  `status_mata_kuliah` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `mata_kuliah`
---
-
-INSERT INTO `mata_kuliah` (`id_matakuliah`, `nama_mata_kuliah`, `kode_mata_kuliah`, `sks`, `semester`, `status_mata_kuliah`) VALUES
-(1, 'Pemrograman Web', 'WEB101', 3, '2', 'Aktif'),
-(2, 'Basis Data', 'BD101', 3, '2', 'Aktif'),
-(3, 'Algoritma Pemrograman', 'ALG101', 3, '1', 'Aktif'),
-(4, 'Rekayasa Perangkat Lunak', 'RPL101', 3, '3', 'Aktif'),
-(5, 'Pemrograman Berorientasi Objek', 'PBO101', 3, '3', 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pemberian_jam_minus`
---
-
-CREATE TABLE `pemberian_jam_minus` (
-  `id_pemberian_jam_minus` int NOT NULL,
-  `kategori_pelanggaran` enum('Akademik','Fasilitas','Lainnya') COLLATE utf8mb4_general_ci NOT NULL,
-  `id_detail_kelas_pada_mata_kuliah` int DEFAULT NULL,
-  `keterangan_absensi` enum('Izin','Sakit','Alpa') COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `id_fasilitas` int DEFAULT NULL,
-  `harga_fasilitas_saat_pemberian` decimal(15,2) DEFAULT NULL,
-  `nama_pelanggaran` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `deskripsi_pelanggaran` text COLLATE utf8mb4_general_ci,
-  `jumlah_jam_minus` decimal(10,1) NOT NULL,
-  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_pemberian` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `pemberian_jam_minus`
---
-
-INSERT INTO `pemberian_jam_minus` (`id_pemberian_jam_minus`, `kategori_pelanggaran`, `id_detail_kelas_pada_mata_kuliah`, `keterangan_absensi`, `id_fasilitas`, `harga_fasilitas_saat_pemberian`, `nama_pelanggaran`, `deskripsi_pelanggaran`, `jumlah_jam_minus`, `jenis_jam`, `tanggal_pemberian`) VALUES
-(1, 'Akademik', 2, 'Alpa', NULL, NULL, 'Pelanggaran Akademik', NULL, '5.0', 'Murni', '2026-07-06 19:21:40'),
-(2, 'Fasilitas', NULL, NULL, 2, '3500000.00', 'Kerusakan Fasilitas', NULL, '1750.0', 'Kompensasi', '2026-07-06 21:11:02'),
-(3, 'Fasilitas', NULL, NULL, 3, '8500000.00', 'Kerusakan Fasilitas', NULL, '4250.0', 'Kompensasi', '2026-07-07 10:04:33');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pengaduan_kerusakan_fasilitas`
---
-
-CREATE TABLE `pengaduan_kerusakan_fasilitas` (
-  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_fasilitas` int NOT NULL,
-  `deskripsi_kerusakan` text COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_pengaduan` datetime NOT NULL,
-  `bukti_kerusakan_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `pelaku_kerusakan` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengaduan` enum('Menunggu Verifikasi','Diterima','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `pengaduan_kerusakan_fasilitas`
---
-
-INSERT INTO `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`, `id_fasilitas`, `deskripsi_kerusakan`, `tanggal_pengaduan`, `bukti_kerusakan_url`, `pelaku_kerusakan`, `status_pengaduan`) VALUES
-(1, 1, 'Proyektor kelas tidak menyala saat digunakan.', '2026-06-08 22:50:43', 'assets/uploads/pengaduan/dummy-proyektor.jpg', NULL, 'Ditolak'),
-(2, 2, 'AC kelas tidak dingin dan mengeluarkan suara bising.', '2026-06-08 22:50:43', 'assets/uploads/pengaduan/dummy-ac.jpg', NULL, 'Diterima'),
-(3, 6, 'azhar', '2026-06-12 00:22:50', 'azhar', 'Tidak diketahui', 'Diterima'),
-(4, 6, 'azhar', '2026-06-12 00:23:21', 'azhar', 'azhar', 'Ditolak'),
-(5, 6, 'azahr', '2026-06-12 00:29:55', 'https://www.youtube.com/', 'azhar', 'Diterima'),
-(6, 8, 'aku lempar jir', '2026-06-17 19:31:24', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSEhMVFRUXFxYVFhUXFRYVFxgYFxcYGBcVGBUYHSggGBolGxcVITEiJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGy0lHyUtLS0rKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLSstLS0tLS0tLf/AABEIAM8A9AMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAAAAgMEBQYBB//EADgQAAEDAgMFBgUCBwEBAQAAAAEAAhEDIQQxQQUSUWFxBiKBkaHwEzKxwdFC4RQjUmJygvEHwlP/xAAZAQACAwEAAAAAAAAAAAAAAAADBAABAgX/xAAmEQACAgIDAAICAgMBAAAAAAAAAQIRAyEEEjFBURMiMlJhcaEU/9oADAMBAAIRAxEAPwD3FCEKEBclN4iu1jS5xgBZ3EbZe5x3TuiQAIm3PghZMscfpuGNz8NOhVuzMeXd14g3gjJwGfiFYrcZKStGZRcXTOoQhaKBCEKEBCEkvExIngoQUkueBmYUPH43ds3P6Klq4515g8yEOeRRCQxORoTi2f1BIdj6YvvehWPxGKd8wMD35KIMW6CZMcffglpcuvgaXEX2bV21qY/q8k43aVM6/RYtoJ71+sHyTra5GYI5+/BUuUy//LE1z9osEZm+kW55qWHBYmlif5jLj5h7laSlXR8WbvYDLhUaos11QhiYXHbQA0ReyA9GTkKLSxzHawpIKtNPwppr06hCFZQIQhQgIQhQgIQhQgio8NBJyAkqkxO3twTu2ItnPiIUnbjjDWN/UXEnTutJjzjyVDVrfDgzG7Bvr+0JTkZnDSGcOJSWyFtztAahDCQ0ATY68cuBFlCOOAG848PHSypNp4tpe95Obi4dM4z0sFU4jEuffNugGgSE7ybZ0ceJJUej7O2iHd5v6AXc9J8PytdgcSKjA8WnTgRmF4zsLaLqb90GxkQTkfwV6P2Sx4JNOcwHNnpf0jyTXGydZdWKcrFStGoQhC6AgCEIUICqdo1/5gaMxqrHEVd1pKonOG9v6iw58z5lDm/hG4L5G6j595qOaIM7wkQfC1j5p0lJcUNoKnRntoUjvW1EcLRlKMLj9yG1B/tBm2pHBXdcNcCHAT/UB9QM+qra+AMW16XHGMyLZpKeJp2hyGVNUyU+uNwkGRIjXMi8+ak1alKAN5swYnWM46T6rP8AwKlE91scswecadR+6TicewsJgtqiN0kniLDSIk5BUp0tm+l+F+3Z7SQRYwN0zkQrHAVN8Xs6YIzuJBjyKxjtr1XGd+OkA8comFYbI2sGzvaD9IF7HhYGVvHmgn9GMuKTRrH2mCouMkCffu6h4faLX95tgD8pvlxSdpbQkR76pmWSLjYtGDUqI1XERcHJT8BtpzfmMt5gqhYS6SDAAknnEho55JXx5yI6JSORp2hpwTVM32Fxjagsb8FJWAw+McwgidPBanZ21w8d6xH04p7HmUtMSy4HHa8LZC41wNxkuo4uCEIUICEIUIVPaCd2mRE/EAvlDmuafqsjt2qPhOLpJIhukEX/ADK2HaJhNBzhmwteP9XAn0lYXadUPc4G4LnQOpMG2okLnc3TQ9xDEY502OYUenUiwyXMVUlxPNNNKxWjoXsn4c95p4EfVa3Z+0XMq0nNB3gB3eIAv42jxKxVNyvsK90Mc2xADm6XacvMHzQ3rZWRdtHtdGqHNDmmQQCDxBuClqg7H40PpFuW6bD+11wPC48lfrq45qUU0cScesmgQhC2ZEVqQcIKotqtax262wiT1P8AwK8rVQ0SVl9p1N50nO/1IH0WJm4DT6yT8axEcI+/2Ueu4C4M8oP1UR+IJtkgSlQVInb6X8aBAcRyhpGtr81AbUXZKzZs5VNzYeQA8gqPardeHvyV81ihY+jIQMsHVjGGdSKHf8k5SxAA9PH39F04aO7PvSVHrCEnQ/pl/hqm6ZY6WG02JsTEjQx5ruMxQ436qp2bU', 'azhar', 'Diterima'),
-(7, 7, 'kaki patah', '2026-06-25 10:23:15', 'xmxb', 'saya sendiri', 'Menunggu Verifikasi');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pengajar`
---
-
-CREATE TABLE `pengajar` (
-  `id_pengajar` int NOT NULL,
-  `nip` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  `nama_pengajar` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengajar` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `pengajar`
---
-
-INSERT INTO `pengajar` (`id_pengajar`, `nip`, `nama_pengajar`, `email`, `no_hp`, `status_pengajar`) VALUES
-(1, 'PGR001', 'Budi Santoso', 'pengajar@simat.test', '081200000001', 'Aktif'),
-(2, 'PGR002', 'Rina Anggraini fgfyyt', 'pictatatertib@simat.test', '081200000002', 'Aktif'),
-(3, 'PGR003', 'Dimas Pratama', 'picaset@simat.test', '081200000003', 'Aktif'),
-(4, 'PGR004', 'Siti Rahma', 'pickemahasiswaan@simat.test', '081200000004', 'Aktif'),
-(5, '347564576', 'Andi Wijaya', 'kaprodi@simat.test', '081200000005', 'Aktif'),
-(6, '00099787', 'poles', 'anjingcepat@gmail.com', '09876543433', 'Tidak Aktif'),
-(7, '03485743', 'Nadya E-Learning', 'bodat@hewan.com', '082365479873', 'Tidak Aktif'),
-(8, '097764578', 'Irsyad', 'irsyad@gmail.com', '08430834892234', 'Tidak Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pengajuan_jam_plus`
---
-
-CREATE TABLE `pengajuan_jam_plus` (
-  `id_pengajuan_jam_plus` int NOT NULL,
-  `id_kegiatan` int DEFAULT NULL,
-  `jumlah_jam_plus` decimal(6,2) NOT NULL,
-  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
-  `sumber_jam` enum('Prodi','Luar') COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_pengajuan` datetime NOT NULL,
-  `deskripsi_pekerjaan` text COLLATE utf8mb4_general_ci,
-  `nama_pemberi` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `dokumen_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengajuan` enum('Menunggu Verifikasi','Disetujui','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `pengajuan_jam_plus`
---
-
-INSERT INTO `pengajuan_jam_plus` (`id_pengajuan_jam_plus`, `id_kegiatan`, `jumlah_jam_plus`, `jenis_jam`, `sumber_jam`, `tanggal_pengajuan`, `deskripsi_pekerjaan`, `nama_pemberi`, `dokumen_url`, `status_pengajuan`) VALUES
-(1, 1, '100.00', 'Murni', 'Prodi', '2026-06-25 23:03:13', 'Olahraga', 'Fahri', 'abc', 'Disetujui'),
-(2, 1, '50.00', 'Kompensasi', 'Luar', '2026-06-25 23:55:15', 'Menyapu', 'Agoy', 'abc', 'Disetujui'),
-(3, 1, '100.00', 'Murni', 'Prodi', '2026-06-25 23:55:35', 'Mengepel', 'Agoy', 'abc', 'Ditolak'),
-(4, NULL, '100.00', 'Kompensasi', 'Prodi', '2026-07-02 09:06:26', 'Pulang', 'Adit', 'abc', 'Menunggu Verifikasi'),
-(5, 2, '90.00', 'Murni', 'Luar', '2026-07-02 09:07:26', 'a', 'Fahri', 'a', 'Menunggu Verifikasi'),
-(6, NULL, '1.00', 'Murni', 'Prodi', '2026-07-02 09:13:53', 'aa', 'Agoy', 'a', 'Menunggu Verifikasi'),
-(7, NULL, '50.00', 'Murni', 'Prodi', '2026-07-03 13:32:05', 'abc', 'Rafi', 'abc', 'Menunggu Verifikasi'),
-(8, NULL, '20.00', 'Murni', 'Prodi', '2026-07-03 14:47:18', 'Panitia', 'Yoga', 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Disetujui');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `pengguna`
---
-
-CREATE TABLE `pengguna` (
-  `id_pengguna` int NOT NULL,
-  `id_mahasiswa` int DEFAULT NULL,
-  `id_pengajar` int DEFAULT NULL,
-  `username` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `role` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi') COLLATE utf8mb4_general_ci NOT NULL,
-  `status_akun` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `pengguna`
---
-
-INSERT INTO `pengguna` (`id_pengguna`, `id_mahasiswa`, `id_pengajar`, `username`, `password`, `role`, `status_akun`) VALUES
-(1, 1, NULL, 'mahasiswa@simat.net', '1234', 'Mahasiswa', 'Tidak Aktif'),
-(2, NULL, 1, 'pengajar@simat.test', '123', 'Pengajar', 'Aktif'),
-(3, NULL, 2, 'pictatatertib@simat.test', '123', 'PIC Tata Tertib', 'Aktif'),
-(4, NULL, 3, 'picaset@simat.test', '123', 'PIC Aset Fasilitas', 'Aktif'),
-(5, NULL, 4, 'pickemahasiswaan@simat.test', '123', 'PIC Kemahasiswaan', 'Aktif'),
-(6, NULL, 5, 'kaprodi@simat.test', '123', 'Kepala Prodi', 'Aktif'),
-(7, 1, NULL, 'yogaenjoy', '123', 'Mahasiswa', 'Aktif'),
-(8, NULL, 7, 'bodat', '098', 'Pengajar', 'Tidak Aktif'),
-(9, 5, NULL, 'mika', '123', 'Mahasiswa', 'Aktif'),
-(10, 2, NULL, 'Fahri', '321', 'Mahasiswa', 'Aktif'),
-(11, 6, NULL, 'ridzal', '123', 'Mahasiswa', 'Tidak Aktif'),
-(12, 10, NULL, 'adit', '123', 'Mahasiswa', 'Aktif'),
-(13, 8, NULL, 'daffa', '123', 'Mahasiswa', 'Aktif'),
-(14, 7, NULL, 'mazt', '123', 'Mahasiswa', 'Aktif'),
-(15, 3, NULL, 'nabilah', '123', 'Mahasiswa', 'Aktif'),
-(16, 9, NULL, 'rijal', '123', 'Mahasiswa', 'Aktif'),
-(17, 12, NULL, 'irsyad', '123', 'Mahasiswa', 'Aktif'),
-(18, 11, NULL, 'jo', '123', 'Mahasiswa', 'Aktif'),
-(19, 13, NULL, 'haikal', '123', 'Mahasiswa', 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `periode_akademik`
---
-
-CREATE TABLE `periode_akademik` (
-  `id_periode_akademik` int NOT NULL,
-  `tahun_akademik` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
-  `semester` enum('Ganjil','Genap') COLLATE utf8mb4_general_ci NOT NULL,
-  `tanggal_mulai` datetime NOT NULL,
-  `tanggal_selesai` datetime NOT NULL,
-  `status_periode` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `periode_akademik`
---
-
-INSERT INTO `periode_akademik` (`id_periode_akademik`, `tahun_akademik`, `semester`, `tanggal_mulai`, `tanggal_selesai`, `status_periode`) VALUES
-(1, '2025/2026', 'Genap', '2026-02-01 00:00:00', '2026-07-31 23:59:59', 'Aktif');
-
--- --------------------------------------------------------
-
---
-
--- Indexes for dumped tables
---
-
---
--- Indexes for table `bursa_jobdesc`
---
-ALTER TABLE `bursa_jobdesc`
-  ADD PRIMARY KEY (`id_bursa_jobdesc`);
-
---
--- Indexes for table `detail_fasilitas_pada_kelas`
---
-ALTER TABLE `detail_fasilitas_pada_kelas`
-  ADD PRIMARY KEY (`id_detail_fasilitas_pada_kelas`),
-  ADD KEY `fk_detail_fasilitas_kelas` (`id_kelas`),
-  ADD KEY `fk_detail_fasilitas_fasilitas` (`id_fasilitas`);
-
---
--- Indexes for table `detail_kelas_pada_mata_kuliah`
---
-ALTER TABLE `detail_kelas_pada_mata_kuliah`
-  ADD PRIMARY KEY (`id_detail_kelas_pada_mata_kuliah`),
-  ADD UNIQUE KEY `uq_kelas_mata_kuliah` (`id_kelas`,`id_mata_kuliah`),
-  ADD KEY `fk_detail_kelas_mk_mk` (`id_mata_kuliah`),
-  ADD KEY `fk_detail_kelas_mk_kelas` (`id_kelas`);
-
---
--- Indexes for table `detail_pengajar_pada_mata_kuliah`
---
-ALTER TABLE `detail_pengajar_pada_mata_kuliah`
-  ADD PRIMARY KEY (`id_detail_pengajar_pada_mata_kuliah`),
-  ADD UNIQUE KEY `uq_detail_pengajar_unik` (`id_detail_kelas_pada_mata_kuliah`,`id_pengajar`),
-  ADD UNIQUE KEY `uq_detail_kedudukan_unik` (`id_detail_kelas_pada_mata_kuliah`,`kedudukan_pengajar`),
-  ADD KEY `fk_detail_pengajar_pengajar` (`id_pengajar`);
-
---
--- Indexes for table `detail_pengguna_pada_bursa_jobdesc`
---
-ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
-  ADD PRIMARY KEY (`id_detail_pengguna_pada_bursa_jobdesc`),
-  ADD KEY `fk_detail_pengguna_bursa` (`id_bursa_jobdesc`),
-  ADD KEY `fk_detail_bursa_pengguna` (`id_pengguna`);
-
---
--- Indexes for table `detail_pengguna_pada_pemberian_jam_minus`
---
-ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
-  ADD PRIMARY KEY (`id_detail_pengguna_pada_pemberian_jam_minus`),
-  ADD UNIQUE KEY `uq_pjm_satu_peran` (`id_pemberian_jam_minus`,`peran_pengguna`),
-  ADD KEY `fk_detail_pengguna_jam_minus` (`id_pemberian_jam_minus`),
-  ADD KEY `fk_detail_jam_minus_pengguna` (`id_pengguna`);
-
---
--- Indexes for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
-  ADD PRIMARY KEY (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`),
-  ADD KEY `fk_detail_pengguna_pengaduan` (`id_pengaduan_kerusakan_fasilitas`),
-  ADD KEY `fk_detail_pengaduan_pengguna` (`id_pengguna`);
-
---
--- Indexes for table `detail_pengguna_pada_pengajuan_jam_plus`
---
-ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
-  ADD PRIMARY KEY (`id_detail_pengguna_pada_pengajuan_jam_plus`),
-  ADD KEY `fk_detail_pengguna_pengajuan` (`id_pengajuan_jam_plus`),
-  ADD KEY `fk_detail_pengajuan_pengguna` (`id_pengguna`);
-
---
--- Indexes for table `fasilitas`
---
-ALTER TABLE `fasilitas`
-  ADD PRIMARY KEY (`id_fasilitas`);
-
---
--- Indexes for table `kegiatan`
---
-ALTER TABLE `kegiatan`
-  ADD PRIMARY KEY (`id_kegiatan`);
-
---
--- Indexes for table `kelas`
---
-ALTER TABLE `kelas`
-  ADD PRIMARY KEY (`id_kelas`);
-
---
--- Indexes for table `mahasiswa`
---
-ALTER TABLE `mahasiswa`
-  ADD PRIMARY KEY (`id_mahasiswa`),
-  ADD UNIQUE KEY `nim` (`nim`),
-  ADD KEY `fk_mahasiswa_kelas` (`id_kelas`),
-  ADD KEY `fk_mahasiswa_periode` (`id_periode_akademik`);
-
---
--- Indexes for table `mata_kuliah`
---
-ALTER TABLE `mata_kuliah`
-  ADD PRIMARY KEY (`id_matakuliah`),
-  ADD UNIQUE KEY `uq_mata_kuliah_id` (`id_matakuliah`),
-  ADD UNIQUE KEY `uq_kode_mata_kuliah` (`kode_mata_kuliah`);
-
---
--- Indexes for table `pemberian_jam_minus`
---
-ALTER TABLE `pemberian_jam_minus`
-  ADD PRIMARY KEY (`id_pemberian_jam_minus`),
-  ADD KEY `idx_pjm_kategori` (`kategori_pelanggaran`),
-  ADD KEY `idx_pjm_detail_kelas_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`),
-  ADD KEY `idx_pjm_fasilitas` (`id_fasilitas`),
-  ADD KEY `idx_pjm_tanggal` (`tanggal_pemberian`);
-
---
--- Indexes for table `pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `pengaduan_kerusakan_fasilitas`
-  ADD PRIMARY KEY (`id_pengaduan_kerusakan_fasilitas`),
-  ADD KEY `fk_pengaduan_fasilitas` (`id_fasilitas`);
-
---
--- Indexes for table `pengajar`
---
-ALTER TABLE `pengajar`
-  ADD PRIMARY KEY (`id_pengajar`),
-  ADD UNIQUE KEY `nip` (`nip`);
-
---
--- Indexes for table `pengajuan_jam_plus`
---
-ALTER TABLE `pengajuan_jam_plus`
-  ADD PRIMARY KEY (`id_pengajuan_jam_plus`),
-  ADD KEY `fk_pengajuan_jam_plus_kegiatan` (`id_kegiatan`);
-
---
--- Indexes for table `pengguna`
---
-ALTER TABLE `pengguna`
-  ADD PRIMARY KEY (`id_pengguna`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD KEY `fk_pengguna_mahasiswa` (`id_mahasiswa`),
-  ADD KEY `fk_pengguna_pengajar` (`id_pengajar`);
-
---
--- Indexes for table `periode_akademik`
---
-ALTER TABLE `periode_akademik`
-  ADD PRIMARY KEY (`id_periode_akademik`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `bursa_jobdesc`
---
-ALTER TABLE `bursa_jobdesc`
-  MODIFY `id_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `detail_fasilitas_pada_kelas`
---
-ALTER TABLE `detail_fasilitas_pada_kelas`
-  MODIFY `id_detail_fasilitas_pada_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `detail_kelas_pada_mata_kuliah`
---
-ALTER TABLE `detail_kelas_pada_mata_kuliah`
-  MODIFY `id_detail_kelas_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-
---
--- AUTO_INCREMENT for table `detail_pengajar_pada_mata_kuliah`
---
-ALTER TABLE `detail_pengajar_pada_mata_kuliah`
-  MODIFY `id_detail_pengajar_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
-
---
--- AUTO_INCREMENT for table `detail_pengguna_pada_bursa_jobdesc`
---
-ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
-  MODIFY `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
-
---
--- AUTO_INCREMENT for table `detail_pengguna_pada_pemberian_jam_minus`
---
-ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
-  MODIFY `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
-  MODIFY `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
-
---
--- AUTO_INCREMENT for table `detail_pengguna_pada_pengajuan_jam_plus`
---
-ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
-  MODIFY `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
-
---
--- AUTO_INCREMENT for table `fasilitas`
---
-ALTER TABLE `fasilitas`
-  MODIFY `id_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT for table `kegiatan`
---
-ALTER TABLE `kegiatan`
-  MODIFY `id_kegiatan` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT for table `kelas`
---
-ALTER TABLE `kelas`
-  MODIFY `id_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `mahasiswa`
---
-ALTER TABLE `mahasiswa`
-  MODIFY `id_mahasiswa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
-
---
--- AUTO_INCREMENT for table `mata_kuliah`
---
-ALTER TABLE `mata_kuliah`
-  MODIFY `id_matakuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `pemberian_jam_minus`
---
-ALTER TABLE `pemberian_jam_minus`
-  MODIFY `id_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT for table `pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `pengaduan_kerusakan_fasilitas`
-  MODIFY `id_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
-
---
--- AUTO_INCREMENT for table `pengajar`
---
-ALTER TABLE `pengajar`
-  MODIFY `id_pengajar` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT for table `pengajuan_jam_plus`
---
-ALTER TABLE `pengajuan_jam_plus`
-  MODIFY `id_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
-
---
--- AUTO_INCREMENT for table `pengguna`
---
-ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- AUTO_INCREMENT for table `periode_akademik`
---
-ALTER TABLE `periode_akademik`
-  MODIFY `id_periode_akademik` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `detail_fasilitas_pada_kelas`
---
-ALTER TABLE `detail_fasilitas_pada_kelas`
-  ADD CONSTRAINT `fk_detail_fasilitas_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_fasilitas_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_kelas_pada_mata_kuliah`
---
-ALTER TABLE `detail_kelas_pada_mata_kuliah`
-  ADD CONSTRAINT `fk_detail_kelas_mk_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_kelas_mk_mk` FOREIGN KEY (`id_mata_kuliah`) REFERENCES `mata_kuliah` (`id_matakuliah`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_pengajar_pada_mata_kuliah`
---
-ALTER TABLE `detail_pengajar_pada_mata_kuliah`
-  ADD CONSTRAINT `fk_detail_pengajar_mk` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_pengajar_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_pengguna_pada_bursa_jobdesc`
---
-ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
-  ADD CONSTRAINT `fk_detail_bursa_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_pengguna_bursa` FOREIGN KEY (`id_bursa_jobdesc`) REFERENCES `bursa_jobdesc` (`id_bursa_jobdesc`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_pengguna_pada_pemberian_jam_minus`
---
-ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
-  ADD CONSTRAINT `fk_detail_jam_minus_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_pengguna_jam_minus` FOREIGN KEY (`id_pemberian_jam_minus`) REFERENCES `pemberian_jam_minus` (`id_pemberian_jam_minus`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
-  ADD CONSTRAINT `fk_detail_pengaduan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_pengguna_pengaduan` FOREIGN KEY (`id_pengaduan_kerusakan_fasilitas`) REFERENCES `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `detail_pengguna_pada_pengajuan_jam_plus`
---
-ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
-  ADD CONSTRAINT `fk_detail_pengajuan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_detail_pengguna_pengajuan` FOREIGN KEY (`id_pengajuan_jam_plus`) REFERENCES `pengajuan_jam_plus` (`id_pengajuan_jam_plus`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Constraints for table `mahasiswa`
---
-ALTER TABLE `mahasiswa`
-  ADD CONSTRAINT `fk_mahasiswa_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_mahasiswa_periode` FOREIGN KEY (`id_periode_akademik`) REFERENCES `periode_akademik` (`id_periode_akademik`) ON UPDATE CASCADE;
-
---
--- Constraints for table `pemberian_jam_minus`
---
-ALTER TABLE `pemberian_jam_minus`
-  ADD CONSTRAINT `fk_pjm_detail_kelas_mata_kuliah` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_pjm_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
---
--- Constraints for table `pengaduan_kerusakan_fasilitas`
---
-ALTER TABLE `pengaduan_kerusakan_fasilitas`
-  ADD CONSTRAINT `fk_pengaduan_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON UPDATE CASCADE;
-
---
--- Constraints for table `pengajuan_jam_plus`
---
-ALTER TABLE `pengajuan_jam_plus`
-  ADD CONSTRAINT `fk_pengajuan_jam_plus_kegiatan` FOREIGN KEY (`id_kegiatan`) REFERENCES `kegiatan` (`id_kegiatan`) ON UPDATE CASCADE;
-
---
--- Constraints for table `pengguna`
---
-ALTER TABLE `pengguna`
-  ADD CONSTRAINT `fk_pengguna_mahasiswa` FOREIGN KEY (`id_mahasiswa`) REFERENCES `mahasiswa` (`id_mahasiswa`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_pengguna_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE SET NULL ON UPDATE CASCADE;
-
-SET FOREIGN_KEY_CHECKS = 1;
-
--- --------------------------------------------------------
-
---
--- Stored functions and procedures
---
 DELIMITER $$
-
-
--- Functions
-CREATE FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT READS SQL DATA BEGIN
-    DECLARE v_id_kelas INT;
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND
-    BEGIN
-        SET v_id_kelas = NULL;
-    END;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        RETURN NULL;
-    END;
-
-    SELECT m.id_kelas
-    INTO v_id_kelas
-    FROM pengguna AS p
-    JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
-    WHERE p.id_pengguna = p_id_pengguna
-    LIMIT 1;
-
-    RETURN v_id_kelas;
-END$$
-
-CREATE FUNCTION `ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) DETERMINISTIC READS SQL DATA BEGIN
-    DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-
-    SELECT
-        COALESCE(saldo_jam_plus_kompensasi, 0),
-        COALESCE(saldo_jam_minus_kompensasi, 0)
-    INTO
-        v_saldo_jam_plus_kompensasi,
-        v_saldo_jam_minus_kompensasi
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa
-    LIMIT 1;
-
-    SET v_sisa_jam_plus_kompensasi =
-        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi;
-
-    IF v_sisa_jam_plus_kompensasi < 0 THEN
-        SET v_sisa_jam_plus_kompensasi = 0;
-    END IF;
-
-    RETURN COALESCE(v_sisa_jam_plus_kompensasi, 0);
-END$$
-
-CREATE FUNCTION `ufn_hitung_total_jam_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) DETERMINISTIC READS SQL DATA BEGIN
-    DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_total_jam_kompensasi DECIMAL(10,2) DEFAULT 0;
-
-    SELECT
-        COALESCE(saldo_jam_plus_kompensasi, 0),
-        COALESCE(saldo_jam_minus_kompensasi, 0)
-    INTO
-        v_saldo_jam_plus_kompensasi,
-        v_saldo_jam_minus_kompensasi
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa
-    LIMIT 1;
-
-    SET v_total_jam_kompensasi =
-        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi;
-
-    IF v_total_jam_kompensasi > 0 THEN
-        SET v_total_jam_kompensasi = 0;
-    END IF;
-
-    RETURN COALESCE(v_total_jam_kompensasi, 0);
-END$$
-
-CREATE FUNCTION `ufn_hitung_total_jam_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) DETERMINISTIC READS SQL DATA BEGIN
-    DECLARE v_total_jam_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_total_jam_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_total_jam_mahasiswa DECIMAL(10,2) DEFAULT 0;
-
-    SET v_total_jam_kompensasi =
-        ufn_hitung_total_jam_kompensasi_mahasiswa(p_id_mahasiswa);
-
-    SET v_total_jam_murni =
-        ufn_hitung_total_jam_murni_mahasiswa(p_id_mahasiswa);
-
-    IF v_total_jam_kompensasi < 0 THEN
-
-        IF v_total_jam_murni < 0 THEN
-            SET v_total_jam_mahasiswa =
-                v_total_jam_kompensasi + v_total_jam_murni;
-        ELSE
-            SET v_total_jam_mahasiswa =
-                v_total_jam_kompensasi;
-        END IF;
-
-    ELSE
-
-        SET v_total_jam_mahasiswa =
-            v_total_jam_murni;
-
-    END IF;
-
-    RETURN COALESCE(v_total_jam_mahasiswa, 0);
-END$$
-
-CREATE FUNCTION `ufn_hitung_total_jam_murni_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,2) DETERMINISTIC READS SQL DATA BEGIN
-    DECLARE v_saldo_jam_plus_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_saldo_jam_minus_murni DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,2) DEFAULT 0;
-    DECLARE v_total_jam_murni DECIMAL(10,2) DEFAULT 0;
-
-    SELECT
-        COALESCE(saldo_jam_plus_murni, 0),
-        COALESCE(saldo_jam_minus_murni, 0)
-    INTO
-        v_saldo_jam_plus_murni,
-        v_saldo_jam_minus_murni
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa
-    LIMIT 1;
-
-    SET v_sisa_jam_plus_kompensasi =
-        ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa(p_id_mahasiswa);
-
-    SET v_total_jam_murni =
-        v_saldo_jam_plus_murni
-        +
-        v_sisa_jam_plus_kompensasi
-        -
-        v_saldo_jam_minus_murni;
-
-    RETURN COALESCE(v_total_jam_murni, 0);
-END$$
-
-CREATE FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) READS SQL DATA BEGIN
-    DECLARE v_minus_murni DECIMAL(10,1) DEFAULT 0;
-    DECLARE v_minus_kompensasi DECIMAL(10,1) DEFAULT 0;
-    DECLARE v_plus_murni DECIMAL(10,1) DEFAULT 0;
-    DECLARE v_plus_kompensasi DECIMAL(10,1) DEFAULT 0;
-
-    DECLARE v_sisa_minus_murni DECIMAL(10,1) DEFAULT 0;
-    DECLARE v_sisa_minus_kompensasi DECIMAL(10,1) DEFAULT 0;
-    DECLARE v_sisa_plus_kompensasi DECIMAL(10,1) DEFAULT 0;
-
-    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
-
-    DECLARE CONTINUE HANDLER FOR NOT FOUND
-    SET v_data_ditemukan = 0;
-
-    SELECT
-        COALESCE(saldo_jam_minus_murni, 0),
-        COALESCE(saldo_jam_minus_kompensasi, 0),
-        COALESCE(saldo_jam_plus_murni, 0),
-        COALESCE(saldo_jam_plus_kompensasi, 0)
-    INTO
-        v_minus_murni,
-        v_minus_kompensasi,
-        v_plus_murni,
-        v_plus_kompensasi
-    FROM mahasiswa
-    WHERE id_mahasiswa = p_id_mahasiswa
-    LIMIT 1;
-
-    IF v_data_ditemukan = 0 THEN
-        RETURN 0;
-    END IF;
-
-    SET v_sisa_minus_kompensasi = GREATEST(0, v_minus_kompensasi - v_plus_kompensasi);
-
-    SET v_sisa_plus_kompensasi = GREATEST(0, v_plus_kompensasi - v_minus_kompensasi);
-
-    SET v_sisa_minus_murni = GREATEST(0, v_minus_murni - v_plus_murni);
-
-    SET v_sisa_minus_murni = GREATEST(0, v_sisa_minus_murni - v_sisa_plus_kompensasi);
-
-    RETURN v_sisa_minus_murni + v_sisa_minus_kompensasi;
-END$$
-
-
+--
 -- Procedures
+--
 CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
     DECLARE v_role VARCHAR(30);
     DECLARE v_id_mahasiswa INT;
-    DECLARE v_penerima_jobdesc VARCHAR(30);
+    DECLARE v_penerima_jobdesc VARCHAR(50);
     DECLARE v_jumlah_diperlukan INT;
     DECLARE v_jumlah_mengambil INT;
     DECLARE v_status_jobdesc VARCHAR(20);
@@ -1150,10 +60,10 @@ CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_
         SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
     END IF;
 
-    SELECT 
+    SELECT
         role,
         id_mahasiswa
-    INTO 
+    INTO
         v_role,
         v_id_mahasiswa
     FROM pengguna
@@ -1214,7 +124,7 @@ CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_
         SET MESSAGE_TEXT = 'Kuota jobdesc sudah penuh';
     END IF;
 
-    IF v_penerima_jobdesc = 'Yang memiliki jam minus' THEN
+    IF v_penerima_jobdesc = 'Mahasiswa dengan Jam Minus' THEN
         SET v_total_jam_minus = ufn_total_jam_minus_mahasiswa(v_id_mahasiswa);
 
         IF v_total_jam_minus <= 0 THEN
@@ -1238,15 +148,16 @@ CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_
     SET
         jumlah_mahasiswa_mengambil = jumlah_mahasiswa_mengambil + 1,
         status_jobdesc = CASE
-            WHEN jumlah_mahasiswa_mengambil >= jumlah_mahasiswa_diperlukan THEN 'Dikerjakan'
-            ELSE 'Dibuka'
+            WHEN jumlah_mahasiswa_mengambil + 1 >= jumlah_mahasiswa_diperlukan
+                THEN 'Dikerjakan'
+            ELSE status_jobdesc
         END
     WHERE id_bursa_jobdesc = p_id_bursa_jobdesc;
 
     COMMIT;
 
-    SELECT 
-        'Pendaftaran bursa jobdesc berhasil' AS Pesan,
+    SELECT
+        'Berhasil mendaftar bursa jobdesc' AS Pesan,
         p_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
@@ -1268,7 +179,7 @@ CREATE PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_
         p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
 END$$
 
-CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(30), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
+CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(50), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
     DECLARE v_id_bursa_jobdesc INT;
     DECLARE v_role VARCHAR(30);
 
@@ -1297,9 +208,22 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
         SET MESSAGE_TEXT = 'Mahasiswa tidak dapat membuat bursa jobdesc';
     END IF;
 
-    IF p_penerima_jobdesc NOT IN ('Semua mahasiswa', 'Yang memiliki jam minus') THEN
+    IF p_penerima_jobdesc NOT IN (
+        'Semua Mahasiswa',
+        'Mahasiswa dengan Jam Minus'
+    ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Pilihan penerima jobdesc tidak valid';
+    END IF;
+
+    IF p_jam_plus <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jam plus harus lebih dari 0';
+    END IF;
+
+    IF p_jumlah_mahasiswa_diperlukan <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Jumlah mahasiswa diperlukan harus lebih dari 0';
     END IF;
 
     START TRANSACTION;
@@ -1338,9 +262,9 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
 
     COMMIT;
 
-    SELECT 
-        'Data bursa jobdesc berhasil ditambahkan' AS Pesan,
-        v_id_bursa_jobdesc AS id_bursa_jobdesc_baru;
+    SELECT
+        'Bursa jobdesc berhasil ditambahkan' AS Pesan,
+        v_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
 CREATE PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
@@ -2670,6 +1594,67 @@ CREATE PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
     FROM kelas
     WHERE status_kelas = 'Aktif'
     ORDER BY tingkat ASC, nama_kelas ASC;
+END$$
+
+CREATE PROCEDURE `usp_select_laporan_bursa_jobdesc_by_role` (IN `p_role` VARCHAR(30))   BEGIN
+    IF p_role IS NULL OR p_role = '' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Role tidak boleh kosong';
+    END IF;
+
+    IF p_role = 'Mahasiswa' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Mahasiswa tidak memiliki akses laporan bursa jobdesc';
+    END IF;
+
+    IF p_role NOT IN (
+        'Pengajar',
+        'PIC Tata Tertib',
+        'PIC Aset Fasilitas',
+        'PIC Kemahasiswaan',
+        'Kepala Prodi'
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Role tidak valid untuk laporan bursa jobdesc';
+    END IF;
+
+    SET SESSION group_concat_max_len = 100000;
+
+    SELECT
+        id_bursa_jobdesc,
+        deskripsi_jobdesc,
+        nama_penerima_jobdesc AS penerima_jobdesc,
+        target_penerima_jobdesc,
+        jam_plus,
+        tanggal_pemberian_jobdesc,
+        kuota,
+        terisi,
+        kuota_terisi,
+        status_jobdesc,
+        nama_pemberi,
+        username_pemberi,
+        role_pemberi
+    FROM vw_laporan_bursa_jobdesc
+    WHERE role_pemberi = p_role
+    ORDER BY tanggal_pemberian_jobdesc DESC, id_bursa_jobdesc DESC;
+END$$
+
+CREATE PROCEDURE `usp_select_laporan_pengaduan_fasilitas` ()   BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RESIGNAL;
+    END;
+
+    SELECT
+        id_pengaduan_kerusakan_fasilitas,
+        nim,
+        nama_mahasiswa,
+        nama_kelas,
+        nama_fasilitas,
+        deskripsi_kerusakan,
+        tanggal_pengaduan
+    FROM vw_laporan_pengaduan_fasilitas
+    ORDER BY nim ASC, tanggal_pengaduan DESC;
 END$$
 
 CREATE PROCEDURE `usp_select_mahasiswa` ()   BEGIN
@@ -4368,13 +3353,1211 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
         p_status AS status_pengajuan;
 END$$
 
+--
+-- Functions
+--
+CREATE FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT READS SQL DATA BEGIN
+    DECLARE v_id_kelas INT;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+    BEGIN
+        SET v_id_kelas = NULL;
+    END;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        RETURN NULL;
+    END;
+
+    SELECT m.id_kelas
+    INTO v_id_kelas
+    FROM pengguna AS p
+    JOIN mahasiswa AS m ON p.id_mahasiswa = m.id_mahasiswa
+    WHERE p.id_pengguna = p_id_pengguna
+    LIMIT 1;
+
+    RETURN v_id_kelas;
+END$$
+
+CREATE FUNCTION `ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+
+    SELECT
+        COALESCE(saldo_jam_plus_kompensasi, 0.0),
+        COALESCE(saldo_jam_minus_kompensasi, 0.0)
+    INTO
+        v_saldo_jam_plus_kompensasi,
+        v_saldo_jam_minus_kompensasi
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa
+    LIMIT 1;
+
+    SET v_sisa_jam_plus_kompensasi =
+        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi;
+
+    IF v_sisa_jam_plus_kompensasi < 0 THEN
+        SET v_sisa_jam_plus_kompensasi = 0.0;
+    END IF;
+
+    RETURN ROUND(COALESCE(v_sisa_jam_plus_kompensasi, 0.0), 1);
+END$$
+
+CREATE FUNCTION `ufn_hitung_total_jam_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_total_jam_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+
+    SELECT
+        COALESCE(saldo_jam_plus_kompensasi, 0.0),
+        COALESCE(saldo_jam_minus_kompensasi, 0.0)
+    INTO
+        v_saldo_jam_plus_kompensasi,
+        v_saldo_jam_minus_kompensasi
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa
+    LIMIT 1;
+
+    SET v_total_jam_kompensasi =
+        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi;
+
+    IF v_total_jam_kompensasi > 0 THEN
+        SET v_total_jam_kompensasi = 0.0;
+    END IF;
+
+    RETURN ROUND(COALESCE(v_total_jam_kompensasi, 0.0), 1);
+END$$
+
+CREATE FUNCTION `ufn_hitung_total_jam_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE v_total_jam_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_total_jam_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_total_jam_mahasiswa DECIMAL(10,1) DEFAULT 0.0;
+
+    SET v_total_jam_kompensasi =
+        ufn_hitung_total_jam_kompensasi_mahasiswa(p_id_mahasiswa);
+
+    SET v_total_jam_murni =
+        ufn_hitung_total_jam_murni_mahasiswa(p_id_mahasiswa);
+
+    IF v_total_jam_kompensasi < 0 THEN
+        IF v_total_jam_murni < 0 THEN
+            SET v_total_jam_mahasiswa =
+                v_total_jam_kompensasi + v_total_jam_murni;
+        ELSE
+            SET v_total_jam_mahasiswa =
+                v_total_jam_kompensasi;
+        END IF;
+    ELSE
+        SET v_total_jam_mahasiswa =
+            v_total_jam_murni;
+    END IF;
+
+    RETURN ROUND(COALESCE(v_total_jam_mahasiswa, 0.0), 1);
+END$$
+
+CREATE FUNCTION `ufn_hitung_total_jam_murni_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE v_saldo_jam_plus_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_saldo_jam_minus_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_total_jam_murni DECIMAL(10,1) DEFAULT 0.0;
+
+    SELECT
+        COALESCE(saldo_jam_plus_murni, 0.0),
+        COALESCE(saldo_jam_minus_murni, 0.0)
+    INTO
+        v_saldo_jam_plus_murni,
+        v_saldo_jam_minus_murni
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa
+    LIMIT 1;
+
+    SET v_sisa_jam_plus_kompensasi =
+        ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa(p_id_mahasiswa);
+
+    SET v_total_jam_murni =
+        v_saldo_jam_plus_murni
+        + v_sisa_jam_plus_kompensasi
+        - v_saldo_jam_minus_murni;
+
+    RETURN ROUND(COALESCE(v_total_jam_murni, 0.0), 1);
+END$$
+
+CREATE FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) READS SQL DATA BEGIN
+    DECLARE v_minus_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_plus_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+
+    DECLARE v_sisa_minus_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_sisa_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_sisa_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+
+    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+        SET v_data_ditemukan = 0;
+
+    SELECT
+        COALESCE(saldo_jam_minus_murni, 0.0),
+        COALESCE(saldo_jam_minus_kompensasi, 0.0),
+        COALESCE(saldo_jam_plus_murni, 0.0),
+        COALESCE(saldo_jam_plus_kompensasi, 0.0)
+    INTO
+        v_minus_murni,
+        v_minus_kompensasi,
+        v_plus_murni,
+        v_plus_kompensasi
+    FROM mahasiswa
+    WHERE id_mahasiswa = p_id_mahasiswa
+    LIMIT 1;
+
+    IF v_data_ditemukan = 0 THEN
+        RETURN 0.0;
+    END IF;
+
+    SET v_sisa_minus_kompensasi =
+        GREATEST(0.0, v_minus_kompensasi - v_plus_kompensasi);
+
+    SET v_sisa_plus_kompensasi =
+        GREATEST(0.0, v_plus_kompensasi - v_minus_kompensasi);
+
+    SET v_sisa_minus_murni =
+        GREATEST(0.0, v_minus_murni - v_plus_murni);
+
+    SET v_sisa_minus_murni =
+        GREATEST(0.0, v_sisa_minus_murni - v_sisa_plus_kompensasi);
+
+    RETURN ROUND(v_sisa_minus_murni + v_sisa_minus_kompensasi, 1);
+END$$
+
 DELIMITER ;
 
 -- --------------------------------------------------------
 
 --
--- View `vw_laporan_total_jam_mahasiswa`
+-- Table structure for table `bursa_jobdesc`
 --
-DROP VIEW IF EXISTS `vw_laporan_total_jam_mahasiswa`;
-CREATE VIEW `vw_laporan_total_jam_mahasiswa` AS
-SELECT `m`.`id_mahasiswa` AS `id_mahasiswa`, `m`.`nim` AS `nim`, `m`.`nama_mahasiswa` AS `nama_mahasiswa`, `k`.`id_kelas` AS `id_kelas`, `k`.`nama_kelas` AS `nama_kelas`, cast(`ufn_hitung_total_jam_kompensasi_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,2)) AS `total_jam_kompensasi`, cast(`ufn_hitung_total_jam_murni_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,2)) AS `total_jam_murni`, cast(`ufn_hitung_total_jam_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,2)) AS `total_jam_mahasiswa` FROM (`mahasiswa` `m` join `kelas` `k` on((`k`.`id_kelas` = `m`.`id_kelas`))) WHERE (`m`.`status_mahasiswa` = 'Aktif');
+
+CREATE TABLE `bursa_jobdesc` (
+  `id_bursa_jobdesc` int NOT NULL,
+  `deskripsi_jobdesc` text COLLATE utf8mb4_general_ci NOT NULL,
+  `penerima_jobdesc` enum('Semua Mahasiswa','Mahasiswa dengan Jam Minus') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Semua Mahasiswa',
+  `jam_plus` decimal(6,1) NOT NULL,
+  `tanggal_pemberian_jobdesc` datetime NOT NULL,
+  `jumlah_mahasiswa_diperlukan` int NOT NULL,
+  `jumlah_mahasiswa_mengambil` int NOT NULL DEFAULT '0',
+  `bukti_selesai_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status_jobdesc` enum('Dibuka','Dikerjakan','Selesai') COLLATE utf8mb4_general_ci DEFAULT 'Dibuka'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bursa_jobdesc`
+--
+
+INSERT INTO `bursa_jobdesc` (`id_bursa_jobdesc`, `deskripsi_jobdesc`, `penerima_jobdesc`, `jam_plus`, `tanggal_pemberian_jobdesc`, `jumlah_mahasiswa_diperlukan`, `jumlah_mahasiswa_mengambil`, `bukti_selesai_url`, `status_jobdesc`) VALUES
+(1, 'wertg34', 'Semua Mahasiswa', '20.0', '2026-06-18 18:46:00', 2, 2, 'https://halo', 'Selesai'),
+(2, 'Membersihkan tendik', 'Semua Mahasiswa', '20.0', '2026-06-19 22:20:00', 10, 10, 'https://halo', 'Selesai'),
+(3, 'Perbaiki laptop', 'Semua Mahasiswa', '10.0', '2026-06-20 00:00:00', 2, 2, 'https://halo', 'Selesai'),
+(4, 'Cari ikan', 'Mahasiswa dengan Jam Minus', '90.0', '2026-06-27 04:40:00', 2, 2, 'a', 'Selesai'),
+(5, 'hdsufodsf', 'Semua Mahasiswa', '20.0', '2026-06-19 08:36:00', 2, 2, 'selesai cik', 'Selesai'),
+(6, 'Rapihkan Tendik', 'Semua Mahasiswa', '1.0', '2026-07-09 18:35:00', 3, 3, 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Selesai'),
+(7, 'a', 'Semua Mahasiswa', '1.0', '2026-07-12 01:19:00', 1, 1, NULL, 'Dikerjakan');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_fasilitas_pada_kelas`
+--
+
+CREATE TABLE `detail_fasilitas_pada_kelas` (
+  `id_detail_fasilitas_pada_kelas` int NOT NULL,
+  `id_kelas` int NOT NULL,
+  `id_fasilitas` int NOT NULL,
+  `jumlah_fasilitas` int DEFAULT '1',
+  `status_detail_fasilitas_pada_kelas` enum('Aktif','Rusak','Tidak Aktif') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_fasilitas_pada_kelas`
+--
+
+INSERT INTO `detail_fasilitas_pada_kelas` (`id_detail_fasilitas_pada_kelas`, `id_kelas`, `id_fasilitas`, `jumlah_fasilitas`, `status_detail_fasilitas_pada_kelas`) VALUES
+(1, 1, 6, 80, 'Aktif'),
+(2, 1, 7, 1, 'Aktif'),
+(3, 2, 8, 3, 'Aktif'),
+(4, 5, 5, 20, 'Aktif'),
+(5, 1, 8, 20, 'Aktif'),
+(6, 2, 5, 20, 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_kelas_pada_mata_kuliah`
+--
+
+CREATE TABLE `detail_kelas_pada_mata_kuliah` (
+  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
+  `id_mata_kuliah` int NOT NULL,
+  `id_kelas` int NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_kelas_pada_mata_kuliah`
+--
+
+INSERT INTO `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`, `id_mata_kuliah`, `id_kelas`) VALUES
+(2, 2, 1),
+(4, 2, 2),
+(3, 3, 2),
+(5, 1, 5),
+(7, 4, 5),
+(6, 5, 5);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_pengajar_pada_mata_kuliah`
+--
+
+CREATE TABLE `detail_pengajar_pada_mata_kuliah` (
+  `id_detail_pengajar_pada_mata_kuliah` int NOT NULL,
+  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
+  `id_pengajar` int NOT NULL,
+  `kedudukan_pengajar` enum('Pengajar1','Pengajar2') COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_pengajar_pada_mata_kuliah`
+--
+
+INSERT INTO `detail_pengajar_pada_mata_kuliah` (`id_detail_pengajar_pada_mata_kuliah`, `id_detail_kelas_pada_mata_kuliah`, `id_pengajar`, `kedudukan_pengajar`) VALUES
+(11, 2, 3, 'Pengajar1'),
+(12, 2, 5, 'Pengajar2'),
+(13, 3, 5, 'Pengajar1'),
+(14, 3, 1, 'Pengajar2'),
+(15, 4, 1, 'Pengajar1'),
+(16, 4, 3, 'Pengajar2'),
+(17, 5, 3, 'Pengajar1'),
+(18, 5, 2, 'Pengajar2'),
+(19, 6, 2, 'Pengajar1'),
+(20, 6, 4, 'Pengajar2'),
+(21, 7, 4, 'Pengajar1'),
+(22, 7, 5, 'Pengajar2');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_pengguna_pada_bursa_jobdesc`
+--
+
+CREATE TABLE `detail_pengguna_pada_bursa_jobdesc` (
+  `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL,
+  `id_bursa_jobdesc` int NOT NULL,
+  `id_pengguna` int NOT NULL,
+  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_pengguna_pada_bursa_jobdesc`
+--
+
+INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa_jobdesc`, `id_bursa_jobdesc`, `id_pengguna`, `peran_pengguna`) VALUES
+(1, 1, 2, 'Pemberi'),
+(17, 4, 2, 'Pemberi'),
+(22, 5, 2, 'Pemberi'),
+(29, 7, 3, 'Pemberi'),
+(3, 2, 6, 'Pemberi'),
+(16, 3, 6, 'Pemberi'),
+(25, 6, 6, 'Pemberi'),
+(15, 1, 7, 'Penerima'),
+(4, 2, 7, 'Penerima'),
+(18, 4, 7, 'Penerima'),
+(28, 6, 7, 'Penerima'),
+(14, 1, 9, 'Penerima'),
+(5, 2, 9, 'Penerima'),
+(23, 5, 9, 'Penerima'),
+(26, 6, 9, 'Penerima'),
+(30, 7, 9, 'Penerima'),
+(6, 2, 10, 'Penerima'),
+(24, 5, 10, 'Penerima'),
+(7, 2, 12, 'Penerima'),
+(8, 2, 13, 'Penerima'),
+(9, 2, 14, 'Penerima'),
+(10, 2, 15, 'Penerima'),
+(19, 4, 15, 'Penerima'),
+(11, 2, 16, 'Penerima'),
+(21, 3, 16, 'Penerima'),
+(12, 2, 17, 'Penerima'),
+(13, 2, 18, 'Penerima'),
+(20, 3, 19, 'Penerima'),
+(27, 6, 19, 'Penerima');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_pengguna_pada_pemberian_jam_minus`
+--
+
+CREATE TABLE `detail_pengguna_pada_pemberian_jam_minus` (
+  `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL,
+  `id_pemberian_jam_minus` int NOT NULL,
+  `id_pengguna` int NOT NULL,
+  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_pengguna_pada_pemberian_jam_minus`
+--
+
+INSERT INTO `detail_pengguna_pada_pemberian_jam_minus` (`id_detail_pengguna_pada_pemberian_jam_minus`, `id_pemberian_jam_minus`, `id_pengguna`, `peran_pengguna`) VALUES
+(1, 1, 3, 'Pemberi'),
+(2, 1, 7, 'Penerima'),
+(3, 2, 3, 'Pemberi'),
+(4, 2, 9, 'Penerima'),
+(5, 3, 3, 'Pemberi'),
+(6, 3, 16, 'Penerima'),
+(7, 4, 3, 'Pemberi'),
+(8, 4, 14, 'Penerima');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+--
+
+CREATE TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (
+  `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL,
+  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
+  `id_pengguna` int NOT NULL,
+  `peran_pengguna` enum('Pelapor','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+--
+
+INSERT INTO `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`, `id_pengaduan_kerusakan_fasilitas`, `id_pengguna`, `peran_pengguna`) VALUES
+(1, 1, 1, 'Pelapor'),
+(2, 2, 1, 'Pelapor'),
+(4, 3, 7, 'Pelapor'),
+(5, 4, 7, 'Pelapor'),
+(8, 5, 7, 'Pelapor'),
+(10, 6, 9, 'Pelapor'),
+(14, 7, 7, 'Pelapor'),
+(13, 1, 4, 'Verifikator'),
+(3, 2, 4, 'Verifikator'),
+(6, 3, 4, 'Verifikator'),
+(7, 4, 4, 'Verifikator'),
+(9, 5, 4, 'Verifikator'),
+(11, 6, 4, 'Verifikator');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `detail_pengguna_pada_pengajuan_jam_plus`
+--
+
+CREATE TABLE `detail_pengguna_pada_pengajuan_jam_plus` (
+  `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL,
+  `id_pengajuan_jam_plus` int NOT NULL,
+  `id_pengguna` int NOT NULL,
+  `peran_pengguna` enum('Pengaju','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `detail_pengguna_pada_pengajuan_jam_plus`
+--
+
+INSERT INTO `detail_pengguna_pada_pengajuan_jam_plus` (`id_detail_pengguna_pada_pengajuan_jam_plus`, `id_pengajuan_jam_plus`, `id_pengguna`, `peran_pengguna`) VALUES
+(1, 1, 19, 'Pengaju'),
+(2, 1, 3, 'Verifikator'),
+(3, 2, 9, 'Pengaju'),
+(4, 3, 9, 'Pengaju'),
+(5, 2, 3, 'Verifikator'),
+(6, 3, 3, 'Verifikator'),
+(7, 4, 19, 'Pengaju'),
+(8, 5, 19, 'Pengaju'),
+(9, 6, 19, 'Pengaju'),
+(10, 7, 9, 'Pengaju'),
+(11, 8, 9, 'Pengaju'),
+(12, 8, 3, 'Verifikator'),
+(13, 9, 15, 'Pengaju'),
+(14, 10, 15, 'Pengaju'),
+(15, 10, 3, 'Verifikator');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `fasilitas`
+--
+
+CREATE TABLE `fasilitas` (
+  `id_fasilitas` int NOT NULL,
+  `nama_fasilitas` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `harga` decimal(15,2) DEFAULT '0.00',
+  `status_fasilitas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif',
+  `tanggal_pendataan` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `fasilitas`
+--
+
+INSERT INTO `fasilitas` (`id_fasilitas`, `nama_fasilitas`, `harga`, `status_fasilitas`, `tanggal_pendataan`) VALUES
+(1, 'Proyektor Kelas', '4500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
+(2, 'AC Kelas', '3500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
+(3, 'Komputer Lab', '8500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
+(4, 'Kursi Kelas', '350000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
+(5, 'Papan Tulis', '750000.00', 'Aktif', '2026-06-08 22:50:43'),
+(6, 'Bangku', '100000.00', 'Tidak Aktif', '2026-06-11 23:44:46'),
+(7, 'Kursi', '120000.00', 'Tidak Aktif', '2026-06-17 19:24:58'),
+(8, 'Kursi Kelas', '170000.00', 'Aktif', '2026-06-17 19:30:39');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `kegiatan`
+--
+
+CREATE TABLE `kegiatan` (
+  `id_kegiatan` int NOT NULL,
+  `nama_kegiatan` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `penyelenggara` enum('ASTRAtech','BEM','MPM','HIMMA','UKM') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_kegiatan` date DEFAULT NULL,
+  `status_kegiatan` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `kegiatan`
+--
+
+INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `penyelenggara`, `tanggal_kegiatan`, `status_kegiatan`) VALUES
+(1, 'ASTRA', 'ASTRAtech', NULL, 'Tidak Aktif'),
+(2, 'Donor Darah', 'BEM', '2026-07-15', 'Aktif'),
+(3, 'Novastech', 'ASTRAtech', '2026-07-23', 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `kelas`
+--
+
+CREATE TABLE `kelas` (
+  `id_kelas` int NOT NULL,
+  `nama_kelas` varchar(5) COLLATE utf8mb4_general_ci NOT NULL,
+  `tingkat` enum('1','2','3','4') COLLATE utf8mb4_general_ci NOT NULL,
+  `jumlah_mahasiswa` int DEFAULT '0',
+  `status_kelas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `kelas`
+--
+
+INSERT INTO `kelas` (`id_kelas`, `nama_kelas`, `tingkat`, `jumlah_mahasiswa`, `status_kelas`) VALUES
+(1, 'TR1C', '1', 3, 'Aktif'),
+(2, 'TR1B', '1', 4, 'Aktif'),
+(3, 'TR1K', '2', 0, 'Tidak Aktif'),
+(4, 'IUGHS', '1', 0, 'Tidak Aktif'),
+(5, 'TR1A', '1', 6, 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `mahasiswa`
+--
+
+CREATE TABLE `mahasiswa` (
+  `id_mahasiswa` int NOT NULL,
+  `id_kelas` int NOT NULL,
+  `id_periode_akademik` int NOT NULL,
+  `nim` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `nama_mahasiswa` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `saldo_jam_minus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
+  `saldo_jam_minus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
+  `saldo_jam_plus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
+  `saldo_jam_plus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
+  `status_mahasiswa` enum('Aktif','Tidak Aktif','Lulus','Cuti') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `mahasiswa`
+--
+
+INSERT INTO `mahasiswa` (`id_mahasiswa`, `id_kelas`, `id_periode_akademik`, `nim`, `nama_mahasiswa`, `email`, `no_hp`, `saldo_jam_minus_murni`, `saldo_jam_minus_kompensasi`, `saldo_jam_plus_murni`, `saldo_jam_plus_kompensasi`, `status_mahasiswa`) VALUES
+(1, 1, 1, '032025001', 'Yoga Margana', 'yoga@simat.test', '081111111111', '7.0', '0.0', '1.0', '1.0', 'Aktif'),
+(2, 1, 1, '032025002', 'Fahri Aprilian', 'fahri@simat.test', '082222222222', '0.0', '1.0', '0.0', '1.0', 'Aktif'),
+(3, 1, 1, '032025003', 'Nabilah Putri', 'nabilah@simat.test', '083333333333', '3.0', '0.0', '0.0', '10.0', 'Aktif'),
+(4, 1, 1, '0987692345', 'Marganaa', 'marganayoga891@gmail.com', '089088752369', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
+(5, 2, 1, '0920250039', 'Mikael', 'mikael@gmail.com', '081298394420', '0.0', '1750.0', '20.0', '26.0', 'Aktif'),
+(6, 2, 1, '0920250035', 'Ridzal', 'Ridzal@gmail.com', '085477325643', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
+(7, 5, 1, '1', 'Mazt', '', '', '20.0', '0.0', '0.0', '0.0', 'Aktif'),
+(8, 5, 1, '2', 'Daffa', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
+(9, 5, 1, '3', 'Rijal', '', '', '0.0', '4250.0', '0.0', '0.0', 'Aktif'),
+(10, 5, 1, '4', 'Adit', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
+(11, 5, 1, '5', 'Jonathan', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
+(12, 5, 1, '6', 'Irsyad', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
+(13, 2, 1, '9', 'Hailkal', '', '', '0.0', '0.0', '100.0', '1.0', 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `mata_kuliah`
+--
+
+CREATE TABLE `mata_kuliah` (
+  `id_matakuliah` int NOT NULL,
+  `nama_mata_kuliah` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
+  `kode_mata_kuliah` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
+  `sks` int NOT NULL,
+  `semester` enum('1','2','3','4','5','6','7','8') COLLATE utf8mb4_general_ci NOT NULL,
+  `status_mata_kuliah` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `mata_kuliah`
+--
+
+INSERT INTO `mata_kuliah` (`id_matakuliah`, `nama_mata_kuliah`, `kode_mata_kuliah`, `sks`, `semester`, `status_mata_kuliah`) VALUES
+(1, 'Pemrograman Web', 'WEB101', 3, '2', 'Aktif'),
+(2, 'Basis Data', 'BD101', 3, '2', 'Aktif'),
+(3, 'Algoritma Pemrograman', 'ALG101', 3, '1', 'Aktif'),
+(4, 'Rekayasa Perangkat Lunak', 'RPL101', 3, '3', 'Aktif'),
+(5, 'Pemrograman Berorientasi Objek', 'PBO101', 3, '3', 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pemberian_jam_minus`
+--
+
+CREATE TABLE `pemberian_jam_minus` (
+  `id_pemberian_jam_minus` int NOT NULL,
+  `kategori_pelanggaran` enum('Akademik','Fasilitas','Lainnya') COLLATE utf8mb4_general_ci NOT NULL,
+  `id_detail_kelas_pada_mata_kuliah` int DEFAULT NULL,
+  `keterangan_absensi` enum('Izin','Sakit','Alpa') COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `id_fasilitas` int DEFAULT NULL,
+  `harga_fasilitas_saat_pemberian` decimal(15,2) DEFAULT NULL,
+  `nama_pelanggaran` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `deskripsi_pelanggaran` text COLLATE utf8mb4_general_ci,
+  `jumlah_jam_minus` decimal(10,1) NOT NULL,
+  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_pemberian` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pemberian_jam_minus`
+--
+
+INSERT INTO `pemberian_jam_minus` (`id_pemberian_jam_minus`, `kategori_pelanggaran`, `id_detail_kelas_pada_mata_kuliah`, `keterangan_absensi`, `id_fasilitas`, `harga_fasilitas_saat_pemberian`, `nama_pelanggaran`, `deskripsi_pelanggaran`, `jumlah_jam_minus`, `jenis_jam`, `tanggal_pemberian`) VALUES
+(1, 'Akademik', 2, 'Alpa', NULL, NULL, 'Pelanggaran Akademik', NULL, '5.0', 'Murni', '2026-07-06 19:21:40'),
+(2, 'Fasilitas', NULL, NULL, 2, '3500000.00', 'Kerusakan Fasilitas', NULL, '1750.0', 'Kompensasi', '2026-07-06 21:11:02'),
+(3, 'Fasilitas', NULL, NULL, 3, '8500000.00', 'Kerusakan Fasilitas', NULL, '4250.0', 'Kompensasi', '2026-07-07 10:04:33'),
+(4, 'Akademik', 5, 'Izin', NULL, NULL, 'Pelanggaran Akademik', NULL, '20.0', 'Murni', '2026-07-12 04:21:20');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pengaduan_kerusakan_fasilitas`
+--
+
+CREATE TABLE `pengaduan_kerusakan_fasilitas` (
+  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
+  `id_fasilitas` int NOT NULL,
+  `deskripsi_kerusakan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_pengaduan` datetime NOT NULL,
+  `bukti_kerusakan_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `pelaku_kerusakan` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status_pengaduan` enum('Menunggu Verifikasi','Diterima','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pengaduan_kerusakan_fasilitas`
+--
+
+INSERT INTO `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`, `id_fasilitas`, `deskripsi_kerusakan`, `tanggal_pengaduan`, `bukti_kerusakan_url`, `pelaku_kerusakan`, `status_pengaduan`) VALUES
+(1, 1, 'Proyektor kelas tidak menyala saat digunakan.', '2026-06-08 22:50:43', 'assets/uploads/pengaduan/dummy-proyektor.jpg', NULL, 'Ditolak'),
+(2, 2, 'AC kelas tidak dingin dan mengeluarkan suara bising.', '2026-06-08 22:50:43', 'assets/uploads/pengaduan/dummy-ac.jpg', NULL, 'Diterima'),
+(3, 6, 'azhar', '2026-06-12 00:22:50', 'azhar', 'Tidak diketahui', 'Diterima'),
+(4, 6, 'azhar', '2026-06-12 00:23:21', 'azhar', 'azhar', 'Ditolak'),
+(5, 6, 'azahr', '2026-06-12 00:29:55', 'https://www.youtube.com/', 'azhar', 'Diterima'),
+(6, 8, 'aku lempar jir', '2026-06-17 19:31:24', 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBxISEhUSEhMVFRUXFxYVFhUXFRYVFxgYFxcYGBcVGBUYHSggGBolGxcVITEiJSkrLi4uFx8zODMtNygtLisBCgoKDg0OGhAQGy0lHyUtLS0rKy0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLSstLS0tLS0tLSstLS0tLS0tLf/AABEIAM8A9AMBIgACEQEDEQH/xAAbAAABBQEBAAAAAAAAAAAAAAAAAgMEBQYBB//EADgQAAEDAgMFBgUCBwEBAQAAAAEAAhEDIQQxQQUSUWFxBiKBkaHwEzKxwdFC4RQjUmJygvEHwlP/xAAZAQACAwEAAAAAAAAAAAAAAAADBAABAgX/xAAmEQACAgIDAAICAgMBAAAAAAAAAQIRAyEEEjFBURMiMlJhcaEU/9oADAMBAAIRAxEAPwD3FCEKEBclN4iu1jS5xgBZ3EbZe5x3TuiQAIm3PghZMscfpuGNz8NOhVuzMeXd14g3gjJwGfiFYrcZKStGZRcXTOoQhaKBCEKEBCEkvExIngoQUkueBmYUPH43ds3P6Klq4515g8yEOeRRCQxORoTi2f1BIdj6YvvehWPxGKd8wMD35KIMW6CZMcffglpcuvgaXEX2bV21qY/q8k43aVM6/RYtoJ71+sHyTra5GYI5+/BUuUy//LE1z9osEZm+kW55qWHBYmlif5jLj5h7laSlXR8WbvYDLhUaos11QhiYXHbQA0ReyA9GTkKLSxzHawpIKtNPwppr06hCFZQIQhQgIQhQgIQhQgio8NBJyAkqkxO3twTu2ItnPiIUnbjjDWN/UXEnTutJjzjyVDVrfDgzG7Bvr+0JTkZnDSGcOJSWyFtztAahDCQ0ATY68cuBFlCOOAG848PHSypNp4tpe95Obi4dM4z0sFU4jEuffNugGgSE7ybZ0ceJJUej7O2iHd5v6AXc9J8PytdgcSKjA8WnTgRmF4zsLaLqb90GxkQTkfwV6P2Sx4JNOcwHNnpf0jyTXGydZdWKcrFStGoQhC6AgCEIUICqdo1/5gaMxqrHEVd1pKonOG9v6iw58z5lDm/hG4L5G6j595qOaIM7wkQfC1j5p0lJcUNoKnRntoUjvW1EcLRlKMLj9yG1B/tBm2pHBXdcNcCHAT/UB9QM+qra+AMW16XHGMyLZpKeJp2hyGVNUyU+uNwkGRIjXMi8+ak1alKAN5swYnWM46T6rP8AwKlE91scswecadR+6TicewsJgtqiN0kniLDSIk5BUp0tm+l+F+3Z7SQRYwN0zkQrHAVN8Xs6YIzuJBjyKxjtr1XGd+OkA8comFYbI2sGzvaD9IF7HhYGVvHmgn9GMuKTRrH2mCouMkCffu6h4faLX95tgD8pvlxSdpbQkR76pmWSLjYtGDUqI1XERcHJT8BtpzfmMt5gqhYS6SDAAknnEho55JXx5yI6JSORp2hpwTVM32Fxjagsb8FJWAw+McwgidPBanZ21w8d6xH04p7HmUtMSy4HHa8LZC41wNxkuo4uCEIUICEIUIVPaCd2mRE/EAvlDmuafqsjt2qPhOLpJIhukEX/ADK2HaJhNBzhmwteP9XAn0lYXadUPc4G4LnQOpMG2okLnc3TQ9xDEY502OYUenUiwyXMVUlxPNNNKxWjoXsn4c95p4EfVa3Z+0XMq0nNB3gB3eIAv42jxKxVNyvsK90Mc2xADm6XacvMHzQ3rZWRdtHtdGqHNDmmQQCDxBuClqg7H40PpFuW6bD+11wPC48lfrq45qUU0cScesmgQhC2ZEVqQcIKotqtax262wiT1P8AwK8rVQ0SVl9p1N50nO/1IH0WJm4DT6yT8axEcI+/2Ueu4C4M8oP1UR+IJtkgSlQVInb6X8aBAcRyhpGtr81AbUXZKzZs5VNzYeQA8gqPardeHvyV81ihY+jIQMsHVjGGdSKHf8k5SxAA9PH39F04aO7PvSVHrCEnQ/pl/hqm6ZY6WG02JsTEjQx5ruMxQ436qp2bU', 'azhar', 'Diterima'),
+(7, 7, 'kaki patah', '2026-06-25 10:23:15', 'xmxb', 'saya sendiri', 'Menunggu Verifikasi');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pengajar`
+--
+
+CREATE TABLE `pengajar` (
+  `id_pengajar` int NOT NULL,
+  `nip` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `nama_pengajar` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status_pengajar` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pengajar`
+--
+
+INSERT INTO `pengajar` (`id_pengajar`, `nip`, `nama_pengajar`, `email`, `no_hp`, `status_pengajar`) VALUES
+(1, 'PGR001', 'Budi Santoso', 'pengajar@simat.test', '081200000001', 'Aktif'),
+(2, 'PGR002', 'Rina Anggraini fgfyyt', 'pictatatertib@simat.test', '081200000002', 'Aktif'),
+(3, 'PGR003', 'Dimas Pratama', 'picaset@simat.test', '081200000003', 'Aktif'),
+(4, 'PGR004', 'Siti Rahma', 'pickemahasiswaan@simat.test', '081200000004', 'Aktif'),
+(5, '347564576', 'Andi Wijaya', 'kaprodi@simat.test', '081200000005', 'Aktif'),
+(6, '00099787', 'poles', 'anjingcepat@gmail.com', '09876543433', 'Tidak Aktif'),
+(7, '03485743', 'Nadya E-Learning', 'bodat@hewan.com', '082365479873', 'Tidak Aktif'),
+(8, '097764578', 'Irsyad', 'irsyad@gmail.com', '08430834892234', 'Tidak Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pengajuan_jam_plus`
+--
+
+CREATE TABLE `pengajuan_jam_plus` (
+  `id_pengajuan_jam_plus` int NOT NULL,
+  `id_kegiatan` int DEFAULT NULL,
+  `jumlah_jam_plus` decimal(6,1) NOT NULL,
+  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
+  `sumber_jam` enum('Prodi','Luar') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_pengajuan` datetime NOT NULL,
+  `deskripsi_pekerjaan` text COLLATE utf8mb4_general_ci,
+  `nama_pemberi` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `dokumen_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `status_pengajuan` enum('Menunggu Verifikasi','Disetujui','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pengajuan_jam_plus`
+--
+
+INSERT INTO `pengajuan_jam_plus` (`id_pengajuan_jam_plus`, `id_kegiatan`, `jumlah_jam_plus`, `jenis_jam`, `sumber_jam`, `tanggal_pengajuan`, `deskripsi_pekerjaan`, `nama_pemberi`, `dokumen_url`, `status_pengajuan`) VALUES
+(1, 1, '100.0', 'Murni', 'Prodi', '2026-06-25 23:03:13', 'Olahraga', 'Fahri', 'abc', 'Disetujui'),
+(2, 1, '50.0', 'Kompensasi', 'Luar', '2026-06-25 23:55:15', 'Menyapu', 'Agoy', 'abc', 'Disetujui'),
+(3, 1, '100.0', 'Murni', 'Prodi', '2026-06-25 23:55:35', 'Mengepel', 'Agoy', 'abc', 'Ditolak'),
+(4, NULL, '100.0', 'Kompensasi', 'Prodi', '2026-07-02 09:06:26', 'Pulang', 'Adit', 'abc', 'Menunggu Verifikasi'),
+(5, 2, '90.0', 'Murni', 'Luar', '2026-07-02 09:07:26', 'a', 'Fahri', 'a', 'Menunggu Verifikasi'),
+(6, NULL, '1.0', 'Murni', 'Prodi', '2026-07-02 09:13:53', 'aa', 'Agoy', 'a', 'Menunggu Verifikasi'),
+(7, NULL, '50.0', 'Murni', 'Prodi', '2026-07-03 13:32:05', 'abc', 'Rafi', 'abc', 'Menunggu Verifikasi'),
+(8, NULL, '20.0', 'Murni', 'Prodi', '2026-07-03 14:47:18', 'Panitia', 'Yoga', 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Disetujui'),
+(9, NULL, '10.0', 'Murni', 'Prodi', '2026-07-11 18:15:33', 'a', 'Fahri', 'a', 'Menunggu Verifikasi'),
+(10, NULL, '10.0', 'Kompensasi', 'Prodi', '2026-07-11 18:16:51', 'a', 'a', 'a', 'Disetujui');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pengguna`
+--
+
+CREATE TABLE `pengguna` (
+  `id_pengguna` int NOT NULL,
+  `id_mahasiswa` int DEFAULT NULL,
+  `id_pengajar` int DEFAULT NULL,
+  `username` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `role` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi') COLLATE utf8mb4_general_ci NOT NULL,
+  `status_akun` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pengguna`
+--
+
+INSERT INTO `pengguna` (`id_pengguna`, `id_mahasiswa`, `id_pengajar`, `username`, `password`, `role`, `status_akun`) VALUES
+(1, 1, NULL, 'mahasiswa@simat.net', '1234', 'Mahasiswa', 'Tidak Aktif'),
+(2, NULL, 1, 'pengajar@simat.test', '123', 'Pengajar', 'Aktif'),
+(3, NULL, 2, 'pictatatertib@simat.test', '123', 'PIC Tata Tertib', 'Aktif'),
+(4, NULL, 3, 'picaset@simat.test', '123', 'PIC Aset Fasilitas', 'Aktif'),
+(5, NULL, 4, 'pickemahasiswaan@simat.test', '123', 'PIC Kemahasiswaan', 'Aktif'),
+(6, NULL, 5, 'kaprodi@simat.test', '123', 'Kepala Prodi', 'Aktif'),
+(7, 1, NULL, 'yogaenjoy', '123', 'Mahasiswa', 'Aktif'),
+(8, NULL, 7, 'bodat', '098', 'Pengajar', 'Tidak Aktif'),
+(9, 5, NULL, 'mika', '123', 'Mahasiswa', 'Aktif'),
+(10, 2, NULL, 'Fahri', '321', 'Mahasiswa', 'Aktif'),
+(11, 6, NULL, 'ridzal', '123', 'Mahasiswa', 'Tidak Aktif'),
+(12, 10, NULL, 'adit', '123', 'Mahasiswa', 'Aktif'),
+(13, 8, NULL, 'daffa', '123', 'Mahasiswa', 'Aktif'),
+(14, 7, NULL, 'mazt', '123', 'Mahasiswa', 'Aktif'),
+(15, 3, NULL, 'nabilah', '123', 'Mahasiswa', 'Aktif'),
+(16, 9, NULL, 'rijal', '123', 'Mahasiswa', 'Aktif'),
+(17, 12, NULL, 'irsyad', '123', 'Mahasiswa', 'Aktif'),
+(18, 11, NULL, 'jo', '123', 'Mahasiswa', 'Aktif'),
+(19, 13, NULL, 'haikal', '123', 'Mahasiswa', 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `periode_akademik`
+--
+
+CREATE TABLE `periode_akademik` (
+  `id_periode_akademik` int NOT NULL,
+  `tahun_akademik` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
+  `semester` enum('Ganjil','Genap') COLLATE utf8mb4_general_ci NOT NULL,
+  `tanggal_mulai` datetime NOT NULL,
+  `tanggal_selesai` datetime NOT NULL,
+  `status_periode` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `periode_akademik`
+--
+
+INSERT INTO `periode_akademik` (`id_periode_akademik`, `tahun_akademik`, `semester`, `tanggal_mulai`, `tanggal_selesai`, `status_periode`) VALUES
+(1, '2025/2026', 'Genap', '2026-02-01 00:00:00', '2026-07-31 23:59:59', 'Aktif');
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_laporan_bursa_jobdesc`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_laporan_bursa_jobdesc` (
+`deskripsi_jobdesc` text
+,`id_bursa_jobdesc` int
+,`id_pemberi` int
+,`jam_plus` decimal(6,1)
+,`kuota` int
+,`kuota_terisi` varchar(23)
+,`nama_pemberi` varchar(50)
+,`nama_penerima_jobdesc` mediumtext
+,`role_pemberi` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi')
+,`status_jobdesc` enum('Dibuka','Dikerjakan','Selesai')
+,`tanggal_pemberian_jobdesc` datetime
+,`target_penerima_jobdesc` enum('Semua Mahasiswa','Mahasiswa dengan Jam Minus')
+,`terisi` int
+,`username_pemberi` varchar(50)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_laporan_pengaduan_fasilitas`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_laporan_pengaduan_fasilitas` (
+`deskripsi_kerusakan` text
+,`id_fasilitas` int
+,`id_kelas` int
+,`id_mahasiswa` int
+,`id_pengaduan_kerusakan_fasilitas` int
+,`nama_fasilitas` varchar(50)
+,`nama_kelas` varchar(5)
+,`nama_mahasiswa` varchar(50)
+,`nim` varchar(20)
+,`tanggal_pengaduan` datetime
+);
+
+-- --------------------------------------------------------
+
+--
+-- Stand-in structure for view `vw_laporan_total_jam_mahasiswa`
+-- (See below for the actual view)
+--
+CREATE TABLE `vw_laporan_total_jam_mahasiswa` (
+`id_kelas` int
+,`id_mahasiswa` int
+,`nama_kelas` varchar(5)
+,`nama_mahasiswa` varchar(50)
+,`nim` varchar(20)
+,`total_jam_kompensasi` decimal(10,1)
+,`total_jam_mahasiswa` decimal(10,1)
+,`total_jam_murni` decimal(10,1)
+);
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_laporan_bursa_jobdesc`
+--
+DROP TABLE IF EXISTS `vw_laporan_bursa_jobdesc`;
+
+CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_bursa_jobdesc`  AS SELECT `bj`.`id_bursa_jobdesc` AS `id_bursa_jobdesc`, `bj`.`deskripsi_jobdesc` AS `deskripsi_jobdesc`, `bj`.`penerima_jobdesc` AS `target_penerima_jobdesc`, coalesce(`data_penerima`.`nama_penerima_jobdesc`,'Belum ada penerima') AS `nama_penerima_jobdesc`, `bj`.`jam_plus` AS `jam_plus`, `bj`.`tanggal_pemberian_jobdesc` AS `tanggal_pemberian_jobdesc`, `bj`.`jumlah_mahasiswa_diperlukan` AS `kuota`, `bj`.`jumlah_mahasiswa_mengambil` AS `terisi`, concat(`bj`.`jumlah_mahasiswa_mengambil`,'/',`bj`.`jumlah_mahasiswa_diperlukan`) AS `kuota_terisi`, `bj`.`status_jobdesc` AS `status_jobdesc`, `p_pemberi`.`id_pengguna` AS `id_pemberi`, `p_pemberi`.`username` AS `username_pemberi`, `p_pemberi`.`role` AS `role_pemberi`, coalesce(`pg_pemberi`.`nama_pengajar`,`m_pemberi`.`nama_mahasiswa`,`p_pemberi`.`username`) AS `nama_pemberi` FROM (((((`bursa_jobdesc` `bj` join `detail_pengguna_pada_bursa_jobdesc` `dp_pemberi` on(((`bj`.`id_bursa_jobdesc` = `dp_pemberi`.`id_bursa_jobdesc`) and (`dp_pemberi`.`peran_pengguna` = 'Pemberi')))) join `pengguna` `p_pemberi` on((`dp_pemberi`.`id_pengguna` = `p_pemberi`.`id_pengguna`))) left join `pengajar` `pg_pemberi` on((`p_pemberi`.`id_pengajar` = `pg_pemberi`.`id_pengajar`))) left join `mahasiswa` `m_pemberi` on((`p_pemberi`.`id_mahasiswa` = `m_pemberi`.`id_mahasiswa`))) left join (select `dp`.`id_bursa_jobdesc` AS `id_bursa_jobdesc`,group_concat(coalesce(`m`.`nama_mahasiswa`,`p`.`username`) order by coalesce(`m`.`nama_mahasiswa`,`p`.`username`) ASC separator ', ') AS `nama_penerima_jobdesc` from ((`detail_pengguna_pada_bursa_jobdesc` `dp` join `pengguna` `p` on((`dp`.`id_pengguna` = `p`.`id_pengguna`))) left join `mahasiswa` `m` on((`p`.`id_mahasiswa` = `m`.`id_mahasiswa`))) where (`dp`.`peran_pengguna` = 'Penerima') group by `dp`.`id_bursa_jobdesc`) `data_penerima` on((`bj`.`id_bursa_jobdesc` = `data_penerima`.`id_bursa_jobdesc`)))  ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_laporan_pengaduan_fasilitas`
+--
+DROP TABLE IF EXISTS `vw_laporan_pengaduan_fasilitas`;
+
+CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_pengaduan_fasilitas`  AS SELECT `pkf`.`id_pengaduan_kerusakan_fasilitas` AS `id_pengaduan_kerusakan_fasilitas`, `m`.`id_mahasiswa` AS `id_mahasiswa`, `m`.`nim` AS `nim`, `m`.`nama_mahasiswa` AS `nama_mahasiswa`, `k`.`id_kelas` AS `id_kelas`, coalesce(`k`.`nama_kelas`,'-') AS `nama_kelas`, `f`.`id_fasilitas` AS `id_fasilitas`, `f`.`nama_fasilitas` AS `nama_fasilitas`, `pkf`.`deskripsi_kerusakan` AS `deskripsi_kerusakan`, `pkf`.`tanggal_pengaduan` AS `tanggal_pengaduan` FROM (((((`pengaduan_kerusakan_fasilitas` `pkf` join `fasilitas` `f` on((`pkf`.`id_fasilitas` = `f`.`id_fasilitas`))) join `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` `dp` on(((`pkf`.`id_pengaduan_kerusakan_fasilitas` = `dp`.`id_pengaduan_kerusakan_fasilitas`) and (`dp`.`peran_pengguna` = 'Pelapor')))) join `pengguna` `p` on((`dp`.`id_pengguna` = `p`.`id_pengguna`))) join `mahasiswa` `m` on((`p`.`id_mahasiswa` = `m`.`id_mahasiswa`))) left join `kelas` `k` on((`m`.`id_kelas` = `k`.`id_kelas`)))  ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_laporan_total_jam_mahasiswa`
+--
+DROP TABLE IF EXISTS `vw_laporan_total_jam_mahasiswa`;
+
+CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_total_jam_mahasiswa`  AS SELECT `m`.`id_mahasiswa` AS `id_mahasiswa`, `m`.`nim` AS `nim`, `m`.`nama_mahasiswa` AS `nama_mahasiswa`, `k`.`id_kelas` AS `id_kelas`, `k`.`nama_kelas` AS `nama_kelas`, cast(`ufn_hitung_total_jam_kompensasi_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_kompensasi`, cast(`ufn_hitung_total_jam_murni_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_murni`, cast(`ufn_hitung_total_jam_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_mahasiswa` FROM (`mahasiswa` `m` join `kelas` `k` on((`k`.`id_kelas` = `m`.`id_kelas`))) WHERE (`m`.`status_mahasiswa` = 'Aktif')  ;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `bursa_jobdesc`
+--
+ALTER TABLE `bursa_jobdesc`
+  ADD PRIMARY KEY (`id_bursa_jobdesc`);
+
+--
+-- Indexes for table `detail_fasilitas_pada_kelas`
+--
+ALTER TABLE `detail_fasilitas_pada_kelas`
+  ADD PRIMARY KEY (`id_detail_fasilitas_pada_kelas`),
+  ADD KEY `fk_detail_fasilitas_kelas` (`id_kelas`),
+  ADD KEY `fk_detail_fasilitas_fasilitas` (`id_fasilitas`);
+
+--
+-- Indexes for table `detail_kelas_pada_mata_kuliah`
+--
+ALTER TABLE `detail_kelas_pada_mata_kuliah`
+  ADD PRIMARY KEY (`id_detail_kelas_pada_mata_kuliah`),
+  ADD UNIQUE KEY `uq_kelas_mata_kuliah` (`id_kelas`,`id_mata_kuliah`),
+  ADD KEY `fk_detail_kelas_mk_mk` (`id_mata_kuliah`),
+  ADD KEY `fk_detail_kelas_mk_kelas` (`id_kelas`);
+
+--
+-- Indexes for table `detail_pengajar_pada_mata_kuliah`
+--
+ALTER TABLE `detail_pengajar_pada_mata_kuliah`
+  ADD PRIMARY KEY (`id_detail_pengajar_pada_mata_kuliah`),
+  ADD UNIQUE KEY `uq_detail_pengajar_unik` (`id_detail_kelas_pada_mata_kuliah`,`id_pengajar`),
+  ADD UNIQUE KEY `uq_detail_kedudukan_unik` (`id_detail_kelas_pada_mata_kuliah`,`kedudukan_pengajar`),
+  ADD KEY `fk_detail_pengajar_pengajar` (`id_pengajar`);
+
+--
+-- Indexes for table `detail_pengguna_pada_bursa_jobdesc`
+--
+ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
+  ADD PRIMARY KEY (`id_detail_pengguna_pada_bursa_jobdesc`),
+  ADD KEY `fk_detail_pengguna_bursa` (`id_bursa_jobdesc`),
+  ADD KEY `fk_detail_bursa_pengguna` (`id_pengguna`),
+  ADD KEY `idx_laporan_bursa_pemberi` (`peran_pengguna`,`id_pengguna`,`id_bursa_jobdesc`);
+
+--
+-- Indexes for table `detail_pengguna_pada_pemberian_jam_minus`
+--
+ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
+  ADD PRIMARY KEY (`id_detail_pengguna_pada_pemberian_jam_minus`),
+  ADD UNIQUE KEY `uq_pjm_satu_peran` (`id_pemberian_jam_minus`,`peran_pengguna`),
+  ADD KEY `fk_detail_pengguna_jam_minus` (`id_pemberian_jam_minus`),
+  ADD KEY `fk_detail_jam_minus_pengguna` (`id_pengguna`);
+
+--
+-- Indexes for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+  ADD PRIMARY KEY (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`),
+  ADD KEY `fk_detail_pengguna_pengaduan` (`id_pengaduan_kerusakan_fasilitas`),
+  ADD KEY `fk_detail_pengaduan_pengguna` (`id_pengguna`),
+  ADD KEY `idx_laporan_pengaduan_pelapor` (`peran_pengguna`,`id_pengaduan_kerusakan_fasilitas`,`id_pengguna`);
+
+--
+-- Indexes for table `detail_pengguna_pada_pengajuan_jam_plus`
+--
+ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
+  ADD PRIMARY KEY (`id_detail_pengguna_pada_pengajuan_jam_plus`),
+  ADD KEY `fk_detail_pengguna_pengajuan` (`id_pengajuan_jam_plus`),
+  ADD KEY `fk_detail_pengajuan_pengguna` (`id_pengguna`);
+
+--
+-- Indexes for table `fasilitas`
+--
+ALTER TABLE `fasilitas`
+  ADD PRIMARY KEY (`id_fasilitas`);
+
+--
+-- Indexes for table `kegiatan`
+--
+ALTER TABLE `kegiatan`
+  ADD PRIMARY KEY (`id_kegiatan`);
+
+--
+-- Indexes for table `kelas`
+--
+ALTER TABLE `kelas`
+  ADD PRIMARY KEY (`id_kelas`);
+
+--
+-- Indexes for table `mahasiswa`
+--
+ALTER TABLE `mahasiswa`
+  ADD PRIMARY KEY (`id_mahasiswa`),
+  ADD UNIQUE KEY `nim` (`nim`),
+  ADD KEY `fk_mahasiswa_kelas` (`id_kelas`),
+  ADD KEY `fk_mahasiswa_periode` (`id_periode_akademik`);
+
+--
+-- Indexes for table `mata_kuliah`
+--
+ALTER TABLE `mata_kuliah`
+  ADD PRIMARY KEY (`id_matakuliah`),
+  ADD UNIQUE KEY `uq_mata_kuliah_id` (`id_matakuliah`),
+  ADD UNIQUE KEY `uq_kode_mata_kuliah` (`kode_mata_kuliah`);
+
+--
+-- Indexes for table `pemberian_jam_minus`
+--
+ALTER TABLE `pemberian_jam_minus`
+  ADD PRIMARY KEY (`id_pemberian_jam_minus`),
+  ADD KEY `idx_pjm_kategori` (`kategori_pelanggaran`),
+  ADD KEY `idx_pjm_detail_kelas_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`),
+  ADD KEY `idx_pjm_fasilitas` (`id_fasilitas`),
+  ADD KEY `idx_pjm_tanggal` (`tanggal_pemberian`);
+
+--
+-- Indexes for table `pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `pengaduan_kerusakan_fasilitas`
+  ADD PRIMARY KEY (`id_pengaduan_kerusakan_fasilitas`),
+  ADD KEY `fk_pengaduan_fasilitas` (`id_fasilitas`);
+
+--
+-- Indexes for table `pengajar`
+--
+ALTER TABLE `pengajar`
+  ADD PRIMARY KEY (`id_pengajar`),
+  ADD UNIQUE KEY `nip` (`nip`);
+
+--
+-- Indexes for table `pengajuan_jam_plus`
+--
+ALTER TABLE `pengajuan_jam_plus`
+  ADD PRIMARY KEY (`id_pengajuan_jam_plus`),
+  ADD KEY `fk_pengajuan_jam_plus_kegiatan` (`id_kegiatan`);
+
+--
+-- Indexes for table `pengguna`
+--
+ALTER TABLE `pengguna`
+  ADD PRIMARY KEY (`id_pengguna`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD KEY `fk_pengguna_mahasiswa` (`id_mahasiswa`),
+  ADD KEY `fk_pengguna_pengajar` (`id_pengajar`);
+
+--
+-- Indexes for table `periode_akademik`
+--
+ALTER TABLE `periode_akademik`
+  ADD PRIMARY KEY (`id_periode_akademik`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `bursa_jobdesc`
+--
+ALTER TABLE `bursa_jobdesc`
+  MODIFY `id_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `detail_fasilitas_pada_kelas`
+--
+ALTER TABLE `detail_fasilitas_pada_kelas`
+  MODIFY `id_detail_fasilitas_pada_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `detail_kelas_pada_mata_kuliah`
+--
+ALTER TABLE `detail_kelas_pada_mata_kuliah`
+  MODIFY `id_detail_kelas_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `detail_pengajar_pada_mata_kuliah`
+--
+ALTER TABLE `detail_pengajar_pada_mata_kuliah`
+  MODIFY `id_detail_pengajar_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+
+--
+-- AUTO_INCREMENT for table `detail_pengguna_pada_bursa_jobdesc`
+--
+ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
+  MODIFY `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+
+--
+-- AUTO_INCREMENT for table `detail_pengguna_pada_pemberian_jam_minus`
+--
+ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
+  MODIFY `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+  MODIFY `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `detail_pengguna_pada_pengajuan_jam_plus`
+--
+ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
+  MODIFY `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
+-- AUTO_INCREMENT for table `fasilitas`
+--
+ALTER TABLE `fasilitas`
+  MODIFY `id_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `kegiatan`
+--
+ALTER TABLE `kegiatan`
+  MODIFY `id_kegiatan` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `kelas`
+--
+ALTER TABLE `kelas`
+  MODIFY `id_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `mahasiswa`
+--
+ALTER TABLE `mahasiswa`
+  MODIFY `id_mahasiswa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+
+--
+-- AUTO_INCREMENT for table `mata_kuliah`
+--
+ALTER TABLE `mata_kuliah`
+  MODIFY `id_matakuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `pemberian_jam_minus`
+--
+ALTER TABLE `pemberian_jam_minus`
+  MODIFY `id_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `pengaduan_kerusakan_fasilitas`
+  MODIFY `id_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `pengajar`
+--
+ALTER TABLE `pengajar`
+  MODIFY `id_pengajar` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `pengajuan_jam_plus`
+--
+ALTER TABLE `pengajuan_jam_plus`
+  MODIFY `id_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `pengguna`
+--
+ALTER TABLE `pengguna`
+  MODIFY `id_pengguna` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+
+--
+-- AUTO_INCREMENT for table `periode_akademik`
+--
+ALTER TABLE `periode_akademik`
+  MODIFY `id_periode_akademik` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `detail_fasilitas_pada_kelas`
+--
+ALTER TABLE `detail_fasilitas_pada_kelas`
+  ADD CONSTRAINT `fk_detail_fasilitas_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_fasilitas_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_kelas_pada_mata_kuliah`
+--
+ALTER TABLE `detail_kelas_pada_mata_kuliah`
+  ADD CONSTRAINT `fk_detail_kelas_mk_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_kelas_mk_mk` FOREIGN KEY (`id_mata_kuliah`) REFERENCES `mata_kuliah` (`id_matakuliah`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_pengajar_pada_mata_kuliah`
+--
+ALTER TABLE `detail_pengajar_pada_mata_kuliah`
+  ADD CONSTRAINT `fk_detail_pengajar_mk` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_pengajar_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_pengguna_pada_bursa_jobdesc`
+--
+ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
+  ADD CONSTRAINT `fk_detail_bursa_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_pengguna_bursa` FOREIGN KEY (`id_bursa_jobdesc`) REFERENCES `bursa_jobdesc` (`id_bursa_jobdesc`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_pengguna_pada_pemberian_jam_minus`
+--
+ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
+  ADD CONSTRAINT `fk_detail_jam_minus_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_pengguna_jam_minus` FOREIGN KEY (`id_pemberian_jam_minus`) REFERENCES `pemberian_jam_minus` (`id_pemberian_jam_minus`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+  ADD CONSTRAINT `fk_detail_pengaduan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_pengguna_pengaduan` FOREIGN KEY (`id_pengaduan_kerusakan_fasilitas`) REFERENCES `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `detail_pengguna_pada_pengajuan_jam_plus`
+--
+ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
+  ADD CONSTRAINT `fk_detail_pengajuan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_detail_pengguna_pengajuan` FOREIGN KEY (`id_pengajuan_jam_plus`) REFERENCES `pengajuan_jam_plus` (`id_pengajuan_jam_plus`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `mahasiswa`
+--
+ALTER TABLE `mahasiswa`
+  ADD CONSTRAINT `fk_mahasiswa_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_mahasiswa_periode` FOREIGN KEY (`id_periode_akademik`) REFERENCES `periode_akademik` (`id_periode_akademik`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `pemberian_jam_minus`
+--
+ALTER TABLE `pemberian_jam_minus`
+  ADD CONSTRAINT `fk_pjm_detail_kelas_mata_kuliah` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pjm_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Constraints for table `pengaduan_kerusakan_fasilitas`
+--
+ALTER TABLE `pengaduan_kerusakan_fasilitas`
+  ADD CONSTRAINT `fk_pengaduan_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `pengajuan_jam_plus`
+--
+ALTER TABLE `pengajuan_jam_plus`
+  ADD CONSTRAINT `fk_pengajuan_jam_plus_kegiatan` FOREIGN KEY (`id_kegiatan`) REFERENCES `kegiatan` (`id_kegiatan`) ON UPDATE CASCADE;
+
+--
+-- Constraints for table `pengguna`
+--
+ALTER TABLE `pengguna`
+  ADD CONSTRAINT `fk_pengguna_mahasiswa` FOREIGN KEY (`id_mahasiswa`) REFERENCES `mahasiswa` (`id_mahasiswa`) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pengguna_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE SET NULL ON UPDATE CASCADE;
+COMMIT;
+
+/*!40101 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
