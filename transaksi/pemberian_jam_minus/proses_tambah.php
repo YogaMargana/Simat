@@ -4,6 +4,57 @@ require_once "../../config/koneksi.php";
 require_once "../../config/function.php";
 require_once "../../includes/auth_dashboard.php";
 
+function kembali_dengan_error($pesan)
+{
+    header(
+        "Location: tambah.php?error=" .
+        urlencode($pesan)
+    );
+    exit;
+}
+
+function ambil_jumlah_jam($nilai_input, $nama_field)
+{
+    $nilai_input = str_replace(
+        ',',
+        '.',
+        trim($nilai_input)
+    );
+
+    if ($nilai_input === '') {
+        kembali_dengan_error(
+            $nama_field . " wajib diisi."
+        );
+    }
+
+    if (
+        !preg_match(
+            '/^\d{1,4}(\.\d)?$/',
+            $nilai_input
+        )
+    ) {
+        kembali_dengan_error(
+            $nama_field .
+            " hanya boleh memiliki satu angka " .
+            "di belakang koma."
+        );
+    }
+
+    $jumlah_jam = (float) $nilai_input;
+
+    if (
+        $jumlah_jam < 0.1 ||
+        $jumlah_jam > 1000.0
+    ) {
+        kembali_dengan_error(
+            $nama_field .
+            " harus antara 0,1 sampai 1000,0."
+        );
+    }
+
+    return $jumlah_jam;
+}
+
 /* ===================================
    OTORISASI
    =================================== */
@@ -132,7 +183,10 @@ if ($kategori === 'Akademik') {
         );
 
     $jumlah_jam_minus_input =
-        round((float) ($_POST['jumlah_jam_minus_akademik'] ?? 0), 1);
+        ambil_jumlah_jam(
+            $_POST['jumlah_jam_minus_akademik'] ?? '',
+            'Jumlah jam minus Akademik'
+        );
 
     if ($id_detail_mata_kuliah <= 0) {
 
@@ -161,19 +215,6 @@ if ($kategori === 'Akademik') {
             "Location: tambah.php?error="
             . urlencode(
                 "Keterangan absensi tidak valid."
-            )
-        );
-
-        exit;
-    }
-
-    if ($jumlah_jam_minus_input <= 0) {
-
-        header(
-            "Location: tambah.php?error="
-            . urlencode(
-                "Jumlah jam minus Akademik "
-                . "harus lebih dari 0."
             )
         );
 
@@ -239,7 +280,10 @@ if ($kategori === 'Lainnya') {
         );
 
     $jumlah_jam_minus_input =
-        round((float) ($_POST['jumlah_jam_minus_lainnya'] ?? 0), 1);
+        ambil_jumlah_jam(
+            $_POST['jumlah_jam_minus_lainnya'] ?? '',
+            'Jumlah jam minus'
+        );
 
     if ($deskripsi === '') {
 
@@ -268,19 +312,6 @@ if ($kategori === 'Lainnya') {
             "Location: tambah.php?error="
             . urlencode(
                 "Jenis jam minus tidak valid."
-            )
-        );
-
-        exit;
-    }
-
-    if ($jumlah_jam_minus_input <= 0) {
-
-        header(
-            "Location: tambah.php?error="
-            . urlencode(
-                "Jumlah jam minus harus "
-                . "lebih dari 0."
             )
         );
 

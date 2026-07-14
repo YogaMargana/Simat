@@ -74,6 +74,11 @@ if ($role == "Pengajar") {
                 <span>Periode Akademik</span>
             </a>
 
+            <a href="/SIMAT/master/mata_kuliah/index.php" class="menu-link <?= $active_menu == 'mata_kuliah' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-calendar-days"></i>
+                <span>Mata Kuliah</span>
+            </a>
+
         <!-- Sidebar Penentuan 2 Pengajar Pada Suatu Mata Kuliah Pada Suatu Kelas -->
             <a href="/SIMAT/master/pengajar_mata_kuliah/index.php" class="menu-link <?= $active_menu == 'pengajar_mata_kuliah' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-book-open-reader"></i>

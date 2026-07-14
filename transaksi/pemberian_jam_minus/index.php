@@ -237,7 +237,10 @@ require_once "../../includes/sidebar.php";
                                         <small class="text-muted">
                                             Harga saat pemberian:
 
-                                            Rp<?= format_jam($row['jumlah_jam_minus']); ?>
+                                            Rp<?= number_format(
+                                                (float) $row['harga_fasilitas_saat_pemberian'],
+                                                    0,',','.'
+                                            ); ?>
                                         </small>
 
                                     <?php } else { ?>
@@ -262,7 +265,7 @@ require_once "../../includes/sidebar.php";
 
                                     <td class="fw-bold text-danger">
 
-                                        -<?= format_jam($row['jumlah_jam_minus']); ?>
+                                        -<?= format_jam($row['jumlah_jam_minus']); ?> Jam
 
                                     </td>
 

@@ -2,66 +2,264 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
-if ($_SESSION['role'] != "Mahasiswa") {
+// Hanya Mahasiswa yang boleh mengirim pengajuan jam plus
+if (($_SESSION['role'] ?? '') !== "Mahasiswa") {
+    header("Location: /SIMAT/index.php");
+    exit;
+}
+
+// Proses hanya dijalankan melalui tombol Kirim Pengajuan
+if (
+    $_SERVER['REQUEST_METHOD'] !== 'POST' ||
+    !isset($_POST['simpan'])
+) {
     header("Location: index.php");
     exit;
 }
 
-if (!isset($_POST['simpan'])) {
-    header("Location: index.php");
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
+
+$jumlah_jam_input = str_replace(
+    ',',
+    '.',
+    trim($_POST['jumlah_jam_plus'] ?? '')
+);
+
+$jenis_jam = trim($_POST['jenis_jam'] ?? '');
+$sumber_jam = trim($_POST['sumber_jam'] ?? '');
+
+$deskripsi = trim(
+    $_POST['deskripsi_pekerjaan'] ?? ''
+);
+
+$nama_pemberi = trim(
+    $_POST['nama_pemberi'] ?? ''
+);
+
+$dokumen_url = trim(
+    $_POST['dokumen_url'] ?? ''
+);
+
+/*
+|--------------------------------------------------------------------------
+| Validasi pengguna
+|--------------------------------------------------------------------------
+*/
+
+if ($id_pengguna <= 0) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Data pengguna tidak valid.")
+    );
     exit;
 }
 
-$id_pengguna        = (int) $_SESSION['id_pengguna'];
-$jumlah_jam_plus    = round((float) ($_POST['jumlah_jam_plus'] ?? 0), 1);
-$jenis_jam          = $_POST['jenis_jam'] ?? '';
-$sumber_jam         = $_POST['sumber_jam'] ?? '';
-$deskripsi          = trim($_POST['deskripsi_pekerjaan'] ?? '');
-$nama_pemberi       = trim($_POST['nama_pemberi'] ?? '');
-$dokumen_url        = trim($_POST['dokumen_url'] ?? '');
+/*
+|--------------------------------------------------------------------------
+| Validasi jumlah jam plus
+|--------------------------------------------------------------------------
+*/
 
-if (!in_array($sumber_jam, ['Prodi', 'Luar'])) {
-    header("Location: tambah.php?error=" . urlencode("Sumber jam wajib dipilih."));
+if ($jumlah_jam_input === '') {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Jumlah jam plus wajib diisi.")
+    );
     exit;
 }
 
-if ($sumber_jam == 'Luar') {
-    $id_kegiatan = (int) ($_POST['id_kegiatan'] ?? 0);
+if (!preg_match('/^\d{1,4}(\.\d)?$/', $jumlah_jam_input)) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Jumlah jam plus hanya boleh memiliki satu angka " .
+            "di belakang koma."
+        )
+    );
+    exit;
+}
+
+$jumlah_jam_plus = (float) $jumlah_jam_input;
+
+if (
+    $jumlah_jam_plus < 0.1 ||
+    $jumlah_jam_plus > 1000.0
+) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Jumlah jam plus harus antara 0,1 sampai 1000,0."
+        )
+    );
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Validasi jenis jam
+|--------------------------------------------------------------------------
+*/
+
+if (
+    !in_array(
+        $jenis_jam,
+        ['Murni', 'Kompensasi'],
+        true
+    )
+) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Jenis jam wajib dipilih.")
+    );
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Validasi sumber jam
+|--------------------------------------------------------------------------
+*/
+
+if (
+    !in_array(
+        $sumber_jam,
+        ['Prodi', 'Luar'],
+        true
+    )
+) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Sumber jam wajib dipilih.")
+    );
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Validasi kegiatan
+|--------------------------------------------------------------------------
+*/
+
+if ($sumber_jam === 'Luar') {
+    $id_kegiatan = (int) (
+        $_POST['id_kegiatan'] ?? 0
+    );
 
     if ($id_kegiatan <= 0) {
-        header("Location: tambah.php?error=" . urlencode("Kegiatan wajib dipilih jika sumber jam berasal dari luar."));
+        header(
+            "Location: tambah.php?error=" .
+            urlencode(
+                "Kegiatan wajib dipilih jika sumber jam " .
+                "berasal dari luar Prodi."
+            )
+        );
         exit;
     }
 } else {
     $id_kegiatan = null;
 }
 
-if ($jumlah_jam_plus <= 0) {
-    header("Location: tambah.php?error=" . urlencode("Jumlah jam plus harus lebih dari 0."));
+/*
+|--------------------------------------------------------------------------
+| Validasi data pekerjaan
+|--------------------------------------------------------------------------
+*/
+
+if ($nama_pemberi === '') {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Nama pemberi tugas wajib diisi.")
+    );
     exit;
 }
 
-if (fmod($jumlah_jam_plus * 10, 1) != 0.0) {
-    header("Location: tambah.php?error=" . urlencode("Jumlah jam plus hanya boleh memiliki 1 angka di belakang koma."));
+if (strlen($nama_pemberi) > 50) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Nama pemberi tugas maksimal 50 karakter."
+        )
+    );
     exit;
 }
 
-if ($jumlah_jam_plus > 100) {
-    header("Location: tambah.php?error=" . urlencode("Jumlah jam plus harus lebih kecil sama dengan 100."));
+if ($deskripsi === '') {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Deskripsi pekerjaan wajib diisi.")
+    );
     exit;
 }
 
-if (!in_array($jenis_jam, ['Murni', 'Kompensasi'])) {
-    header("Location: tambah.php?error=" . urlencode("Jenis jam tidak valid."));
+/*
+|--------------------------------------------------------------------------
+| Validasi dokumen bukti
+|--------------------------------------------------------------------------
+*/
+
+if ($dokumen_url === '') {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode("Tautan dokumen bukti wajib diisi.")
+    );
     exit;
 }
 
-if ($deskripsi == '' || $nama_pemberi == '' || $dokumen_url == '') {
-    header("Location: tambah.php?error=" . urlencode("Semua field wajib diisi."));
+if (strlen($dokumen_url) > 2048) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Tautan dokumen bukti maksimal 2048 karakter."
+        )
+    );
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "CALL usp_insert_pengajuan_jam_plus(?, ?, ?, ?, ?, ?, ?, ?)");
+if (
+    filter_var(
+        $dokumen_url,
+        FILTER_VALIDATE_URL
+    ) === false
+) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Format tautan dokumen bukti tidak valid."
+        )
+    );
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| Menjalankan stored procedure
+|--------------------------------------------------------------------------
+*/
+
+$sql = "
+    CALL usp_insert_pengajuan_jam_plus(
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?,
+        ?
+    )
+";
+
+$stmt = mysqli_prepare($koneksi, $sql);
+
+if (!$stmt) {
+    header(
+        "Location: tambah.php?error=" .
+        urlencode(
+            "Gagal menyiapkan proses penyimpanan data."
+        )
+    );
+    exit;
+}
 
 mysqli_stmt_bind_param(
     $stmt,
@@ -79,12 +277,22 @@ mysqli_stmt_bind_param(
 if (mysqli_stmt_execute($stmt)) {
     mysqli_stmt_close($stmt);
 
-    header("Location: index.php?status=berhasil_tambah");
-    exit;
-} else {
-    $error = mysqli_error($koneksi);
-    mysqli_stmt_close($stmt);
-
-    header("Location: tambah.php?error=" . urlencode($error));
+    header(
+        "Location: index.php?status=berhasil_tambah"
+    );
     exit;
 }
+
+$error = mysqli_stmt_error($stmt);
+
+mysqli_stmt_close($stmt);
+
+header(
+    "Location: tambah.php?error=" .
+    urlencode(
+        $error !== ''
+            ? $error
+            : "Pengajuan jam plus gagal disimpan."
+    )
+);
+exit;

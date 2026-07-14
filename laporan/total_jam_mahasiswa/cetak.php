@@ -73,25 +73,6 @@ class PDFLaporanTotalJamMahasiswa extends FPDF
         $this->Cell(0, 10, pdf_text("Halaman " . $this->PageNo() . " dari {nb}"), 0, 0, "C");
     }
 
-    public function TableNote()
-    {
-        $this->SetFont("Arial", "", 8);
-
-        $this->MultiCell(
-            0,
-            5,
-            pdf_text(
-                "Aturan Perhitungan: Jam plus murni tidak bisa membayar jam minus kompensasi. " .
-                "Jam plus kompensasi digunakan untuk membayar jam minus kompensasi terlebih dahulu. " .
-                "Jika masih ada sisa jam plus kompensasi, sisanya dapat digunakan untuk membayar jam minus murni."
-            ),
-            0,
-            "L"
-        );
-
-        $this->Ln(2);
-    }
-
     public function TableHeader()
     {
         $this->SetFont("Arial", "B", 9);
@@ -112,7 +93,6 @@ $pdf->AliasNbPages();
 $pdf->SetMargins(10, 10, 10);
 $pdf->AddPage();
 
-$pdf->TableNote();
 $pdf->TableHeader();
 
 $pdf->SetFont("Arial", "", 9);
@@ -123,7 +103,6 @@ if (count($data_laporan) > 0) {
     foreach ($data_laporan as $row) {
         if ($pdf->GetY() > 185) {
             $pdf->AddPage();
-            $pdf->TableNote();
             $pdf->TableHeader();
             $pdf->SetFont("Arial", "", 9);
         }

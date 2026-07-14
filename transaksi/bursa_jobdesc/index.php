@@ -10,7 +10,7 @@ if ($role == '') {
     exit;
 }
 
-$bisa_membuat_jobdesc = $role != "Mahasiswa";
+$bisa_membuat_jobdesc = boleh_membuat_jobdesc($role);
 
 $page_title = "Bursa Jobdesc";
 $active_menu = "bursa_jobdesc";
@@ -117,24 +117,34 @@ require_once "../../includes/sidebar.php";
 
                 <div class="table-responsive">
                     <table id="myTable" class="table table-hover table-bordered table-striped align-middle text-nowrap" border="1">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 60px;" class="text-center">No</th>
-                                <th class="text-center">Deskripsi</th>
-                                <th class="text-center">Penerima Jobdesc</th>
+                     <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;" class="text-center">No</th>
+                            <th class="text-center">Deskripsi</th>
+                            <th class="text-center">Penerima Jobdesc</th>
+
+                            <?php if ($role !== "Mahasiswa") { ?>
                                 <th class="text-center">Pemberi</th>
-                                <th class="text-center">Jam Plus</th>
-                                <th class="text-center">Tanggal</th>
+                            <?php } ?>
+
+                            <th class="text-center">Jam Plus</th>
+
+                            <th class="text-center">Tanggal</th>
+
+                            <?php if ($role !== "Mahasiswa") { ?>
                                 <th class="text-center">Terisi/Kuota</th>
-                                <th class="text-center">Status</th>
+                            <?php } ?>
+
+                            <th class="text-center">Status</th>
+
+                            <?php if ($role !== "Mahasiswa") { ?>
                                 <th class="text-center">Penerima</th>
                                 <th class="text-center">Bukti Selesai</th>
+                            <?php } ?>
 
-                                <?php if ($role == "Mahasiswa" || $bisa_membuat_jobdesc) { ?>
-                                    <th style="width: 170px;" class="text-center">Aksi</th>
-                                <?php } ?>
-                            </tr>
-                        </thead>
+                            <th style="width: 170px;" class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
                         <tbody>
                             <?php if (count($data_bursa_jobdesc) > 0) { ?>
                                 <?php $no = 1; ?>
@@ -143,36 +153,52 @@ require_once "../../includes/sidebar.php";
                                     <tr>
                                         <td class="text-center"><?= $no++; ?></td>
 
-                                        <td><?= aman($jobdesc['deskripsi_jobdesc']); ?></td>
+                                       <td class="text-wrap" style="min-width: 250px;">
+                                            <?= aman($jobdesc['deskripsi_jobdesc']); ?>
+                                        </td>
 
-                                        <td class="text-center">
-                                            <?php if ($jobdesc['penerima_jobdesc'] == "Semua Mahasiswa") { ?>
-                                                <span class="badge bg-info text-dark">Semua Mahasiswa</span>
-                                            <?php } elseif ($jobdesc['penerima_jobdesc'] == "Mahasiswa dengan Jam Minus") { ?>
-                                                <span class="badge bg-warning text-dark">Mahasiswa dengan Jam Minus</span>
-                                            <?php } else { ?>
-                                                <span class="badge bg-secondary">
-                                                    <?= aman($jobdesc['penerima_jobdesc']); ?>
-                                                </span>
+                                            <td class="text-center">
+                                                <?php if (
+                                                    $jobdesc['penerima_jobdesc'] ===
+                                                    "Semua Mahasiswa"
+                                                ) { ?>
+                                                    <span class="badge bg-info text-dark">
+                                                        Semua Mahasiswa
+                                                    </span>
+
+                                                <?php } elseif (
+                                                    $jobdesc['penerima_jobdesc'] ===
+                                                    "Mahasiswa dengan Jam Minus"
+                                                ) { ?>
+                                                    <span class="badge bg-warning text-dark">
+                                                        Mahasiswa dengan Sisa Jam Minus
+                                                    </span>
+
+                                                <?php } else { ?>
+                                                    <span class="badge bg-secondary">
+                                                        <?= aman(
+                                                            $jobdesc['penerima_jobdesc']
+                                                        ); ?>
+                                                    </span>
+                                                <?php } ?>
+                                            </td>
+
+                                            <?php if ($role !== "Mahasiswa") { ?>
+                                                <td>
+                                                    <?= aman($jobdesc['nama_pemberi'] ?? '-'); ?><br>
+                                                    <small class="text-muted">
+                                                        <?= aman($jobdesc['username_pemberi'] ?? '-'); ?>
+                                                    </small>
+                                                </td>
                                             <?php } ?>
-                                        </td>
 
-                                        <td>
-                                            <?= aman($jobdesc['nama_pemberi'] ?? '-'); ?><br>
-                                            <small class="text-muted">
-                                                <?= aman($jobdesc['username_pemberi'] ?? '-'); ?>
-                                            </small>
-                                        </td>
+                                        <td class="text-center fw-semibold"><?= format_jam($jobdesc['jam_plus']); ?> Jam</td>
 
-                                        <td class="text-center"><?= format_jam($jobdesc['jam_plus']); ?></td>
+                                        <td class="text-center"><?= date('d-m-Y H:i', strtotime($jobdesc['tanggal_pemberian_jobdesc'])); ?></td>
 
-                                        <td><?= aman($jobdesc['tanggal_pemberian_jobdesc']); ?></td>
-
-                                        <td class="text-center">
-                                            <?= aman($jobdesc['jumlah_mahasiswa_mengambil'] ?? '0'); ?>
-                                            /
-                                            <?= aman($jobdesc['jumlah_mahasiswa_diperlukan'] ?? '0'); ?>
-                                        </td>
+                                        <?php if ($role !== "Mahasiswa") { ?>
+                                            <td class="text-center"><?= (int) ($jobdesc['jumlah_mahasiswa_mengambil'] ?? 0); ?> / <?= (int) ($jobdesc['jumlah_mahasiswa_diperlukan'] ?? 0); ?></td>
+                                        <?php } ?>
 
                                         <td class="text-center">
                                             <?php if ($jobdesc['status_jobdesc'] == "Dibuka") { ?>
@@ -184,19 +210,21 @@ require_once "../../includes/sidebar.php";
                                             <?php } ?>
                                         </td>
 
-                                        <td>
-                                            <?= aman($jobdesc['nama_penerima'] ?? '-'); ?>
-                                        </td>
+                                            <?php if ($role !== "Mahasiswa") { ?>
+                                                <td>
+                                                    <?= aman($jobdesc['nama_penerima'] ?? '-'); ?>
+                                                </td>
 
-                                        <td class="text-center">
-                                            <?php if (!empty($jobdesc['bukti_selesai_url'])) { ?>
-                                                <a href="<?= aman($jobdesc['bukti_selesai_url']); ?>" target="_blank" class="btn btn-outline-primary btn-sm">
-                                                    Lihat Bukti
-                                                </a>
-                                            <?php } else { ?>
-                                                <span class="text-muted">-</span>
+                                                <td class="text-center">
+                                                    <?php if (!empty($jobdesc['bukti_selesai_url'])) { ?>
+                                                        <a href="<?= aman($jobdesc['bukti_selesai_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
+                                                            Lihat Bukti Selesai
+                                                        </a>
+                                                    <?php } else { ?>
+                                                        <span class="text-muted">-</span>
+                                                    <?php } ?>
+                                                </td>
                                             <?php } ?>
-                                        </td>
 
                                         <?php if ($role == "Mahasiswa" || $bisa_membuat_jobdesc) { ?>
                                             <td class="text-center">
@@ -244,7 +272,7 @@ require_once "../../includes/sidebar.php";
                                                     <?php } elseif ($jobdesc['status_jobdesc'] == "Dibuka" && $jumlah_mengambil < $jumlah_diperlukan) { ?>
 
                                                         <a href="daftar.php?id=<?= $jobdesc['id_bursa_jobdesc']; ?>"
-                                                        class="btn btn-success btn-sm btn-konfirmasi"
+                                                        class="btn btn-primary btn-sm btn-konfirmasi"
                                                         data-title="Daftar Jobdesc?"
                                                         data-text="Yakin ingin mendaftar jobdesc ini?"
                                                         data-icon="question"
@@ -304,12 +332,7 @@ require_once "../../includes/sidebar.php";
                                     </tr>
                                 <?php } ?>
 
-                            <?php } else { ?>
-                                <tr>
-                                    <td colspan="12" class="text-center text-muted py-4">
-                                        Data bursa jobdesc belum tersedia.
-                                    </td>
-                                </tr>
+                    
                             <?php } ?>
                         </tbody>
                     </table>

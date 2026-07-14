@@ -1,4 +1,6 @@
 <?php 
+date_default_timezone_set('Asia/Jakarta');
+
 $host = "localhost";
 $user = "root";
 $pass = "";
@@ -11,4 +13,5 @@ if (!$koneksi) {
 }
 
 mysqli_set_charset($koneksi, "utf8mb4");
+mysqli_query($koneksi, "SET time_zone = '+07:00'");
 ?>

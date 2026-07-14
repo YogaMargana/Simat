@@ -77,10 +77,11 @@ require_once "../../includes/sidebar.php";
                                 <th class="text-center">Kegiatan</th>
                                 <th class="text-center">Jam Diajukan</th>
                                 <th class="text-center">Sumber</th>
-                                <th class="text-center">Jam Diterima</th>
+                                <th class="text-center">Jam Plus yang Diperoleh</th>
                                 <th class="text-center">Jenis</th>
                                 <th class="text-center">Tanggal</th>
                                 <th class="text-center">Status</th>
+                                <th class="text-center">Alasan Penolakan</th>
                                 <?php if ($role == "PIC Tata Tertib") { ?>
                                     <th class="text-center">Aksi</th>
                                 <?php } ?>
@@ -122,6 +123,23 @@ require_once "../../includes/sidebar.php";
                                             <span class="badge bg-danger">Ditolak</span>
                                         <?php } ?>
                                     </td>
+                                    <td
+                                        class="text-wrap"
+                                        style="min-width: 220px;"
+                                    >
+                                        <?php if ($row['status_pengajuan'] === 'Ditolak') { ?>
+                                            <span class="text-danger">
+                                                <?= nl2br(
+                                                    aman(
+                                                        $row['alasan_penolakan']
+                                                        ?: 'Alasan tidak tersedia.'
+                                                    )
+                                                ); ?>
+                                            </span>
+                                        <?php } else { ?>
+                                            <span class="text-muted">-</span>
+                                        <?php } ?>
+                                    </td>
                                     <?php if ($role == "PIC Tata Tertib") { ?>
                                         <td class="text-center">
                                             <?php if ($role == "PIC Tata Tertib" && $row['status_pengajuan'] == "Menunggu Verifikasi") { ?>
@@ -133,7 +151,14 @@ require_once "../../includes/sidebar.php";
                                     <?php } ?>
                                 </tr>
                             <?php } } else { ?>
-                                <tr><td colspan="10" class="text-center py-4">Belum ada data.</td></tr>
+                                <tr>
+                                    <td
+                                        colspan="<?= $role === 'PIC Tata Tertib' ? 11 : 10; ?>"
+                                        class="text-center py-4"
+                                    >
+                                        Belum ada data.
+                                    </td>
+                                </tr>
                             <?php } ?>
                         </tbody>
                     </table>

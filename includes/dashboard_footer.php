@@ -19,7 +19,6 @@ $pesan_status = [
 ];
 ?>
 
-<script src="/SIMAT/assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/SIMAT/assets/vendor/datatables/datatables.js"></script>
 <script src="/SIMAT/assets/vendor/datatables/datatables.min.js"></script>
 
@@ -86,12 +85,30 @@ $pesan_status = [
 </script>
 
 <script>
+const tabelData = document.getElementById('myTable');
+
+if (tabelData) {
     new DataTable('#myTable', {
         ordering: true,
         paging: true,
         searching: true,
-        info: true
+        info: true,
+        language: {
+            emptyTable: 'Data belum tersedia.',
+            search: 'Cari:',
+            lengthMenu: 'Tampilkan _MENU_ data',
+            info: 'Menampilkan _START_ sampai _END_ dari _TOTAL_ data',
+            infoEmpty: 'Tidak ada data yang ditampilkan',
+            zeroRecords: 'Data tidak ditemukan',
+            paginate: {
+                first: 'Pertama',
+                last: 'Terakhir',
+                next: 'Berikutnya',
+                previous: 'Sebelumnya'
+            }
+        }
     });
+}
 </script>
 
 </body>

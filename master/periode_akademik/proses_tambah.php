@@ -4,7 +4,7 @@ require_once "../../includes/auth_dashboard.php";
 
 $role = $_SESSION['role'] ?? '';
 
-if (!in_array($role, ["Kepala Prodi", "PIC Kemahasiswaan"])) {
+if (!in_array($role, ["Kepala Prodi"])) {
     header("Location: /SIMAT/index.php");
     exit;
 }

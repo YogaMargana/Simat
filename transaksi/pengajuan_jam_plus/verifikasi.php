@@ -5,7 +5,7 @@ require_once "../../includes/auth_dashboard.php";
 
 $role = $_SESSION['role'] ?? '';
 
-// Hanya PIC Kemahasiswaan yang boleh melakukan verifikasi
+// Hanya PIC Tata Tertib yang boleh memverifikasi pengajuan jam plus
 if ($role != "PIC Tata Tertib") {
     header("Location: /SIMAT/index.php");
     exit;
@@ -158,7 +158,7 @@ require_once "../../includes/sidebar.php";
                             </tr>
 
                             <tr>
-                                <th>Jam Diterima</th>
+                                <th>Jam Plus yang Diperoleh</th>
                                 <td class="fw-bold text-success">
                                     : +<?= format_jam($jumlah_jam_diterima); ?> Jam
                                 </td>
@@ -178,7 +178,7 @@ require_once "../../includes/sidebar.php";
                                 <th>Dokumen Bukti</th>
                                 <td>: 
                                     <a href="<?= aman($pengajuan['dokumen_url']); ?>" target="_blank" class="btn btn-info btn-sm text-white">
-                                        <i class="fa-solid fa-external-link me-1"></i> Buka Dokumen
+                                        <i class="fa-solid fa-external-link me-1"></i> Lihat Dokumen Bukti
                                     </a>
                                 </td>
                             </tr>
@@ -199,14 +199,41 @@ require_once "../../includes/sidebar.php";
                     <form action="proses_verifikasi.php" method="post">
                         <input type="hidden" name="id_pengajuan_jam_plus" value="<?= aman($pengajuan['id_pengajuan_jam_plus']); ?>">
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Keputusan Verifikasi</label>
-                            <select name="status_pengajuan" class="form-select form-select-lg" required>
-                                <option value="">-- Pilih Keputusan --</option>
-                                <option value="Disetujui">Setujui Pengajuan (Jam diterima akan ditambahkan ke saldo)</option>
-                                <option value="Ditolak">Tolak Pengajuan</option>
-                            </select>
-                        </div>
+                            <div class="mb-4">
+                                <label for="status_pengajuan" class="form-label fw-bold">
+                                    Keputusan *
+                                </label>
+
+                                <select
+                                    name="status_pengajuan"
+                                    id="status_pengajuan"
+                                    class="form-select form-select-lg"
+                                    required
+                                >
+                                    <option value="">Pilih keputusan</option>
+                                    <option value="Disetujui">Setujui Pengajuan</option>
+                                    <option value="Ditolak">Tolak Pengajuan</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4 d-none" id="alasan_penolakan_container">
+                                <label for="alasan_penolakan" class="form-label fw-bold">
+                                    Alasan Penolakan *
+                                </label>
+
+                                <textarea
+                                    name="alasan_penolakan"
+                                    id="alasan_penolakan"
+                                    class="form-control"
+                                    rows="4"
+                                    maxlength="255"
+                                    placeholder="Tuliskan alasan penolakan pengajuan"
+                                ></textarea>
+
+                                <div class="form-text">
+                                    Maksimal 255 karakter.
+                                </div>
+                            </div>
 
                         <div class="d-flex gap-2">
                             <button type="submit" name="verifikasi" class="btn btn-primary px-4">
@@ -219,16 +246,76 @@ require_once "../../includes/sidebar.php";
                             </a>
                         </div>
                     </form>
-                <?php } else { ?>
-                    <div class="alert alert-secondary d-flex align-items-center">
-                        <i class="fa-solid fa-info-circle me-2"></i>
-                        <span>Pengajuan ini sudah diproses dan tidak dapat diubah kembali.</span>
-                    </div>
-                    <a href="index.php" class="btn btn-secondary px-4">Kembali</a>
-                <?php } ?>
+                    <?php } else { ?>
+                        <div class="alert alert-secondary d-flex align-items-center">
+                            <i class="fa-solid fa-info-circle me-2"></i>
+                            <span>
+                                Pengajuan ini sudah diproses dan tidak dapat diubah kembali.
+                            </span>
+                        </div>
+
+                        <?php if ($pengajuan['status_pengajuan'] === 'Ditolak') { ?>
+                            <div class="mb-4">
+                                <label class="fw-bold d-block mb-2">
+                                    Alasan Penolakan
+                                </label>
+
+                                <div class="p-3 border rounded bg-light text-danger">
+                                    <?= nl2br(
+                                        aman(
+                                            $pengajuan['alasan_penolakan']
+                                            ?: 'Alasan penolakan tidak tersedia.'
+                                        )
+                                    ); ?>
+                                </div>
+                            </div>
+                        <?php } ?>
+
+                        <a href="index.php" class="btn btn-secondary px-4">
+                            Kembali
+                        </a>
+                    <?php } ?>
             </div>
         </div>
     </div>
 </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const statusSelect = document.getElementById('status_pengajuan');
+    const alasanContainer = document.getElementById(
+        'alasan_penolakan_container'
+    );
+    const alasanTextarea = document.getElementById(
+        'alasan_penolakan'
+    );
+
+    if (
+        !statusSelect ||
+        !alasanContainer ||
+        !alasanTextarea
+    ) {
+        return;
+    }
+
+    function toggleAlasanPenolakan() {
+        if (statusSelect.value === 'Ditolak') {
+            alasanContainer.classList.remove('d-none');
+            alasanTextarea.setAttribute('required', 'required');
+        } else {
+            alasanContainer.classList.add('d-none');
+            alasanTextarea.removeAttribute('required');
+            alasanTextarea.value = '';
+        }
+    }
+
+    statusSelect.addEventListener(
+        'change',
+        toggleAlasanPenolakan
+    );
+
+    toggleAlasanPenolakan();
+});
+</script>
 
 <?php require_once "../../includes/dashboard_footer.php"; ?>

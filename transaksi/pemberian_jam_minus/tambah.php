@@ -88,24 +88,25 @@ require_once "../../includes/sidebar.php";
                 <form
                     action="proses_tambah.php"
                     method="post"
-                    id="form_pemberian_jam_minus"
-                >
+                    id="form_pemberian_jam_minus">
 
                     <div class="mb-3">
 
-                        <label class="form-label fw-bold">
+                        <label
+                            for="id_pengguna_mahasiswa"
+                            class="form-label fw-bold">
                             Mahasiswa
+                            <span class="text-danger">*</span>
                         </label>
 
                         <select
                             name="id_pengguna_mahasiswa"
                             id="id_pengguna_mahasiswa"
                             class="form-select"
-                            required
-                        >
+                            required>
 
                             <option value="">
-                                -- Pilih Mahasiswa --
+                                Pilih Mahasiswa
                             </option>
 
                             <?php foreach (
@@ -114,10 +115,7 @@ require_once "../../includes/sidebar.php";
 
                                 <option
                                     value="<?= (int)
-                                        $mahasiswa[
-                                            'id_pengguna_mahasiswa'
-                                        ]; ?>"
-                                >
+                                            $mahasiswa['id_pengguna_mahasiswa']; ?>">
 
                                     <?= aman(
                                         $mahasiswa['nim']
@@ -145,19 +143,21 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-4">
 
-                        <label class="form-label fw-bold">
+                        <label
+                            for="kategori_pelanggaran"
+                            class="form-label fw-bold">
                             Kategori Pemberian Jam Minus
+                            <span class="text-danger">*</span>
                         </label>
 
                         <select
                             name="kategori_pelanggaran"
                             id="kategori_pelanggaran"
                             class="form-select"
-                            required
-                        >
+                            required>
 
                             <option value="">
-                                -- Pilih Kategori --
+                                Pilih Kategori
                             </option>
 
                             <option value="Akademik">
@@ -176,10 +176,7 @@ require_once "../../includes/sidebar.php";
 
                     </div>
 
-                    <div
-                        id="section_akademik"
-                        class="d-none"
-                    >
+                    <div id="section_akademik" class="d-none">
 
                         <div class="card bg-light border mb-4">
 
@@ -191,18 +188,20 @@ require_once "../../includes/sidebar.php";
 
                                 <div class="mb-3">
 
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="id_detail_kelas_pada_mata_kuliah"
+                                        class="form-label fw-bold">
                                         Mata Kuliah
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <select
                                         name="id_detail_kelas_pada_mata_kuliah"
                                         id="id_detail_kelas_pada_mata_kuliah"
-                                        class="form-select"
-                                    >
+                                        class="form-select">
 
                                         <option value="">
-                                            -- Pilih mahasiswa terlebih dahulu --
+                                            Pilih mahasiswa terlebih dahulu
                                         </option>
 
                                     </select>
@@ -216,18 +215,20 @@ require_once "../../includes/sidebar.php";
 
                                 <div class="mb-3">
 
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="keterangan_absensi"
+                                        class="form-label fw-bold">
                                         Keterangan Absensi
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <select
                                         name="keterangan_absensi"
                                         id="keterangan_absensi"
-                                        class="form-select"
-                                    >
+                                        class="form-select">
 
                                         <option value="">
-                                            -- Pilih Keterangan Absensi --
+                                            Pilih Keterangan Absensi
                                         </option>
 
                                         <option value="Izin">
@@ -247,52 +248,38 @@ require_once "../../includes/sidebar.php";
                                 </div>
 
                                 <div class="mb-3">
-
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="jumlah_jam_minus_akademik"
+                                        class="form-label fw-bold">
                                         Jumlah Jam Minus
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <div class="input-group">
-
                                         <input
                                             type="number"
-
                                             name="jumlah_jam_minus_akademik"
-
                                             id="jumlah_jam_minus_akademik"
-
                                             class="form-control"
-
                                             min="0.1"
-
-                                            max="100.0"
-
+                                            max="1000.0"
                                             step="0.1"
-
-                                            placeholder="0.0"
-                                        >
+                                            inputmode="decimal"
+                                            placeholder="0.0">
 
                                         <span class="input-group-text">
                                             Jam
                                         </span>
-
                                     </div>
 
                                     <div class="form-text">
-                                        Jumlah jam ditentukan langsung
-                                        oleh PIC Tata Tertib.
+                                        Masukkan jumlah antara 0,1 sampai 1000,0 jam.
                                     </div>
-
                                 </div>
 
                                 <div class="alert alert-info mb-0">
-
                                     Jenis jam minus:
-
-                                    <strong>
-                                        Murni
-                                    </strong>
-
+                                    <strong>Jam Minus Murni</strong>
                                 </div>
 
                             </div>
@@ -303,8 +290,7 @@ require_once "../../includes/sidebar.php";
 
                     <div
                         id="section_fasilitas"
-                        class="d-none"
-                    >
+                        class="d-none">
 
                         <div class="card bg-light border mb-4">
 
@@ -316,18 +302,20 @@ require_once "../../includes/sidebar.php";
 
                                 <div class="mb-3">
 
-                                    <label class="form-label fw-bold">
-                                        Fasilitas yang Dirusak
+                                    <label
+                                        for="id_fasilitas"
+                                        class="form-label fw-bold">
+                                        Fasilitas Rusak
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <select
                                         name="id_fasilitas"
                                         id="id_fasilitas"
-                                        class="form-select"
-                                    >
+                                        class="form-select">
 
                                         <option value="">
-                                            -- Pilih Fasilitas --
+                                            Pilih Fasilitas
                                         </option>
 
                                         <?php foreach (
@@ -336,31 +324,20 @@ require_once "../../includes/sidebar.php";
 
                                             <option
                                                 value="<?= (int)
-                                                    $fasilitas[
-                                                        'id_fasilitas'
-                                                    ]; ?>"
+                                                        $fasilitas['id_fasilitas']; ?>"
 
                                                 data-harga="<?= aman(
-                                                    $fasilitas['harga']
-                                                ); ?>"
-                                            >
+                                                                $fasilitas['harga']
+                                                            ); ?>">
 
                                                 <?= aman(
-                                                    $fasilitas[
-                                                        'nama_fasilitas'
-                                                    ]
-                                                ); ?>
-
-                                                -
-
-                                                Rp<?= format_jam($fasilitas['harga']); ?>
-
-                                                -
-
+                                                    $fasilitas['nama_fasilitas']
+                                                ); ?> -
+                                                Rp<?= number_format(
+                                                    (float) $fasilitas['harga'],0,',','.'
+                                                ); ?> -
                                                 <?= aman(
-                                                    $fasilitas[
-                                                        'status_fasilitas'
-                                                    ]
+                                                    $fasilitas['status_fasilitas']
                                                 ); ?>
 
                                             </option>
@@ -383,8 +360,7 @@ require_once "../../includes/sidebar.php";
                                         Harga fasilitas:
 
                                         <strong
-                                            id="preview_harga_fasilitas"
-                                        >
+                                            id="preview_harga_fasilitas">
                                             -
                                         </strong>
                                     </div>
@@ -400,18 +376,16 @@ require_once "../../includes/sidebar.php";
                                     <div>
                                         Perkiraan jam minus:
 
-                                        <strong
-                                            id="preview_jam_fasilitas"
-                                        >
+                                        <strong id="preview_jam_fasilitas">
                                             -
                                         </strong>
                                     </div>
 
                                     <div>
-                                        Jenis jam:
+                                        Jenis jam minus:
 
                                         <strong>
-                                            Kompensasi
+                                            Jam Minus Kompensasi
                                         </strong>
                                     </div>
 
@@ -425,8 +399,7 @@ require_once "../../includes/sidebar.php";
 
                     <div
                         id="section_lainnya"
-                        class="d-none"
-                    >
+                        class="d-none">
 
                         <div class="card bg-light border mb-4">
 
@@ -438,8 +411,11 @@ require_once "../../includes/sidebar.php";
 
                                 <div class="mb-3">
 
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="deskripsi_pelanggaran"
+                                        class="form-label fw-bold">
                                         Deskripsi Pelanggaran
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <textarea
@@ -447,71 +423,64 @@ require_once "../../includes/sidebar.php";
                                         id="deskripsi_pelanggaran"
                                         class="form-control"
                                         rows="4"
-                                        placeholder="Jelaskan pelanggaran secara jelas..."
-                                    ></textarea>
+                                        placeholder="Jelaskan pelanggaran secara jelas..."></textarea>
 
                                 </div>
 
                                 <div class="mb-3">
-
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="jenis_jam_lainnya"
+                                        class="form-label fw-bold">
                                         Jenis Jam Minus
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <select
                                         name="jenis_jam_lainnya"
                                         id="jenis_jam_lainnya"
-                                        class="form-select"
-                                    >
-
+                                        class="form-select">
                                         <option value="">
-                                            -- Pilih Jenis Jam --
+                                            Pilih jenis jam minus
                                         </option>
 
                                         <option value="Murni">
-                                            Murni
+                                            Jam Minus Murni
                                         </option>
 
                                         <option value="Kompensasi">
-                                            Kompensasi
+                                            Jam Minus Kompensasi
                                         </option>
-
                                     </select>
-
                                 </div>
 
                                 <div class="mb-3">
-
-                                    <label class="form-label fw-bold">
+                                    <label
+                                        for="jumlah_jam_minus_lainnya"
+                                        class="form-label fw-bold">
                                         Jumlah Jam Minus
+                                        <span class="text-danger">*</span>
                                     </label>
 
                                     <div class="input-group">
-
                                         <input
                                             type="number"
-
                                             name="jumlah_jam_minus_lainnya"
-
                                             id="jumlah_jam_minus_lainnya"
-
                                             class="form-control"
-
                                             min="0.1"
-
-                                            max="100.0"
-
+                                            max="1000.0"
                                             step="0.1"
-
-                                            placeholder="0.0"
-                                        >
+                                            inputmode="decimal"
+                                            placeholder="0.0">
 
                                         <span class="input-group-text">
                                             Jam
                                         </span>
-
                                     </div>
 
+                                    <div class="form-text">
+                                        Masukkan jumlah antara 0,1 sampai 1000,0 jam.
+                                    </div>
                                 </div>
 
                             </div>
@@ -520,34 +489,34 @@ require_once "../../includes/sidebar.php";
 
                     </div>
 
-                    <div class="d-flex gap-2">
+            </div>
 
-                        <button
-                            type="submit"
-                            name="simpan"
-                            class="btn btn-primary px-4"
-                        >
+            <div class="d-flex gap-2">
 
-                            <i class="fa-solid fa-floppy-disk me-1"></i>
+                <button
+                    type="submit"
+                    name="simpan"
+                    class="btn btn-primary px-4">
 
-                            Simpan Pemberian Jam Minus
+                    <i class="fa-solid fa-floppy-disk me-1"></i>
 
-                        </button>
+                    Simpan Pemberian Jam Minus
 
-                        <a
-                            href="index.php"
-                            class="btn btn-secondary px-4"
-                        >
-                            Kembali
-                        </a>
+                </button>
 
-                    </div>
-
-                </form>
+                <a
+                    href="index.php"
+                    class="btn btn-secondary px-4">
+                    Kembali
+                </a>
 
             </div>
 
+            </form>
+
         </div>
+
+    </div>
 
     </div>
 
@@ -556,7 +525,7 @@ require_once "../../includes/sidebar.php";
 <script>
     document.addEventListener(
         'DOMContentLoaded',
-        function () {
+        function() {
 
             const mahasiswa =
                 document.getElementById(
@@ -628,12 +597,20 @@ require_once "../../includes/sidebar.php";
                     'preview_jam_fasilitas'
                 );
 
-            function formatAngka(nilai) {
+            function formatRupiah(nilai) {
                 return new Intl.NumberFormat(
-                    'id-ID',
-                    {
+                    'id-ID', {
                         minimumFractionDigits: 0,
-                        maximumFractionDigits: 2
+                        maximumFractionDigits: 0
+                    }
+                ).format(nilai);
+            }
+
+            function formatJam(nilai) {
+                return new Intl.NumberFormat(
+                    'id-ID', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
                     }
                 ).format(nilai);
             }
@@ -688,16 +665,16 @@ require_once "../../includes/sidebar.php";
                     mahasiswa.value;
 
                 mataKuliah.innerHTML =
-                    '<option value="">'
-                    + 'Memuat data...'
-                    + '</option>';
+                    '<option value="">' +
+                    'Memuat data...' +
+                    '</option>';
 
                 if (!idMahasiswa) {
 
                     mataKuliah.innerHTML =
-                        '<option value="">'
-                        + '-- Pilih mahasiswa terlebih dahulu --'
-                        + '</option>';
+                        '<option value="">' +
+                        'Pilih mahasiswa terlebih dahulu' +
+                        '</option>';
 
                     return;
                 }
@@ -705,9 +682,9 @@ require_once "../../includes/sidebar.php";
                 try {
 
                     const response = await fetch(
-                        'ambil_mata_kuliah.php'
-                        + '?id_pengguna_mahasiswa='
-                        + encodeURIComponent(
+                        'ambil_mata_kuliah.php' +
+                        '?id_pengguna_mahasiswa=' +
+                        encodeURIComponent(
                             idMahasiswa
                         )
                     );
@@ -730,12 +707,12 @@ require_once "../../includes/sidebar.php";
                     }
 
                     mataKuliah.innerHTML =
-                        '<option value="">'
-                        + '-- Pilih Mata Kuliah --'
-                        + '</option>';
+                        '<option value="">' +
+                        'Pilih Mata Kuliah' +
+                        '</option>';
 
                     result.data.forEach(
-                        function (item) {
+                        function(item) {
 
                             const option =
                                 document.createElement(
@@ -748,9 +725,9 @@ require_once "../../includes/sidebar.php";
                                 ];
 
                             option.textContent =
-                                item['kode_mata_kuliah']
-                                + ' - '
-                                + item['nama_mata_kuliah'];
+                                item['kode_mata_kuliah'] +
+                                ' - ' +
+                                item['nama_mata_kuliah'];
 
                             mataKuliah.appendChild(
                                 option
@@ -761,9 +738,9 @@ require_once "../../includes/sidebar.php";
                     if (result.data.length === 0) {
 
                         mataKuliah.innerHTML =
-                            '<option value="">'
-                            + '-- Tidak ada mata kuliah --'
-                            + '</option>';
+                            '<option value="">' +
+                            'Tidak ada mata kuliah' +
+                            '</option>';
 
                     }
 
@@ -772,9 +749,9 @@ require_once "../../includes/sidebar.php";
                     console.error(error);
 
                     mataKuliah.innerHTML =
-                        '<option value="">'
-                        + '-- Gagal mengambil mata kuliah --'
-                        + '</option>';
+                        '<option value="">' +
+                        'Gagal mengambil mata kuliah' +
+                        '</option>';
 
                 }
             }
@@ -850,19 +827,19 @@ require_once "../../includes/sidebar.php";
                     );
 
                 /*
-                * Formula final:
-                * harga × 0.0005
-                */
+                 * Formula final:
+                 * harga × 0.0005
+                 */
                 const jamMinus =
                     harga * 0.0005;
 
                 previewHarga.textContent =
-                    'Rp'
-                    + formatAngka(harga);
+                    'Rp' +
+                    formatRupiah(harga);
 
                 previewJamFasilitas.textContent =
-                    formatAngka(jamMinus)
-                    + ' jam';
+                    formatJam(jamMinus) +
+                    ' Jam';
             }
 
             kategori.addEventListener(
@@ -872,7 +849,7 @@ require_once "../../includes/sidebar.php";
 
             mahasiswa.addEventListener(
                 'change',
-                function () {
+                function() {
 
                     if (
                         kategori.value ===
@@ -892,7 +869,7 @@ require_once "../../includes/sidebar.php";
             aturKategori();
         }
     );
-    </script>
+</script>
 
 <?php
 require_once "../../includes/dashboard_footer.php";

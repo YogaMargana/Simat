@@ -1,14 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.0
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Jul 11, 2026 at 09:26 PM
--- Server version: 8.0.30
--- PHP Version: 8.1.10
---
--- Versi kompatibel import lokal untuk XAMPP/Laragon
--- Perubahan: hapus DEFINER, tambah DROP/CREATE/USE database, nonaktifkan FK saat import.
+-- Host: 127.0.0.1
+-- Waktu pembuatan: 14 Jul 2026 pada 10.19
+-- Versi server: 10.4.32-MariaDB
+-- Versi PHP: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,19 +21,11 @@ SET time_zone = "+00:00";
 -- Database: `db_simat`
 --
 
-/*!40101 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS */;
-SET FOREIGN_KEY_CHECKS=0;
-
-DROP DATABASE IF EXISTS `db_simat`;
-CREATE DATABASE IF NOT EXISTS `db_simat` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `db_simat`;
-
-
 DELIMITER $$
 --
--- Procedures
+-- Prosedur
 --
-CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
     DECLARE v_role VARCHAR(30);
     DECLARE v_id_mahasiswa INT;
     DECLARE v_penerima_jobdesc VARCHAR(50);
@@ -161,7 +150,7 @@ CREATE PROCEDURE `usp_daftar_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_
         p_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
-CREATE PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM detail_kelas_pada_mata_kuliah
@@ -179,7 +168,7 @@ CREATE PROCEDURE `usp_delete_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_
         p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
 END$$
 
-CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(50), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskripsi_jobdesc` TEXT, IN `p_penerima_jobdesc` VARCHAR(50), IN `p_jam_plus` DECIMAL(6,2), IN `p_tanggal_pemberian_jobdesc` DATETIME, IN `p_jumlah_mahasiswa_diperlukan` INT)   BEGIN
     DECLARE v_id_bursa_jobdesc INT;
     DECLARE v_role VARCHAR(30);
 
@@ -193,9 +182,11 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
         SELECT 1
         FROM pengguna
         WHERE id_pengguna = p_id_pengguna
+          AND status_akun = 'Aktif'
     ) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Data pengguna tidak ditemukan';
+        SET MESSAGE_TEXT =
+            'Data pengguna tidak ditemukan atau tidak aktif';
     END IF;
 
     SELECT role
@@ -203,9 +194,25 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
     FROM pengguna
     WHERE id_pengguna = p_id_pengguna;
 
-    IF v_role = 'Mahasiswa' THEN
+    IF v_role NOT IN (
+        'Pengajar',
+        'Kepala Prodi',
+        'PIC Tata Tertib',
+        'PIC Aset Fasilitas',
+        'PIC Kemahasiswaan'
+    ) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Mahasiswa tidak dapat membuat bursa jobdesc';
+        SET MESSAGE_TEXT =
+            'Pengguna tidak memiliki akses membuat jobdesc';
+    END IF;
+
+    IF
+        p_deskripsi_jobdesc IS NULL
+        OR CHAR_LENGTH(TRIM(p_deskripsi_jobdesc)) = 0
+    THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+            'Deskripsi jobdesc wajib diisi';
     END IF;
 
     IF p_penerima_jobdesc NOT IN (
@@ -213,17 +220,53 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
         'Mahasiswa dengan Jam Minus'
     ) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pilihan penerima jobdesc tidak valid';
+        SET MESSAGE_TEXT =
+            'Sasaran mahasiswa tidak valid';
     END IF;
 
-    IF p_jam_plus <= 0 THEN
+    IF
+        p_jam_plus < 0.1
+        OR p_jam_plus > 1000.0
+    THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jam plus harus lebih dari 0';
+        SET MESSAGE_TEXT =
+            'Jam plus harus antara 0,1 sampai 1000,0';
     END IF;
 
-    IF p_jumlah_mahasiswa_diperlukan <= 0 THEN
+    IF p_jam_plus <> ROUND(p_jam_plus, 1) THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Jumlah mahasiswa diperlukan harus lebih dari 0';
+        SET MESSAGE_TEXT =
+            'Jam plus maksimal satu angka di belakang koma';
+    END IF;
+
+    IF p_tanggal_pemberian_jobdesc IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+            'Tanggal pemberian jobdesc wajib diisi';
+    END IF;
+
+    IF p_tanggal_pemberian_jobdesc <
+       TIMESTAMP(
+           CURDATE(),
+           MAKETIME(
+               HOUR(NOW()),
+               MINUTE(NOW()),
+               0
+           )
+       )
+    THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+            'Tanggal pemberian jobdesc tidak boleh lampau';
+    END IF;
+
+    IF
+        p_jumlah_mahasiswa_diperlukan IS NULL
+        OR p_jumlah_mahasiswa_diperlukan < 1
+    THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT =
+            'Jumlah mahasiswa minimal 1';
     END IF;
 
     START TRANSACTION;
@@ -238,7 +281,7 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
         status_jobdesc
     )
     VALUES (
-        p_deskripsi_jobdesc,
+        TRIM(p_deskripsi_jobdesc),
         p_penerima_jobdesc,
         p_jam_plus,
         p_tanggal_pemberian_jobdesc,
@@ -263,11 +306,11 @@ CREATE PROCEDURE `usp_insert_bursa_jobdesc` (IN `p_id_pengguna` INT, IN `p_deskr
     COMMIT;
 
     SELECT
-        'Bursa jobdesc berhasil ditambahkan' AS Pesan,
+        'Bursa jobdesc berhasil ditambahkan' AS pesan,
         v_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
-CREATE PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
     IF p_jumlah_fasilitas <= 0 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Jumlah fasilitas harus lebih dari 0';
@@ -322,7 +365,7 @@ CREATE PROCEDURE `usp_insert_detail_fasilitas_pada_kelas` (IN `p_id_kelas` INT, 
         LAST_INSERT_ID() AS id_detail_fasilitas_pada_kelas;
 END$$
 
-CREATE PROCEDURE `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_peran_pengguna` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_peran_pengguna` VARCHAR(20))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -340,7 +383,7 @@ CREATE PROCEDURE `usp_insert_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
     );
 END$$
 
-CREATE PROCEDURE `usp_insert_fasilitas` (IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_fasilitas` (IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
     IF p_nama_fasilitas IS NULL OR TRIM(p_nama_fasilitas) = '' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Nama fasilitas wajib diisi';
@@ -369,7 +412,7 @@ CREATE PROCEDURE `usp_insert_fasilitas` (IN `p_nama_fasilitas` VARCHAR(50), IN `
         LAST_INSERT_ID() AS id_fasilitas_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_kegiatan` (IN `p_nama_kegiatan` VARCHAR(50), IN `p_penyelenggara` VARCHAR(20), IN `p_tanggal_kegiatan` DATE)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_kegiatan` (IN `p_nama_kegiatan` VARCHAR(50), IN `p_penyelenggara` VARCHAR(20), IN `p_tanggal_kegiatan` DATE)   BEGIN
     IF p_nama_kegiatan IS NULL OR TRIM(p_nama_kegiatan) = '' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Nama kegiatan wajib diisi';
@@ -398,7 +441,7 @@ CREATE PROCEDURE `usp_insert_kegiatan` (IN `p_nama_kegiatan` VARCHAR(50), IN `p_
         LAST_INSERT_ID() AS id_kegiatan_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_kelas` (IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_kelas` (IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -418,7 +461,7 @@ CREATE PROCEDURE `usp_insert_kelas` (IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat
         LAST_INSERT_ID() AS id_kelas_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_mahasiswa` (IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_mahasiswa` (IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
     DECLARE v_id_mahasiswa_baru INT;
     
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -459,207 +502,156 @@ CREATE PROCEDURE `usp_insert_mahasiswa` (IN `p_id_kelas` INT, IN `p_id_periode_a
         v_id_mahasiswa_baru AS id_mahasiswa_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_id_penerima` INT, IN `p_kategori_pelanggaran` VARCHAR(20), IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_keterangan_absensi` VARCHAR(10), IN `p_id_fasilitas` INT, IN `p_deskripsi_pelanggaran` TEXT, IN `p_jenis_jam_input` VARCHAR(20), IN `p_jumlah_jam_minus_input` DECIMAL(10,2))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_id_penerima` INT, IN `p_kategori_pelanggaran` VARCHAR(20), IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_keterangan_absensi` VARCHAR(10), IN `p_id_fasilitas` INT, IN `p_deskripsi_pelanggaran` TEXT, IN `p_jenis_jam_input` VARCHAR(20), IN `p_jumlah_jam_minus_input` DECIMAL(10,2))   BEGIN
     DECLARE v_id_mahasiswa INT;
     DECLARE v_id_kelas_mahasiswa INT;
 
     DECLARE v_id_detail_mk_final INT DEFAULT NULL;
-    DECLARE v_keterangan_absensi_final VARCHAR(10)
-        DEFAULT NULL;
-
+    DECLARE v_keterangan_absensi_final VARCHAR(10) DEFAULT NULL;
     DECLARE v_id_fasilitas_final INT DEFAULT NULL;
 
-    DECLARE v_harga_fasilitas DECIMAL(15,2)
-        DEFAULT NULL;
+    DECLARE v_harga_fasilitas DECIMAL(15,2) DEFAULT NULL;
+    DECLARE v_hasil_perhitungan_fasilitas DECIMAL(20,6) DEFAULT NULL;
 
-    DECLARE v_hasil_perhitungan_fasilitas DECIMAL(20,6)
-        DEFAULT NULL;
-
-    DECLARE v_jumlah_jam_minus DECIMAL(10,2)
-        DEFAULT 0.00;
-
+    DECLARE v_jumlah_jam_minus DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_jenis_jam VARCHAR(20);
-
     DECLARE v_nama_pelanggaran VARCHAR(100);
-
     DECLARE v_deskripsi_final TEXT DEFAULT NULL;
 
     DECLARE v_id_pemberian_jam_minus INT;
 
-    /* =========================================
-       ROLLBACK OTOMATIS JIKA ADA ERROR
-       ========================================= */
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
         RESIGNAL;
     END;
 
-    /* =========================================
-       VALIDASI PIC TATA TERTIB
-       ========================================= */
+    /*
+    | Validasi PIC Tata Tertib
+    */
+
     IF NOT EXISTS (
         SELECT 1
         FROM pengguna
-
         WHERE id_pengguna = p_id_pemberi
-
           AND role = 'PIC Tata Tertib'
-
           AND status_akun = 'Aktif'
     ) THEN
-
         SIGNAL SQLSTATE '45000'
-
         SET MESSAGE_TEXT =
             'Pemberi tidak valid atau bukan PIC Tata Tertib';
-
     END IF;
 
-    /* =========================================
-       VALIDASI MAHASISWA PENERIMA
-       ========================================= */
+    /*
+    | Validasi mahasiswa penerima
+    */
+
     IF NOT EXISTS (
         SELECT 1
-
         FROM pengguna AS u
-
         JOIN mahasiswa AS m
             ON u.id_mahasiswa = m.id_mahasiswa
-
         WHERE u.id_pengguna = p_id_penerima
-
           AND u.role = 'Mahasiswa'
-
           AND u.status_akun = 'Aktif'
-
           AND m.status_mahasiswa = 'Aktif'
     ) THEN
-
         SIGNAL SQLSTATE '45000'
-
         SET MESSAGE_TEXT =
             'Mahasiswa penerima tidak ditemukan atau tidak aktif';
-
     END IF;
 
-    /* =========================================
-       VALIDASI KATEGORI
-       ========================================= */
-    IF p_kategori_pelanggaran IS NULL
+    /*
+    | Validasi kategori
+    */
 
+    IF p_kategori_pelanggaran IS NULL
        OR p_kategori_pelanggaran NOT IN (
             'Akademik',
             'Fasilitas',
             'Lainnya'
        )
     THEN
-
         SIGNAL SQLSTATE '45000'
-
         SET MESSAGE_TEXT =
             'Kategori pemberian jam minus tidak valid';
-
     END IF;
 
     START TRANSACTION;
 
-    /* =========================================
-       AMBIL + LOCK DATA MAHASISWA
-       ========================================= */
+    /*
+    | Ambil data mahasiswa
+    */
+
     SELECT
         u.id_mahasiswa,
         m.id_kelas
-
     INTO
         v_id_mahasiswa,
         v_id_kelas_mahasiswa
-
     FROM pengguna AS u
-
     JOIN mahasiswa AS m
         ON u.id_mahasiswa = m.id_mahasiswa
-
     WHERE u.id_pengguna = p_id_penerima
-
     FOR UPDATE;
 
-    /* ==================================================
-       KATEGORI 1: AKADEMIK
-       ================================================== */
+    /*
+    | Kategori Akademik
+    */
+
     IF p_kategori_pelanggaran = 'Akademik' THEN
 
-        /* Mata kuliah wajib dipilih */
         IF p_id_detail_kelas_pada_mata_kuliah IS NULL
-
            OR p_id_detail_kelas_pada_mata_kuliah <= 0
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Mata kuliah wajib dipilih untuk kategori Akademik';
-
         END IF;
 
-        /* Absensi wajib valid */
         IF p_keterangan_absensi IS NULL
-
            OR p_keterangan_absensi NOT IN (
                 'Izin',
                 'Sakit',
                 'Alpa'
            )
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Keterangan absensi tidak valid';
-
         END IF;
 
-        /* Jumlah jam input PIC */
         IF p_jumlah_jam_minus_input IS NULL
-
-           OR p_jumlah_jam_minus_input <= 0
+           OR p_jumlah_jam_minus_input < 0.1
+           OR p_jumlah_jam_minus_input > 1000.0
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
-                'Jumlah jam minus Akademik harus lebih dari 0';
-
+                'Jumlah jam minus Akademik harus antara 0,1 sampai 1000,0';
         END IF;
 
-        /*
-         * PENTING:
-         * Mata kuliah harus benar-benar dimiliki
-         * kelas mahasiswa penerima.
-         */
+        IF p_jumlah_jam_minus_input <>
+           ROUND(p_jumlah_jam_minus_input, 1)
+        THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT =
+                'Jumlah jam minus Akademik maksimal satu angka di belakang koma';
+        END IF;
+
         IF NOT EXISTS (
             SELECT 1
-
             FROM detail_kelas_pada_mata_kuliah AS dkmk
-
             JOIN mata_kuliah AS mk
-                ON dkmk.id_mata_kuliah =
-                    mk.id_matakuliah
-
-            WHERE dkmk.id_detail_kelas_pada_mata_kuliah =
+                ON dkmk.id_mata_kuliah = mk.id_matakuliah
+            WHERE
+                dkmk.id_detail_kelas_pada_mata_kuliah =
                     p_id_detail_kelas_pada_mata_kuliah
-
-              AND dkmk.id_kelas =
-                    v_id_kelas_mahasiswa
-
-              AND mk.status_mata_kuliah = 'Aktif'
+                AND dkmk.id_kelas = v_id_kelas_mahasiswa
+                AND mk.status_mata_kuliah = 'Aktif'
         ) THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Mata kuliah tidak dimiliki oleh kelas mahasiswa tersebut';
-
         END IF;
 
         SET v_id_detail_mk_final =
@@ -669,140 +661,78 @@ CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_
             p_keterangan_absensi;
 
         SET v_jumlah_jam_minus =
-            p_jumlah_jam_minus_input;
+            ROUND(p_jumlah_jam_minus_input, 1);
 
-        SET v_jenis_jam =
-            'Murni';
+        SET v_jenis_jam = 'Murni';
+        SET v_nama_pelanggaran = 'Pelanggaran Akademik';
+        SET v_deskripsi_final = NULL;
 
-        SET v_nama_pelanggaran =
-            'Pelanggaran Akademik';
+    /*
+    | Kategori Fasilitas
+    */
 
-        SET v_deskripsi_final =
-            NULL;
-
-    /* ==================================================
-       KATEGORI 2: FASILITAS
-       ================================================== */
     ELSEIF p_kategori_pelanggaran = 'Fasilitas' THEN
 
-        /* Fasilitas wajib dipilih */
         IF p_id_fasilitas IS NULL
-
            OR p_id_fasilitas <= 0
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Fasilitas wajib dipilih';
-
         END IF;
 
-        /*
-         * Tidak memfilter status_fasilitas.
-         *
-         * Sesuai requirement:
-         * semua fasilitas pada tabel fasilitas
-         * dapat dipilih.
-         */
         IF NOT EXISTS (
             SELECT 1
-
             FROM fasilitas
-
-            WHERE id_fasilitas =
-                p_id_fasilitas
+            WHERE id_fasilitas = p_id_fasilitas
         ) THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Fasilitas tidak ditemukan';
-
         END IF;
 
-        /* Ambil harga ASLI dari database */
-        SELECT
-            harga
-
-        INTO
-            v_harga_fasilitas
-
+        SELECT harga
+        INTO v_harga_fasilitas
         FROM fasilitas
-
-        WHERE id_fasilitas =
-            p_id_fasilitas
-
+        WHERE id_fasilitas = p_id_fasilitas
         LIMIT 1;
 
         IF v_harga_fasilitas IS NULL
-
            OR v_harga_fasilitas <= 0
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Harga fasilitas harus lebih dari 0';
-
         END IF;
 
         /*
-         * FORMULA FINAL:
-         *
-         * harga × 0,0005
-         */
+        | Rumus sementara:
+        | harga fasilitas × 0,0005
+        */
+
         SET v_hasil_perhitungan_fasilitas =
             v_harga_fasilitas * 0.0005;
 
-        /*
-         * Karena jumlah_jam_minus memakai DECIMAL(10,2),
-         * validasi range dilakukan sebelum penyimpanan.
-         */
-        IF v_hasil_perhitungan_fasilitas >
-            99999999.99
-        THEN
-
-            SIGNAL SQLSTATE '45000'
-
-            SET MESSAGE_TEXT =
-                'Hasil perhitungan jam minus melebihi kapasitas sistem';
-
-        END IF;
-
         SET v_jumlah_jam_minus =
-            ROUND(
-                v_hasil_perhitungan_fasilitas,
-                2
-            );
+            ROUND(v_hasil_perhitungan_fasilitas, 1);
 
-        IF v_jumlah_jam_minus <= 0 THEN
-
+        IF v_jumlah_jam_minus < 0.1 THEN
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Hasil perhitungan jam minus harus lebih dari 0';
-
         END IF;
 
-        SET v_id_fasilitas_final =
-            p_id_fasilitas;
+        SET v_id_fasilitas_final = p_id_fasilitas;
+        SET v_jenis_jam = 'Kompensasi';
+        SET v_nama_pelanggaran = 'Kerusakan Fasilitas';
+        SET v_deskripsi_final = NULL;
 
-        SET v_jenis_jam =
-            'Kompensasi';
+    /*
+    | Kategori Lainnya
+    */
 
-        SET v_nama_pelanggaran =
-            'Kerusakan Fasilitas';
-
-        SET v_deskripsi_final =
-            NULL;
-
-    /* ==================================================
-       KATEGORI 3: LAINNYA
-       ================================================== */
     ELSEIF p_kategori_pelanggaran = 'Lainnya' THEN
 
-        /* Deskripsi wajib */
         IF TRIM(
             COALESCE(
                 p_deskripsi_pelanggaran,
@@ -810,41 +740,37 @@ CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_
             )
         ) = ''
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Deskripsi pelanggaran wajib diisi';
-
         END IF;
 
-        /* Jenis dipilih PIC */
         IF p_jenis_jam_input IS NULL
-
            OR p_jenis_jam_input NOT IN (
                 'Murni',
                 'Kompensasi'
            )
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
                 'Jenis jam minus tidak valid';
-
         END IF;
 
-        /* Jumlah diinput PIC */
         IF p_jumlah_jam_minus_input IS NULL
-
-           OR p_jumlah_jam_minus_input <= 0
+           OR p_jumlah_jam_minus_input < 0.1
+           OR p_jumlah_jam_minus_input > 1000.0
         THEN
-
             SIGNAL SQLSTATE '45000'
-
             SET MESSAGE_TEXT =
-                'Jumlah jam minus harus lebih dari 0';
+                'Jumlah jam minus harus antara 0,1 sampai 1000,0';
+        END IF;
 
+        IF p_jumlah_jam_minus_input <>
+           ROUND(p_jumlah_jam_minus_input, 1)
+        THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT =
+                'Jumlah jam minus maksimal satu angka di belakang koma';
         END IF;
 
         SET v_nama_pelanggaran =
@@ -857,65 +783,47 @@ CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_
             p_jenis_jam_input;
 
         SET v_jumlah_jam_minus =
-            p_jumlah_jam_minus_input;
+            ROUND(p_jumlah_jam_minus_input, 1);
 
     END IF;
 
-    /* =========================================
-       INSERT TRANSAKSI UTAMA
-       ========================================= */
+    /*
+    | Simpan transaksi
+    */
+
     INSERT INTO pemberian_jam_minus (
         kategori_pelanggaran,
-
         id_detail_kelas_pada_mata_kuliah,
-
         keterangan_absensi,
-
         id_fasilitas,
-
         harga_fasilitas_saat_pemberian,
-
         nama_pelanggaran,
-
         deskripsi_pelanggaran,
-
         jumlah_jam_minus,
-
         jenis_jam,
-
         tanggal_pemberian
     )
     VALUES (
         p_kategori_pelanggaran,
-
         v_id_detail_mk_final,
-
         v_keterangan_absensi_final,
-
         v_id_fasilitas_final,
-
         v_harga_fasilitas,
-
         v_nama_pelanggaran,
-
         v_deskripsi_final,
-
         v_jumlah_jam_minus,
-
         v_jenis_jam,
-
         NOW()
     );
 
     SET v_id_pemberian_jam_minus =
         LAST_INSERT_ID();
 
-    /* =========================================
-       SIMPAN PIC SEBAGAI PEMBERI
-       ========================================= */
-    INSERT INTO
-        detail_pengguna_pada_pemberian_jam_minus
-    (
+    /*
+    | Simpan PIC sebagai pemberi
+    */
+
+    INSERT INTO detail_pengguna_pada_pemberian_jam_minus (
         id_pemberian_jam_minus,
         id_pengguna,
         peran_pengguna
@@ -926,12 +834,11 @@ CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_
         'Pemberi'
     );
 
-    /* =========================================
-       SIMPAN MAHASISWA SEBAGAI PENERIMA
-       ========================================= */
-    INSERT INTO
-        detail_pengguna_pada_pemberian_jam_minus
-    (
+    /*
+    | Simpan mahasiswa sebagai penerima
+    */
+
+    INSERT INTO detail_pengguna_pada_pemberian_jam_minus (
         id_pemberian_jam_minus,
         id_pengguna,
         peran_pengguna
@@ -942,61 +849,38 @@ CREATE PROCEDURE `usp_insert_pemberian_jam_minus` (IN `p_id_pemberi` INT, IN `p_
         'Penerima'
     );
 
-    /* =========================================
-       UPDATE SALDO MAHASISWA
-       ========================================= */
+    /*
+    | Tambahkan saldo jam minus
+    */
+
     IF v_jenis_jam = 'Murni' THEN
 
         UPDATE mahasiswa
-
         SET saldo_jam_minus_murni =
-            COALESCE(
-                saldo_jam_minus_murni,
-                0
-            )
-            +
-            v_jumlah_jam_minus
-
-        WHERE id_mahasiswa =
-            v_id_mahasiswa;
+            COALESCE(saldo_jam_minus_murni, 0.0)
+            + v_jumlah_jam_minus
+        WHERE id_mahasiswa = v_id_mahasiswa;
 
     ELSEIF v_jenis_jam = 'Kompensasi' THEN
 
         UPDATE mahasiswa
-
         SET saldo_jam_minus_kompensasi =
-            COALESCE(
-                saldo_jam_minus_kompensasi,
-                0
-            )
-            +
-            v_jumlah_jam_minus
-
-        WHERE id_mahasiswa =
-            v_id_mahasiswa;
+            COALESCE(saldo_jam_minus_kompensasi, 0.0)
+            + v_jumlah_jam_minus
+        WHERE id_mahasiswa = v_id_mahasiswa;
 
     END IF;
 
     COMMIT;
 
-    /* =========================================
-       RESPONSE
-       ========================================= */
     SELECT
-        'Pemberian jam minus berhasil disimpan'
-            AS pesan,
-
-        v_id_pemberian_jam_minus
-            AS id_pemberian_jam_minus,
-
-        v_jumlah_jam_minus
-            AS jumlah_jam_minus,
-
-        v_jenis_jam
-            AS jenis_jam;
+        'Pemberian jam minus berhasil disimpan' AS pesan,
+        v_id_pemberian_jam_minus AS id_pemberian_jam_minus,
+        v_jumlah_jam_minus AS jumlah_jam_minus,
+        v_jenis_jam AS jenis_jam;
 END$$
 
-CREATE PROCEDURE `usp_insert_pengaduan_kerusakan_fasilitas` (IN `p_id_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_deskripsi_kerusakan` TEXT, IN `p_bukti_kerusakan_url` VARCHAR(2048), IN `p_pelaku_kerusakan` VARCHAR(50))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengaduan_kerusakan_fasilitas` (IN `p_id_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_deskripsi_kerusakan` TEXT, IN `p_bukti_kerusakan_url` VARCHAR(2048), IN `p_pelaku_kerusakan` VARCHAR(50))   BEGIN
 	DECLARE v_id_pengaduan_kerusakan_fasilitas INT;
     
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -1037,7 +921,7 @@ CREATE PROCEDURE `usp_insert_pengaduan_kerusakan_fasilitas` (IN `p_id_fasilitas`
         v_id_pengaduan_kerusakan_fasilitas AS id_pengaduan_kerusakan_fasilitas_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_pengajar` (IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajar` (IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -1061,7 +945,7 @@ CREATE PROCEDURE `usp_insert_pengajar` (IN `p_nip` VARCHAR(20), IN `p_nama_penga
         LAST_INSERT_ID() AS id_pengajar_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_pengajar_mata_kuliah_kelas` (IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajar_mata_kuliah_kelas` (IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
     DECLARE v_id_detail INT;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -1161,7 +1045,7 @@ CREATE PROCEDURE `usp_insert_pengajar_mata_kuliah_kelas` (IN `p_id_kelas` INT, I
         v_id_detail AS id_detail_kelas_pada_mata_kuliah;
 END$$
 
-CREATE PROCEDURE `usp_insert_pengajuan_jam_plus` (IN `p_id_pengguna` INT, IN `p_id_kegiatan` INT, IN `p_jumlah_jam` DECIMAL(6,2), IN `p_jenis_jam` VARCHAR(20), IN `p_sumber_jam` VARCHAR(10), IN `p_deskripsi` TEXT, IN `p_nama_pemberi` VARCHAR(50), IN `p_dokumen_url` VARCHAR(2048))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengajuan_jam_plus` (IN `p_id_pengguna` INT, IN `p_id_kegiatan` INT, IN `p_jumlah_jam` DECIMAL(6,2), IN `p_jenis_jam` VARCHAR(20), IN `p_sumber_jam` VARCHAR(10), IN `p_deskripsi` TEXT, IN `p_nama_pemberi` VARCHAR(50), IN `p_dokumen_url` VARCHAR(2048))   BEGIN
     DECLARE v_id_pengajuan INT;
     DECLARE v_id_kegiatan_final INT;
 
@@ -1261,7 +1145,7 @@ CREATE PROCEDURE `usp_insert_pengajuan_jam_plus` (IN `p_id_pengguna` INT, IN `p_
         v_id_pengajuan AS id_pengajuan_jam_plus;
 END$$
 
-CREATE PROCEDURE `usp_insert_pengguna` (IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_pengguna` (IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -1309,7 +1193,7 @@ CREATE PROCEDURE `usp_insert_pengguna` (IN `p_id_mahasiswa` INT, IN `p_id_pengaj
         LAST_INSERT_ID() AS id_pengguna_baru;
 END$$
 
-CREATE PROCEDURE `usp_insert_periode_akademik` (IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_insert_periode_akademik` (IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
     DECLARE v_id_periode_akademik INT;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -1370,7 +1254,7 @@ CREATE PROCEDURE `usp_insert_periode_akademik` (IN `p_tahun_akademik` VARCHAR(10
         v_id_periode_akademik AS id_periode_akademik_baru;
 END$$
 
-CREATE PROCEDURE `usp_pulihkan_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_pulihkan_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM detail_fasilitas_pada_kelas
@@ -1399,7 +1283,7 @@ CREATE PROCEDURE `usp_pulihkan_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_
         p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
 END$$
 
-CREATE PROCEDURE `usp_select_bursa_jobdesc` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_bursa_jobdesc` ()   BEGIN
     SELECT
         bj.id_bursa_jobdesc,
         bj.deskripsi_jobdesc,
@@ -1452,7 +1336,7 @@ CREATE PROCEDURE `usp_select_bursa_jobdesc` ()   BEGIN
     ORDER BY bj.id_bursa_jobdesc DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_fasilitas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas` ()   BEGIN
     SELECT
         id_fasilitas,
         nama_fasilitas,
@@ -1463,7 +1347,7 @@ CREATE PROCEDURE `usp_select_fasilitas` ()   BEGIN
     ORDER BY id_fasilitas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_fasilitas_aktif` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_aktif` ()   BEGIN
     SELECT
         id_fasilitas,
         nama_fasilitas,
@@ -1473,7 +1357,7 @@ CREATE PROCEDURE `usp_select_fasilitas_aktif` ()   BEGIN
     ORDER BY nama_fasilitas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_fasilitas_by_id` (IN `p_id_fasilitas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_by_id` (IN `p_id_fasilitas` INT)   BEGIN
     SELECT
         id_fasilitas,
         nama_fasilitas,
@@ -1485,7 +1369,7 @@ CREATE PROCEDURE `usp_select_fasilitas_by_id` (IN `p_id_fasilitas` INT)   BEGIN
     LIMIT 1;
 END$$
 
-CREATE PROCEDURE `usp_select_fasilitas_kelas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_kelas` ()   BEGIN
     SELECT
         dfpk.id_detail_fasilitas_pada_kelas,
         dfpk.id_kelas,
@@ -1509,7 +1393,7 @@ CREATE PROCEDURE `usp_select_fasilitas_kelas` ()   BEGIN
     ORDER BY k.nama_kelas ASC, f.nama_fasilitas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_fasilitas_kelas_by_id` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_fasilitas_kelas_by_id` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
     SELECT
         dfpk.id_detail_fasilitas_pada_kelas,
         dfpk.id_kelas,
@@ -1533,7 +1417,7 @@ CREATE PROCEDURE `usp_select_fasilitas_kelas_by_id` (IN `p_id_detail_fasilitas_p
     LIMIT 1;
 END$$
 
-CREATE PROCEDURE `usp_select_kegiatan` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kegiatan` ()   BEGIN
     SELECT
         id_kegiatan,
         nama_kegiatan,
@@ -1544,7 +1428,7 @@ CREATE PROCEDURE `usp_select_kegiatan` ()   BEGIN
     ORDER BY id_kegiatan ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_kegiatan_aktif` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kegiatan_aktif` ()   BEGIN
     SELECT
         id_kegiatan,
         nama_kegiatan,
@@ -1556,7 +1440,7 @@ CREATE PROCEDURE `usp_select_kegiatan_aktif` ()   BEGIN
     ORDER BY nama_kegiatan ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_kegiatan_by_id` (IN `p_id_kegiatan` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kegiatan_by_id` (IN `p_id_kegiatan` INT)   BEGIN
     SELECT
         id_kegiatan,
         nama_kegiatan,
@@ -1568,7 +1452,7 @@ CREATE PROCEDURE `usp_select_kegiatan_by_id` (IN `p_id_kegiatan` INT)   BEGIN
     LIMIT 1;
 END$$
 
-CREATE PROCEDURE `usp_select_kelas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kelas` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -1584,7 +1468,7 @@ CREATE PROCEDURE `usp_select_kelas` ()   BEGIN
     ORDER BY id_kelas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
     SELECT
         id_kelas,
         nama_kelas,
@@ -1596,7 +1480,7 @@ CREATE PROCEDURE `usp_select_kelas_aktif` ()   BEGIN
     ORDER BY tingkat ASC, nama_kelas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_laporan_bursa_jobdesc_by_role` (IN `p_role` VARCHAR(30))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_laporan_bursa_jobdesc_by_role` (IN `p_role` VARCHAR(30))   BEGIN
     IF p_role IS NULL OR p_role = '' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Role tidak boleh kosong';
@@ -1639,7 +1523,7 @@ CREATE PROCEDURE `usp_select_laporan_bursa_jobdesc_by_role` (IN `p_role` VARCHAR
     ORDER BY tanggal_pemberian_jobdesc DESC, id_bursa_jobdesc DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_laporan_pengaduan_fasilitas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_laporan_pengaduan_fasilitas` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -1657,7 +1541,7 @@ CREATE PROCEDURE `usp_select_laporan_pengaduan_fasilitas` ()   BEGIN
     ORDER BY nim ASC, tanggal_pengaduan DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_mahasiswa` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mahasiswa` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -1686,7 +1570,7 @@ CREATE PROCEDURE `usp_select_mahasiswa` ()   BEGIN
     ORDER BY m.id_mahasiswa ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_mahasiswa_aktif_untuk_jam_minus` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mahasiswa_aktif_untuk_jam_minus` ()   BEGIN
     SELECT
         u.id_pengguna AS id_pengguna_mahasiswa,
 
@@ -1722,7 +1606,7 @@ CREATE PROCEDURE `usp_select_mahasiswa_aktif_untuk_jam_minus` ()   BEGIN
         m.nim ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_mata_kuliah_aktif` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mata_kuliah_aktif` ()   BEGIN
     SELECT
         id_matakuliah AS id_mata_kuliah,
         nama_mata_kuliah,
@@ -1735,7 +1619,7 @@ CREATE PROCEDURE `usp_select_mata_kuliah_aktif` ()   BEGIN
     ORDER BY semester ASC, nama_mata_kuliah ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_mata_kuliah_mahasiswa` (IN `p_id_pengguna` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mata_kuliah_mahasiswa` (IN `p_id_pengguna` INT)   BEGIN
     DECLARE v_id_mahasiswa INT;
     DECLARE v_id_kelas INT;
 
@@ -1809,7 +1693,7 @@ CREATE PROCEDURE `usp_select_mata_kuliah_mahasiswa` (IN `p_id_pengguna` INT)   B
     ORDER BY mk.semester ASC, mk.nama_mata_kuliah ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_mata_kuliah_mahasiswa_untuk_jam_minus` (IN `p_id_pengguna_mahasiswa` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_mata_kuliah_mahasiswa_untuk_jam_minus` (IN `p_id_pengguna_mahasiswa` INT)   BEGIN
     DECLARE v_id_kelas INT;
 
     /* =========================================
@@ -1895,7 +1779,7 @@ CREATE PROCEDURE `usp_select_mata_kuliah_mahasiswa_untuk_jam_minus` (IN `p_id_pe
         mk.nama_mata_kuliah ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_pemberian_jam_minus` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pemberian_jam_minus` ()   BEGIN
     SELECT
         pjm.id_pemberian_jam_minus,
 
@@ -2035,7 +1919,7 @@ CREATE PROCEDURE `usp_select_pemberian_jam_minus` ()   BEGIN
         pjm.id_pemberian_jam_minus DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengaduan_kerusakan_fasilitas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengaduan_kerusakan_fasilitas` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2086,7 +1970,7 @@ CREATE PROCEDURE `usp_select_pengaduan_kerusakan_fasilitas` ()   BEGIN
     ORDER BY pkf.id_pengaduan_kerusakan_fasilitas ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengajar` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2103,7 +1987,7 @@ CREATE PROCEDURE `usp_select_pengajar` ()   BEGIN
     ORDER BY id_pengajar ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengajar_aktif` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_aktif` ()   BEGIN
     SELECT
         id_pengajar,
         nip,
@@ -2116,7 +2000,7 @@ CREATE PROCEDURE `usp_select_pengajar_aktif` ()   BEGIN
     ORDER BY nama_pengajar ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_mata_kuliah_kelas` ()   BEGIN
     SELECT
         dkmk.id_detail_kelas_pada_mata_kuliah,
 
@@ -2157,7 +2041,7 @@ CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas` ()   BEGIN
     ORDER BY k.tingkat ASC, k.nama_kelas ASC, mk.semester ASC, mk.nama_mata_kuliah ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas_by_id` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajar_mata_kuliah_kelas_by_id` (IN `p_id_detail_kelas_pada_mata_kuliah` INT)   BEGIN
     SELECT
         dkmk.id_detail_kelas_pada_mata_kuliah,
 
@@ -2198,7 +2082,7 @@ CREATE PROCEDURE `usp_select_pengajar_mata_kuliah_kelas_by_id` (IN `p_id_detail_
     WHERE dkmk.id_detail_kelas_pada_mata_kuliah = p_id_detail_kelas_pada_mata_kuliah;
 END$$
 
-CREATE PROCEDURE `usp_select_pengajuan_jam_plus` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengajuan_jam_plus` ()   BEGIN
     SELECT 
         pjp.*,
 
@@ -2245,7 +2129,7 @@ CREATE PROCEDURE `usp_select_pengajuan_jam_plus` ()   BEGIN
     ORDER BY pjp.id_pengajuan_jam_plus DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_pengguna` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_pengguna` ()   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2268,7 +2152,7 @@ CREATE PROCEDURE `usp_select_pengguna` ()   BEGIN
     ORDER BY p.id_pengguna ASC;
 END$$
 
-CREATE PROCEDURE `usp_select_periode_akademik` ()   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_periode_akademik` ()   BEGIN
     SELECT
         id_periode_akademik,
         tahun_akademik,
@@ -2280,7 +2164,7 @@ CREATE PROCEDURE `usp_select_periode_akademik` ()   BEGIN
     ORDER BY id_periode_akademik DESC;
 END$$
 
-CREATE PROCEDURE `usp_select_periode_akademik_by_id` (IN `p_id_periode_akademik` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_select_periode_akademik_by_id` (IN `p_id_periode_akademik` INT)   BEGIN
     SELECT
         id_periode_akademik,
         tahun_akademik,
@@ -2293,7 +2177,7 @@ CREATE PROCEDURE `usp_select_periode_akademik_by_id` (IN `p_id_periode_akademik`
     LIMIT 1;
 END$$
 
-CREATE PROCEDURE `usp_selesaikan_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pemberi` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_selesaikan_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pemberi` INT)   BEGIN
     DECLARE v_status_jobdesc VARCHAR(20);
     DECLARE v_bukti_selesai_url TEXT;
     DECLARE v_jam_plus DECIMAL(10,2);
@@ -2359,7 +2243,7 @@ CREATE PROCEDURE `usp_selesaikan_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN
         p_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_fasilitas` (IN `p_id_fasilitas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_fasilitas` (IN `p_id_fasilitas` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2382,7 +2266,7 @@ CREATE PROCEDURE `usp_soft_delete_fasilitas` (IN `p_id_fasilitas` INT)   BEGIN
         p_id_fasilitas AS id_fasilitas;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_fasilitas_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM detail_fasilitas_pada_kelas
@@ -2402,7 +2286,7 @@ CREATE PROCEDURE `usp_soft_delete_fasilitas_kelas` (IN `p_id_detail_fasilitas_pa
         p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_kegiatan` (IN `p_id_kegiatan` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_kegiatan` (IN `p_id_kegiatan` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM kegiatan
@@ -2422,7 +2306,7 @@ CREATE PROCEDURE `usp_soft_delete_kegiatan` (IN `p_id_kegiatan` INT)   BEGIN
         p_id_kegiatan AS id_kegiatan;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_kelas` (IN `p_id_kelas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_kelas` (IN `p_id_kelas` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2445,7 +2329,7 @@ CREATE PROCEDURE `usp_soft_delete_kelas` (IN `p_id_kelas` INT)   BEGIN
         p_id_kelas AS id_kelas;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_mahasiswa` (IN `p_id_mahasiswa` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_mahasiswa` (IN `p_id_mahasiswa` INT)   BEGIN
 	DECLARE v_id_kelas INT;
     
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -2494,7 +2378,7 @@ CREATE PROCEDURE `usp_soft_delete_mahasiswa` (IN `p_id_mahasiswa` INT)   BEGIN
         p_id_mahasiswa AS id_mahasiswa;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_pengajar` (IN `p_id_pengajar` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_pengajar` (IN `p_id_pengajar` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2517,7 +2401,7 @@ CREATE PROCEDURE `usp_soft_delete_pengajar` (IN `p_id_pengajar` INT)   BEGIN
         p_id_pengajar AS id_pengajar;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_pengguna` (IN `p_id_pengguna` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_pengguna` (IN `p_id_pengguna` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2540,7 +2424,7 @@ CREATE PROCEDURE `usp_soft_delete_pengguna` (IN `p_id_pengguna` INT)   BEGIN
         p_id_pengguna AS id_pengguna;
 END$$
 
-CREATE PROCEDURE `usp_soft_delete_periode_akademik` (IN `p_id_periode_akademik` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_soft_delete_periode_akademik` (IN `p_id_periode_akademik` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM periode_akademik
@@ -2559,7 +2443,7 @@ CREATE PROCEDURE `usp_soft_delete_periode_akademik` (IN `p_id_periode_akademik` 
         p_id_periode_akademik AS id_periode_akademik;
 END$$
 
-CREATE PROCEDURE `usp_update_bukti_selesai_url_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT, IN `p_bukti_selesai_url` TEXT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_bukti_selesai_url_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT, IN `p_bukti_selesai_url` TEXT)   BEGIN
     DECLARE v_role VARCHAR(30);
     DECLARE v_status_jobdesc VARCHAR(20);
     DECLARE v_bukti_selesai_url TEXT;
@@ -2638,7 +2522,7 @@ CREATE PROCEDURE `usp_update_bukti_selesai_url_bursa_jobdesc` (IN `p_id_bursa_jo
         p_id_bursa_jobdesc AS id_bursa_jobdesc;
 END$$
 
-CREATE PROCEDURE `usp_update_detail_fasilitas_pada_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT, IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_detail_fasilitas_pada_kelas` (IN `p_id_detail_fasilitas_pada_kelas` INT, IN `p_id_kelas` INT, IN `p_id_fasilitas` INT, IN `p_jumlah_fasilitas` INT)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM detail_fasilitas_pada_kelas
@@ -2698,7 +2582,7 @@ CREATE PROCEDURE `usp_update_detail_fasilitas_pada_kelas` (IN `p_id_detail_fasil
         p_id_detail_fasilitas_pada_kelas AS id_detail_fasilitas_pada_kelas;
 END$$
 
-CREATE PROCEDURE `usp_update_fasilitas` (IN `p_id_fasilitas` INT, IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_fasilitas` (IN `p_id_fasilitas` INT, IN `p_nama_fasilitas` VARCHAR(50), IN `p_harga` DECIMAL(15,2))   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM fasilitas
@@ -2729,7 +2613,7 @@ CREATE PROCEDURE `usp_update_fasilitas` (IN `p_id_fasilitas` INT, IN `p_nama_fas
         p_id_fasilitas AS id_fasilitas;
 END$$
 
-CREATE PROCEDURE `usp_update_kegiatan` (IN `p_id_kegiatan` INT, IN `p_nama_kegiatan` VARCHAR(50), IN `p_penyelenggara` VARCHAR(20), IN `p_tanggal_kegiatan` DATE)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_kegiatan` (IN `p_id_kegiatan` INT, IN `p_nama_kegiatan` VARCHAR(50), IN `p_penyelenggara` VARCHAR(20), IN `p_tanggal_kegiatan` DATE)   BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM kegiatan
@@ -2763,7 +2647,7 @@ CREATE PROCEDURE `usp_update_kegiatan` (IN `p_id_kegiatan` INT, IN `p_nama_kegia
         p_id_kegiatan AS id_kegiatan;
 END$$
 
-CREATE PROCEDURE `usp_update_kelas` (IN `p_id_kelas` INT, IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_kelas` (IN `p_id_kelas` INT, IN `p_nama_kelas` VARCHAR(5), IN `p_tingkat` VARCHAR(1))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2788,7 +2672,7 @@ CREATE PROCEDURE `usp_update_kelas` (IN `p_id_kelas` INT, IN `p_nama_kelas` VARC
         p_id_kelas AS id_kelas;
 END$$
 
-CREATE PROCEDURE `usp_update_mahasiswa` (IN `p_id_mahasiswa` INT, IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20), IN `p_status_mahasiswa` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_mahasiswa` (IN `p_id_mahasiswa` INT, IN `p_id_kelas` INT, IN `p_id_periode_akademik` INT, IN `p_nim` VARCHAR(20), IN `p_nama_mahasiswa` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20), IN `p_status_mahasiswa` VARCHAR(20))   BEGIN
     DECLARE v_id_kelas_lama INT;
     
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -2845,7 +2729,7 @@ CREATE PROCEDURE `usp_update_mahasiswa` (IN `p_id_mahasiswa` INT, IN `p_id_kelas
         p_id_mahasiswa AS id_mahasiswa;
 END$$
 
-CREATE PROCEDURE `usp_update_pengajar` (IN `p_id_pengajar` INT, IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengajar` (IN `p_id_pengajar` INT, IN `p_nip` VARCHAR(20), IN `p_nama_pengajar` VARCHAR(50), IN `p_email` VARCHAR(50), IN `p_no_hp` VARCHAR(20))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -2872,7 +2756,7 @@ CREATE PROCEDURE `usp_update_pengajar` (IN `p_id_pengajar` INT, IN `p_nip` VARCH
         p_id_pengajar AS id_pengajar;
 END$$
 
-CREATE PROCEDURE `usp_update_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_pada_mata_kuliah` INT, IN `p_id_kelas` INT, IN `p_id_mata_kuliah` INT, IN `p_id_pengajar_1` INT, IN `p_id_pengajar_2` INT)   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -2976,7 +2860,7 @@ CREATE PROCEDURE `usp_update_pengajar_mata_kuliah_kelas` (IN `p_id_detail_kelas_
         p_id_detail_kelas_pada_mata_kuliah AS id_detail_kelas_pada_mata_kuliah;
 END$$
 
-CREATE PROCEDURE `usp_update_pengguna` (IN `p_id_pengguna` INT, IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_pengguna` (IN `p_id_pengguna` INT, IN `p_id_mahasiswa` INT, IN `p_id_pengajar` INT, IN `p_username` VARCHAR(50), IN `p_password` VARCHAR(255), IN `p_role` VARCHAR(30))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -3026,7 +2910,7 @@ CREATE PROCEDURE `usp_update_pengguna` (IN `p_id_pengguna` INT, IN `p_id_mahasis
         p_id_pengguna AS id_pengguna;
 END$$
 
-CREATE PROCEDURE `usp_update_periode_akademik` (IN `p_id_periode_akademik` INT, IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_periode_akademik` (IN `p_id_periode_akademik` INT, IN `p_tahun_akademik` VARCHAR(10), IN `p_semester` VARCHAR(10), IN `p_tanggal_mulai` DATETIME, IN `p_tanggal_selesai` DATETIME, IN `p_status_periode` VARCHAR(20))   BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -3087,7 +2971,7 @@ CREATE PROCEDURE `usp_update_periode_akademik` (IN `p_id_periode_akademik` INT, 
         p_id_periode_akademik AS id_periode_akademik;
 END$$
 
-CREATE PROCEDURE `usp_update_status_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT, IN `p_id_pengguna` INT)   BEGIN
 	DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         RESIGNAL;
@@ -3129,7 +3013,7 @@ CREATE PROCEDURE `usp_update_status_bursa_jobdesc` (IN `p_id_bursa_jobdesc` INT,
     END IF;
 END$$
 
-CREATE PROCEDURE `usp_update_status_detail_fasilitas_pada_kelas` (IN `p_id_pengguna` INT, IN `p_id_fasilitas` INT, IN `p_status_detail_fasilitas_pada_kelas` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_detail_fasilitas_pada_kelas` (IN `p_id_pengguna` INT, IN `p_id_fasilitas` INT, IN `p_status_detail_fasilitas_pada_kelas` VARCHAR(20))   BEGIN
     DECLARE v_id_kelas INT;
 
     SET v_id_kelas = ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas(p_id_pengguna);
@@ -3162,7 +3046,7 @@ CREATE PROCEDURE `usp_update_status_detail_fasilitas_pada_kelas` (IN `p_id_pengg
     AND status_detail_fasilitas_pada_kelas IN ('Aktif', 'Rusak');
 END$$
 
-CREATE PROCEDURE `usp_update_status_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_status_pengaduan` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_pengaduan_kerusakan_fasilitas` (IN `p_id_pengaduan_kerusakan_fasilitas` INT, IN `p_id_pengguna` INT, IN `p_status_pengaduan` VARCHAR(20))   BEGIN
 	DECLARE v_id_fasilitas INT;
     DECLARE v_id_pengguna_pelapor INT;
     
@@ -3234,7 +3118,7 @@ CREATE PROCEDURE `usp_update_status_pengaduan_kerusakan_fasilitas` (IN `p_id_pen
         p_status_pengaduan AS status_pengaduan;
 END$$
 
-CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT, IN `p_id_verifikator` INT, IN `p_status` VARCHAR(20))   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT, IN `p_id_verifikator` INT, IN `p_status` VARCHAR(20), IN `p_alasan_penolakan` VARCHAR(255))   BEGIN
     DECLARE v_id_mhs INT;
     DECLARE v_jumlah_asli DECIMAL(6,2);
     DECLARE v_jumlah_diterima DECIMAL(6,2);
@@ -3253,12 +3137,21 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
         SET MESSAGE_TEXT = 'Status verifikasi tidak valid';
     END IF;
 
+    IF p_status = 'Ditolak'
+       AND (
+           p_alasan_penolakan IS NULL
+           OR CHAR_LENGTH(TRIM(p_alasan_penolakan)) = 0
+       ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Alasan penolakan wajib diisi';
+    END IF;
+
     IF NOT EXISTS (
         SELECT 1
         FROM pengguna
         WHERE id_pengguna = p_id_verifikator
-        AND role = 'PIC Tata Tertib'
-        AND status_akun = 'Aktif'
+          AND role = 'PIC Tata Tertib'
+          AND status_akun = 'Aktif'
     ) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Verifikator tidak valid atau bukan PIC Tata Tertib';
@@ -3280,18 +3173,25 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
 
     IF v_status_lama <> 'Menunggu Verifikasi' THEN
         SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Pengajuan ini sudah diverifikasi dan tidak dapat diproses ulang';
+        SET MESSAGE_TEXT =
+        'Pengajuan ini sudah diverifikasi dan tidak dapat diproses ulang';
     END IF;
 
     START TRANSACTION;
 
     UPDATE pengajuan_jam_plus
-    SET status_pengajuan = p_status
+    SET
+        status_pengajuan = p_status,
+        alasan_penolakan = CASE
+            WHEN p_status = 'Ditolak'
+                THEN TRIM(p_alasan_penolakan)
+            ELSE NULL
+        END
     WHERE id_pengajuan_jam_plus = p_id_pengajuan;
 
     DELETE FROM detail_pengguna_pada_pengajuan_jam_plus
     WHERE id_pengajuan_jam_plus = p_id_pengajuan
-    AND peran_pengguna = 'Verifikator';
+      AND peran_pengguna = 'Verifikator';
 
     INSERT INTO detail_pengguna_pada_pengajuan_jam_plus (
         id_pengajuan_jam_plus,
@@ -3317,11 +3217,12 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
             v_id_mhs
         FROM pengajuan_jam_plus pjp
         JOIN detail_pengguna_pada_pengajuan_jam_plus dp
-            ON pjp.id_pengajuan_jam_plus = dp.id_pengajuan_jam_plus
+            ON pjp.id_pengajuan_jam_plus =
+               dp.id_pengajuan_jam_plus
         JOIN pengguna u
             ON dp.id_pengguna = u.id_pengguna
         WHERE pjp.id_pengajuan_jam_plus = p_id_pengajuan
-        AND dp.peran_pengguna = 'Pengaju'
+          AND dp.peran_pengguna = 'Pengaju'
         LIMIT 1;
 
         IF v_sumber = 'Luar' THEN
@@ -3331,16 +3232,23 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
         END IF;
 
         IF v_jenis = 'Murni' THEN
+
             UPDATE mahasiswa
-            SET saldo_jam_plus_murni = saldo_jam_plus_murni + v_jumlah_diterima
+            SET saldo_jam_plus_murni =
+                saldo_jam_plus_murni + v_jumlah_diterima
             WHERE id_mahasiswa = v_id_mhs;
+
         ELSEIF v_jenis = 'Kompensasi' THEN
+
             UPDATE mahasiswa
-            SET saldo_jam_plus_kompensasi = saldo_jam_plus_kompensasi + v_jumlah_diterima
+            SET saldo_jam_plus_kompensasi =
+                saldo_jam_plus_kompensasi + v_jumlah_diterima
             WHERE id_mahasiswa = v_id_mhs;
+
         ELSE
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Jenis jam pada pengajuan tidak valid';
+            SET MESSAGE_TEXT =
+            'Jenis jam pada pengajuan tidak valid';
         END IF;
 
     END IF;
@@ -3348,15 +3256,20 @@ CREATE PROCEDURE `usp_update_status_pengajuan_jam_plus` (IN `p_id_pengajuan` INT
     COMMIT;
 
     SELECT
-        'Verifikasi pengajuan jam plus berhasil disimpan' AS Pesan,
+        'Verifikasi pengajuan jam plus berhasil disimpan' AS pesan,
         p_id_pengajuan AS id_pengajuan_jam_plus,
-        p_status AS status_pengajuan;
+        p_status AS status_pengajuan,
+        CASE
+            WHEN p_status = 'Ditolak'
+                THEN TRIM(p_alasan_penolakan)
+            ELSE NULL
+        END AS alasan_penolakan;
 END$$
 
 --
--- Functions
+-- Fungsi
 --
-CREATE FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_pengguna` INT) RETURNS INT(11) READS SQL DATA BEGIN
     DECLARE v_id_kelas INT;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND
@@ -3379,7 +3292,7 @@ CREATE FUNCTION `ufn_cari_id_kelas_di_table_detail_fasilitas_pada_kelas` (`p_id_
     RETURN v_id_kelas;
 END$$
 
-CREATE FUNCTION `ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
     DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
@@ -3404,10 +3317,13 @@ CREATE FUNCTION `ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa` (`p_id_mahasiswa
     RETURN ROUND(COALESCE(v_sisa_jam_plus_kompensasi, 0.0), 1);
 END$$
 
-CREATE FUNCTION `ufn_hitung_total_jam_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_hitung_total_jam_kompensasi_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
     DECLARE v_saldo_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_saldo_jam_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
-    DECLARE v_total_jam_kompensasi DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+        SET v_data_ditemukan = 0;
 
     SELECT
         COALESCE(saldo_jam_plus_kompensasi, 0.0),
@@ -3419,48 +3335,58 @@ CREATE FUNCTION `ufn_hitung_total_jam_kompensasi_mahasiswa` (`p_id_mahasiswa` IN
     WHERE id_mahasiswa = p_id_mahasiswa
     LIMIT 1;
 
-    SET v_total_jam_kompensasi =
-        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi;
-
-    IF v_total_jam_kompensasi > 0 THEN
-        SET v_total_jam_kompensasi = 0.0;
+    IF v_data_ditemukan = 0 THEN
+        RETURN 0.0;
     END IF;
 
-    RETURN ROUND(COALESCE(v_total_jam_kompensasi, 0.0), 1);
+    RETURN ROUND(
+        v_saldo_jam_plus_kompensasi - v_saldo_jam_minus_kompensasi,
+        1
+    );
 END$$
 
-CREATE FUNCTION `ufn_hitung_total_jam_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_hitung_total_jam_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
     DECLARE v_total_jam_kompensasi DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_total_jam_murni DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_total_jam_mahasiswa DECIMAL(10,1) DEFAULT 0.0;
 
     SET v_total_jam_kompensasi =
-        ufn_hitung_total_jam_kompensasi_mahasiswa(p_id_mahasiswa);
+        COALESCE(
+            ufn_hitung_total_jam_kompensasi_mahasiswa(p_id_mahasiswa),
+            0.0
+        );
 
     SET v_total_jam_murni =
-        ufn_hitung_total_jam_murni_mahasiswa(p_id_mahasiswa);
+        COALESCE(
+            ufn_hitung_total_jam_murni_mahasiswa(p_id_mahasiswa),
+            0.0
+        );
 
-    IF v_total_jam_kompensasi < 0 THEN
-        IF v_total_jam_murni < 0 THEN
-            SET v_total_jam_mahasiswa =
-                v_total_jam_kompensasi + v_total_jam_murni;
-        ELSE
-            SET v_total_jam_mahasiswa =
-                v_total_jam_kompensasi;
-        END IF;
+    IF
+        v_total_jam_kompensasi < 0
+        AND
+        v_total_jam_murni > 0
+    THEN
+        SET v_total_jam_mahasiswa =
+            v_total_jam_kompensasi;
     ELSE
         SET v_total_jam_mahasiswa =
-            v_total_jam_murni;
+            v_total_jam_kompensasi + v_total_jam_murni;
     END IF;
 
-    RETURN ROUND(COALESCE(v_total_jam_mahasiswa, 0.0), 1);
+    RETURN ROUND(
+        COALESCE(v_total_jam_mahasiswa, 0.0),
+        1
+    );
 END$$
 
-CREATE FUNCTION `ufn_hitung_total_jam_murni_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_hitung_total_jam_murni_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) DETERMINISTIC READS SQL DATA BEGIN
     DECLARE v_saldo_jam_plus_murni DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_saldo_jam_minus_murni DECIMAL(10,1) DEFAULT 0.0;
-    DECLARE v_sisa_jam_plus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
-    DECLARE v_total_jam_murni DECIMAL(10,1) DEFAULT 0.0;
+    DECLARE v_data_ditemukan TINYINT DEFAULT 1;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND
+        SET v_data_ditemukan = 0;
 
     SELECT
         COALESCE(saldo_jam_plus_murni, 0.0),
@@ -3472,18 +3398,17 @@ CREATE FUNCTION `ufn_hitung_total_jam_murni_mahasiswa` (`p_id_mahasiswa` INT) RE
     WHERE id_mahasiswa = p_id_mahasiswa
     LIMIT 1;
 
-    SET v_sisa_jam_plus_kompensasi =
-        ufn_hitung_sisa_jam_plus_kompensasi_mahasiswa(p_id_mahasiswa);
+    IF v_data_ditemukan = 0 THEN
+        RETURN 0.0;
+    END IF;
 
-    SET v_total_jam_murni =
-        v_saldo_jam_plus_murni
-        + v_sisa_jam_plus_kompensasi
-        - v_saldo_jam_minus_murni;
-
-    RETURN ROUND(COALESCE(v_total_jam_murni, 0.0), 1);
+    RETURN ROUND(
+        v_saldo_jam_plus_murni - v_saldo_jam_minus_murni,
+        1
+    );
 END$$
 
-CREATE FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) READS SQL DATA BEGIN
+CREATE DEFINER=`root`@`localhost` FUNCTION `ufn_total_jam_minus_mahasiswa` (`p_id_mahasiswa` INT) RETURNS DECIMAL(10,1) READS SQL DATA BEGIN
     DECLARE v_minus_murni DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_minus_kompensasi DECIMAL(10,1) DEFAULT 0.0;
     DECLARE v_plus_murni DECIMAL(10,1) DEFAULT 0.0;
@@ -3536,50 +3461,52 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Table structure for table `bursa_jobdesc`
+-- Struktur dari tabel `bursa_jobdesc`
 --
 
 CREATE TABLE `bursa_jobdesc` (
-  `id_bursa_jobdesc` int NOT NULL,
-  `deskripsi_jobdesc` text COLLATE utf8mb4_general_ci NOT NULL,
-  `penerima_jobdesc` enum('Semua Mahasiswa','Mahasiswa dengan Jam Minus') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Semua Mahasiswa',
+  `id_bursa_jobdesc` int(11) NOT NULL,
+  `deskripsi_jobdesc` text NOT NULL,
+  `penerima_jobdesc` enum('Semua Mahasiswa','Mahasiswa dengan Jam Minus') NOT NULL DEFAULT 'Semua Mahasiswa',
   `jam_plus` decimal(6,1) NOT NULL,
   `tanggal_pemberian_jobdesc` datetime NOT NULL,
-  `jumlah_mahasiswa_diperlukan` int NOT NULL,
-  `jumlah_mahasiswa_mengambil` int NOT NULL DEFAULT '0',
-  `bukti_selesai_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_jobdesc` enum('Dibuka','Dikerjakan','Selesai') COLLATE utf8mb4_general_ci DEFAULT 'Dibuka'
+  `jumlah_mahasiswa_diperlukan` int(11) NOT NULL,
+  `jumlah_mahasiswa_mengambil` int(11) NOT NULL DEFAULT 0,
+  `bukti_selesai_url` varchar(2048) DEFAULT NULL,
+  `status_jobdesc` enum('Dibuka','Dikerjakan','Selesai') DEFAULT 'Dibuka'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `bursa_jobdesc`
+-- Dumping data untuk tabel `bursa_jobdesc`
 --
 
 INSERT INTO `bursa_jobdesc` (`id_bursa_jobdesc`, `deskripsi_jobdesc`, `penerima_jobdesc`, `jam_plus`, `tanggal_pemberian_jobdesc`, `jumlah_mahasiswa_diperlukan`, `jumlah_mahasiswa_mengambil`, `bukti_selesai_url`, `status_jobdesc`) VALUES
-(1, 'wertg34', 'Semua Mahasiswa', '20.0', '2026-06-18 18:46:00', 2, 2, 'https://halo', 'Selesai'),
-(2, 'Membersihkan tendik', 'Semua Mahasiswa', '20.0', '2026-06-19 22:20:00', 10, 10, 'https://halo', 'Selesai'),
-(3, 'Perbaiki laptop', 'Semua Mahasiswa', '10.0', '2026-06-20 00:00:00', 2, 2, 'https://halo', 'Selesai'),
-(4, 'Cari ikan', 'Mahasiswa dengan Jam Minus', '90.0', '2026-06-27 04:40:00', 2, 2, 'a', 'Selesai'),
-(5, 'hdsufodsf', 'Semua Mahasiswa', '20.0', '2026-06-19 08:36:00', 2, 2, 'selesai cik', 'Selesai'),
-(6, 'Rapihkan Tendik', 'Semua Mahasiswa', '1.0', '2026-07-09 18:35:00', 3, 3, 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Selesai'),
-(7, 'a', 'Semua Mahasiswa', '1.0', '2026-07-12 01:19:00', 1, 1, NULL, 'Dikerjakan');
+(1, 'wertg34', 'Semua Mahasiswa', 20.0, '2026-06-18 18:46:00', 2, 2, 'https://halo', 'Selesai'),
+(2, 'Membersihkan tendik', 'Semua Mahasiswa', 20.0, '2026-06-19 22:20:00', 10, 10, 'https://halo', 'Selesai'),
+(3, 'Perbaiki laptop', 'Semua Mahasiswa', 10.0, '2026-06-20 00:00:00', 2, 2, 'https://halo', 'Selesai'),
+(4, 'Cari ikan', 'Mahasiswa dengan Jam Minus', 90.0, '2026-06-27 04:40:00', 2, 2, 'a', 'Selesai'),
+(5, 'hdsufodsf', 'Semua Mahasiswa', 20.0, '2026-06-19 08:36:00', 2, 2, 'selesai cik', 'Selesai'),
+(6, 'Rapihkan Tendik', 'Semua Mahasiswa', 1.0, '2026-07-09 18:35:00', 3, 3, 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Selesai'),
+(7, 'a', 'Semua Mahasiswa', 1.0, '2026-07-12 01:19:00', 1, 1, NULL, 'Dikerjakan'),
+(8, 'sdfdsv', 'Semua Mahasiswa', 100.0, '2026-07-14 11:09:00', 1, 1, 'https://www.google.com/search?q=if+%28+%21preg_match%28+%27%2F%5E%5Cd%7B1%2C4%7D%28%5C.%5Cd%29%3F%24%2F%27%2C+%24jam_plus_input+%29+%29+%7B+kembali_dengan_error%28%22Jam+plus+hanya+boleh+memiliki+satu+angka+di+belakang+koma.%22%29%3B+%7D&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIHCAEQIRiPAjIHCAIQIRiPAtIBCDE2ODRqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8&udm=50&aep=10&ntc=1&mstk=AUtExfDErJ_94f2O22fKSc3SnVYDOCz9iJpwFN2QBjUMZHPJeH7VwFO5qqzufoJ0CQko_AasmfF68tOFybXW2qJu9gjRe7F2j9q-JsuQKDXmDaaBsDhBqv_6j29pNTY9v0UwRjHA8On-yBQy-UAv07wHs1RbXmReH6oWFgUN3nVAmaFSQYnslfE1L4HxqpHVj2s3My6ar5U3sjODi9PGnaJysNTfvnswB7R4Y8QhH3Lkbr45zYRdl1PDMahLBZ2qY-2APUgWlAbbTt__0LR00bhbg1gVXOEYW3Kj-lS6CGry8VI11vk7bXdGZ07YfBQ7LtzFk9C8gYrDTGJ5BQ&aioh=3&csuir=1&cs=1&mtid=3rNVavXwG_qY4-EPjYfewQQ', 'Selesai'),
+(9, 'ouasdh', 'Mahasiswa dengan Jam Minus', 120.0, '2026-07-14 11:30:00', 1, 0, NULL, 'Dibuka');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_fasilitas_pada_kelas`
+-- Struktur dari tabel `detail_fasilitas_pada_kelas`
 --
 
 CREATE TABLE `detail_fasilitas_pada_kelas` (
-  `id_detail_fasilitas_pada_kelas` int NOT NULL,
-  `id_kelas` int NOT NULL,
-  `id_fasilitas` int NOT NULL,
-  `jumlah_fasilitas` int DEFAULT '1',
-  `status_detail_fasilitas_pada_kelas` enum('Aktif','Rusak','Tidak Aktif') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_detail_fasilitas_pada_kelas` int(11) NOT NULL,
+  `id_kelas` int(11) NOT NULL,
+  `id_fasilitas` int(11) NOT NULL,
+  `jumlah_fasilitas` int(11) DEFAULT 1,
+  `status_detail_fasilitas_pada_kelas` enum('Aktif','Rusak','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_fasilitas_pada_kelas`
+-- Dumping data untuk tabel `detail_fasilitas_pada_kelas`
 --
 
 INSERT INTO `detail_fasilitas_pada_kelas` (`id_detail_fasilitas_pada_kelas`, `id_kelas`, `id_fasilitas`, `jumlah_fasilitas`, `status_detail_fasilitas_pada_kelas`) VALUES
@@ -3593,17 +3520,17 @@ INSERT INTO `detail_fasilitas_pada_kelas` (`id_detail_fasilitas_pada_kelas`, `id
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_kelas_pada_mata_kuliah`
+-- Struktur dari tabel `detail_kelas_pada_mata_kuliah`
 --
 
 CREATE TABLE `detail_kelas_pada_mata_kuliah` (
-  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
-  `id_mata_kuliah` int NOT NULL,
-  `id_kelas` int NOT NULL
+  `id_detail_kelas_pada_mata_kuliah` int(11) NOT NULL,
+  `id_mata_kuliah` int(11) NOT NULL,
+  `id_kelas` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_kelas_pada_mata_kuliah`
+-- Dumping data untuk tabel `detail_kelas_pada_mata_kuliah`
 --
 
 INSERT INTO `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`, `id_mata_kuliah`, `id_kelas`) VALUES
@@ -3617,18 +3544,18 @@ INSERT INTO `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_pengajar_pada_mata_kuliah`
+-- Struktur dari tabel `detail_pengajar_pada_mata_kuliah`
 --
 
 CREATE TABLE `detail_pengajar_pada_mata_kuliah` (
-  `id_detail_pengajar_pada_mata_kuliah` int NOT NULL,
-  `id_detail_kelas_pada_mata_kuliah` int NOT NULL,
-  `id_pengajar` int NOT NULL,
-  `kedudukan_pengajar` enum('Pengajar1','Pengajar2') COLLATE utf8mb4_general_ci NOT NULL
+  `id_detail_pengajar_pada_mata_kuliah` int(11) NOT NULL,
+  `id_detail_kelas_pada_mata_kuliah` int(11) NOT NULL,
+  `id_pengajar` int(11) NOT NULL,
+  `kedudukan_pengajar` enum('Pengajar1','Pengajar2') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_pengajar_pada_mata_kuliah`
+-- Dumping data untuk tabel `detail_pengajar_pada_mata_kuliah`
 --
 
 INSERT INTO `detail_pengajar_pada_mata_kuliah` (`id_detail_pengajar_pada_mata_kuliah`, `id_detail_kelas_pada_mata_kuliah`, `id_pengajar`, `kedudukan_pengajar`) VALUES
@@ -3648,18 +3575,18 @@ INSERT INTO `detail_pengajar_pada_mata_kuliah` (`id_detail_pengajar_pada_mata_ku
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_pengguna_pada_bursa_jobdesc`
+-- Struktur dari tabel `detail_pengguna_pada_bursa_jobdesc`
 --
 
 CREATE TABLE `detail_pengguna_pada_bursa_jobdesc` (
-  `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL,
-  `id_bursa_jobdesc` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
+  `id_detail_pengguna_pada_bursa_jobdesc` int(11) NOT NULL,
+  `id_bursa_jobdesc` int(11) NOT NULL,
+  `id_pengguna` int(11) NOT NULL,
+  `peran_pengguna` enum('Pemberi','Penerima') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_pengguna_pada_bursa_jobdesc`
+-- Dumping data untuk tabel `detail_pengguna_pada_bursa_jobdesc`
 --
 
 INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa_jobdesc`, `id_bursa_jobdesc`, `id_pengguna`, `peran_pengguna`) VALUES
@@ -3667,6 +3594,8 @@ INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa
 (17, 4, 2, 'Pemberi'),
 (22, 5, 2, 'Pemberi'),
 (29, 7, 3, 'Pemberi'),
+(31, 8, 3, 'Pemberi'),
+(33, 9, 3, 'Pemberi'),
 (3, 2, 6, 'Pemberi'),
 (16, 3, 6, 'Pemberi'),
 (25, 6, 6, 'Pemberi'),
@@ -3679,6 +3608,7 @@ INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa
 (23, 5, 9, 'Penerima'),
 (26, 6, 9, 'Penerima'),
 (30, 7, 9, 'Penerima'),
+(32, 8, 9, 'Penerima'),
 (6, 2, 10, 'Penerima'),
 (24, 5, 10, 'Penerima'),
 (7, 2, 12, 'Penerima'),
@@ -3696,18 +3626,18 @@ INSERT INTO `detail_pengguna_pada_bursa_jobdesc` (`id_detail_pengguna_pada_bursa
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_pengguna_pada_pemberian_jam_minus`
+-- Struktur dari tabel `detail_pengguna_pada_pemberian_jam_minus`
 --
 
 CREATE TABLE `detail_pengguna_pada_pemberian_jam_minus` (
-  `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL,
-  `id_pemberian_jam_minus` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pemberi','Penerima') COLLATE utf8mb4_general_ci NOT NULL
+  `id_detail_pengguna_pada_pemberian_jam_minus` int(11) NOT NULL,
+  `id_pemberian_jam_minus` int(11) NOT NULL,
+  `id_pengguna` int(11) NOT NULL,
+  `peran_pengguna` enum('Pemberi','Penerima') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_pengguna_pada_pemberian_jam_minus`
+-- Dumping data untuk tabel `detail_pengguna_pada_pemberian_jam_minus`
 --
 
 INSERT INTO `detail_pengguna_pada_pemberian_jam_minus` (`id_detail_pengguna_pada_pemberian_jam_minus`, `id_pemberian_jam_minus`, `id_pengguna`, `peran_pengguna`) VALUES
@@ -3718,23 +3648,27 @@ INSERT INTO `detail_pengguna_pada_pemberian_jam_minus` (`id_detail_pengguna_pada
 (5, 3, 3, 'Pemberi'),
 (6, 3, 16, 'Penerima'),
 (7, 4, 3, 'Pemberi'),
-(8, 4, 14, 'Penerima');
+(8, 4, 14, 'Penerima'),
+(9, 5, 3, 'Pemberi'),
+(10, 5, 13, 'Penerima'),
+(11, 6, 3, 'Pemberi'),
+(12, 6, 9, 'Penerima');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+-- Struktur dari tabel `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
 --
 
 CREATE TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (
-  `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pelapor','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
+  `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int(11) NOT NULL,
+  `id_pengaduan_kerusakan_fasilitas` int(11) NOT NULL,
+  `id_pengguna` int(11) NOT NULL,
+  `peran_pengguna` enum('Pelapor','Verifikator') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+-- Dumping data untuk tabel `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
 --
 
 INSERT INTO `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`, `id_pengaduan_kerusakan_fasilitas`, `id_pengguna`, `peran_pengguna`) VALUES
@@ -3755,18 +3689,18 @@ INSERT INTO `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` (`id_detail_pen
 -- --------------------------------------------------------
 
 --
--- Table structure for table `detail_pengguna_pada_pengajuan_jam_plus`
+-- Struktur dari tabel `detail_pengguna_pada_pengajuan_jam_plus`
 --
 
 CREATE TABLE `detail_pengguna_pada_pengajuan_jam_plus` (
-  `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL,
-  `id_pengajuan_jam_plus` int NOT NULL,
-  `id_pengguna` int NOT NULL,
-  `peran_pengguna` enum('Pengaju','Verifikator') COLLATE utf8mb4_general_ci NOT NULL
+  `id_detail_pengguna_pada_pengajuan_jam_plus` int(11) NOT NULL,
+  `id_pengajuan_jam_plus` int(11) NOT NULL,
+  `id_pengguna` int(11) NOT NULL,
+  `peran_pengguna` enum('Pengaju','Verifikator') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `detail_pengguna_pada_pengajuan_jam_plus`
+-- Dumping data untuk tabel `detail_pengguna_pada_pengajuan_jam_plus`
 --
 
 INSERT INTO `detail_pengguna_pada_pengajuan_jam_plus` (`id_detail_pengguna_pada_pengajuan_jam_plus`, `id_pengajuan_jam_plus`, `id_pengguna`, `peran_pengguna`) VALUES
@@ -3784,52 +3718,61 @@ INSERT INTO `detail_pengguna_pada_pengajuan_jam_plus` (`id_detail_pengguna_pada_
 (12, 8, 3, 'Verifikator'),
 (13, 9, 15, 'Pengaju'),
 (14, 10, 15, 'Pengaju'),
-(15, 10, 3, 'Verifikator');
+(15, 10, 3, 'Verifikator'),
+(16, 9, 3, 'Verifikator'),
+(17, 5, 3, 'Verifikator'),
+(18, 7, 3, 'Verifikator'),
+(19, 4, 3, 'Verifikator'),
+(20, 11, 9, 'Pengaju'),
+(21, 12, 9, 'Pengaju'),
+(22, 12, 3, 'Verifikator'),
+(23, 13, 9, 'Pengaju'),
+(24, 13, 3, 'Verifikator');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `fasilitas`
+-- Struktur dari tabel `fasilitas`
 --
 
 CREATE TABLE `fasilitas` (
-  `id_fasilitas` int NOT NULL,
-  `nama_fasilitas` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `harga` decimal(15,2) DEFAULT '0.00',
-  `status_fasilitas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif',
+  `id_fasilitas` int(11) NOT NULL,
+  `nama_fasilitas` varchar(50) NOT NULL,
+  `harga` decimal(15,2) DEFAULT 0.00,
+  `status_fasilitas` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif',
   `tanggal_pendataan` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `fasilitas`
+-- Dumping data untuk tabel `fasilitas`
 --
 
 INSERT INTO `fasilitas` (`id_fasilitas`, `nama_fasilitas`, `harga`, `status_fasilitas`, `tanggal_pendataan`) VALUES
-(1, 'Proyektor Kelas', '4500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(2, 'AC Kelas', '3500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(3, 'Komputer Lab', '8500000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(4, 'Kursi Kelas', '350000.00', 'Tidak Aktif', '2026-06-08 22:50:43'),
-(5, 'Papan Tulis', '750000.00', 'Aktif', '2026-06-08 22:50:43'),
-(6, 'Bangku', '100000.00', 'Tidak Aktif', '2026-06-11 23:44:46'),
-(7, 'Kursi', '120000.00', 'Tidak Aktif', '2026-06-17 19:24:58'),
-(8, 'Kursi Kelas', '170000.00', 'Aktif', '2026-06-17 19:30:39');
+(1, 'Proyektor Kelas', 4500000.00, 'Tidak Aktif', '2026-06-08 22:50:43'),
+(2, 'AC Kelas', 3500000.00, 'Tidak Aktif', '2026-06-08 22:50:43'),
+(3, 'Komputer Lab', 8500000.00, 'Tidak Aktif', '2026-06-08 22:50:43'),
+(4, 'Kursi Kelas', 350000.00, 'Tidak Aktif', '2026-06-08 22:50:43'),
+(5, 'Papan Tulis', 750000.00, 'Aktif', '2026-06-08 22:50:43'),
+(6, 'Bangku', 100000.00, 'Tidak Aktif', '2026-06-11 23:44:46'),
+(7, 'Kursi', 120000.00, 'Tidak Aktif', '2026-06-17 19:24:58'),
+(8, 'Kursi Kelas', 170000.00, 'Aktif', '2026-06-17 19:30:39');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `kegiatan`
+-- Struktur dari tabel `kegiatan`
 --
 
 CREATE TABLE `kegiatan` (
-  `id_kegiatan` int NOT NULL,
-  `nama_kegiatan` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `penyelenggara` enum('ASTRAtech','BEM','MPM','HIMMA','UKM') COLLATE utf8mb4_general_ci NOT NULL,
+  `id_kegiatan` int(11) NOT NULL,
+  `nama_kegiatan` varchar(50) NOT NULL,
+  `penyelenggara` enum('ASTRAtech','BEM','MPM','HIMMA','UKM') NOT NULL,
   `tanggal_kegiatan` date DEFAULT NULL,
-  `status_kegiatan` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `status_kegiatan` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `kegiatan`
+-- Dumping data untuk tabel `kegiatan`
 --
 
 INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `penyelenggara`, `tanggal_kegiatan`, `status_kegiatan`) VALUES
@@ -3840,19 +3783,19 @@ INSERT INTO `kegiatan` (`id_kegiatan`, `nama_kegiatan`, `penyelenggara`, `tangga
 -- --------------------------------------------------------
 
 --
--- Table structure for table `kelas`
+-- Struktur dari tabel `kelas`
 --
 
 CREATE TABLE `kelas` (
-  `id_kelas` int NOT NULL,
-  `nama_kelas` varchar(5) COLLATE utf8mb4_general_ci NOT NULL,
-  `tingkat` enum('1','2','3','4') COLLATE utf8mb4_general_ci NOT NULL,
-  `jumlah_mahasiswa` int DEFAULT '0',
-  `status_kelas` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_kelas` int(11) NOT NULL,
+  `nama_kelas` varchar(5) NOT NULL,
+  `tingkat` enum('1','2','3','4') NOT NULL,
+  `jumlah_mahasiswa` int(11) DEFAULT 0,
+  `status_kelas` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `kelas`
+-- Dumping data untuk tabel `kelas`
 --
 
 INSERT INTO `kelas` (`id_kelas`, `nama_kelas`, `tingkat`, `jumlah_mahasiswa`, `status_kelas`) VALUES
@@ -3865,60 +3808,60 @@ INSERT INTO `kelas` (`id_kelas`, `nama_kelas`, `tingkat`, `jumlah_mahasiswa`, `s
 -- --------------------------------------------------------
 
 --
--- Table structure for table `mahasiswa`
+-- Struktur dari tabel `mahasiswa`
 --
 
 CREATE TABLE `mahasiswa` (
-  `id_mahasiswa` int NOT NULL,
-  `id_kelas` int NOT NULL,
-  `id_periode_akademik` int NOT NULL,
-  `nim` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  `nama_mahasiswa` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `saldo_jam_minus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_minus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_plus_murni` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `saldo_jam_plus_kompensasi` decimal(10,1) NOT NULL DEFAULT '0.0',
-  `status_mahasiswa` enum('Aktif','Tidak Aktif','Lulus','Cuti') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_mahasiswa` int(11) NOT NULL,
+  `id_kelas` int(11) NOT NULL,
+  `id_periode_akademik` int(11) NOT NULL,
+  `nim` varchar(20) NOT NULL,
+  `nama_mahasiswa` varchar(50) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `no_hp` varchar(20) DEFAULT NULL,
+  `saldo_jam_minus_murni` decimal(10,1) NOT NULL DEFAULT 0.0,
+  `saldo_jam_minus_kompensasi` decimal(10,1) NOT NULL DEFAULT 0.0,
+  `saldo_jam_plus_murni` decimal(10,1) NOT NULL DEFAULT 0.0,
+  `saldo_jam_plus_kompensasi` decimal(10,1) NOT NULL DEFAULT 0.0,
+  `status_mahasiswa` enum('Aktif','Tidak Aktif','Lulus','Cuti') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `mahasiswa`
+-- Dumping data untuk tabel `mahasiswa`
 --
 
 INSERT INTO `mahasiswa` (`id_mahasiswa`, `id_kelas`, `id_periode_akademik`, `nim`, `nama_mahasiswa`, `email`, `no_hp`, `saldo_jam_minus_murni`, `saldo_jam_minus_kompensasi`, `saldo_jam_plus_murni`, `saldo_jam_plus_kompensasi`, `status_mahasiswa`) VALUES
-(1, 1, 1, '032025001', 'Yoga Margana', 'yoga@simat.test', '081111111111', '7.0', '0.0', '1.0', '1.0', 'Aktif'),
-(2, 1, 1, '032025002', 'Fahri Aprilian', 'fahri@simat.test', '082222222222', '0.0', '1.0', '0.0', '1.0', 'Aktif'),
-(3, 1, 1, '032025003', 'Nabilah Putri', 'nabilah@simat.test', '083333333333', '3.0', '0.0', '0.0', '10.0', 'Aktif'),
-(4, 1, 1, '0987692345', 'Marganaa', 'marganayoga891@gmail.com', '089088752369', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
-(5, 2, 1, '0920250039', 'Mikael', 'mikael@gmail.com', '081298394420', '0.0', '1750.0', '20.0', '26.0', 'Aktif'),
-(6, 2, 1, '0920250035', 'Ridzal', 'Ridzal@gmail.com', '085477325643', '0.0', '0.0', '0.0', '0.0', 'Tidak Aktif'),
-(7, 5, 1, '1', 'Mazt', '', '', '20.0', '0.0', '0.0', '0.0', 'Aktif'),
-(8, 5, 1, '2', 'Daffa', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(9, 5, 1, '3', 'Rijal', '', '', '0.0', '4250.0', '0.0', '0.0', 'Aktif'),
-(10, 5, 1, '4', 'Adit', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(11, 5, 1, '5', 'Jonathan', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(12, 5, 1, '6', 'Irsyad', '', '', '0.0', '0.0', '0.0', '0.0', 'Aktif'),
-(13, 2, 1, '9', 'Hailkal', '', '', '0.0', '0.0', '100.0', '1.0', 'Aktif');
+(1, 1, 1, '032025001', 'Yoga Margana', 'yoga@simat.test', '081111111111', 7.0, 0.0, 1.0, 1.0, 'Aktif'),
+(2, 1, 1, '032025002', 'Fahri Aprilian', 'fahri@simat.test', '082222222222', 0.0, 1.0, 0.0, 1.0, 'Aktif'),
+(3, 1, 1, '032025003', 'Nabilah Putri', 'nabilah@simat.test', '083333333333', 3.0, 0.0, 10.0, 10.0, 'Aktif'),
+(4, 1, 1, '0987692345', 'Marganaa', 'marganayoga891@gmail.com', '089088752369', 0.0, 0.0, 0.0, 0.0, 'Tidak Aktif'),
+(5, 2, 1, '0920250039', 'Mikael', 'mikael@gmail.com', '081298394420', 0.0, 2750.0, 520.0, 1126.0, 'Aktif'),
+(6, 2, 1, '0920250035', 'Ridzal', 'Ridzal@gmail.com', '085477325643', 0.0, 0.0, 0.0, 0.0, 'Tidak Aktif'),
+(7, 5, 1, '1', 'Mazt', '', '', 20.0, 0.0, 0.0, 0.0, 'Aktif'),
+(8, 5, 1, '2', 'Daffa', '', '', 0.0, 1750.0, 0.0, 0.0, 'Aktif'),
+(9, 5, 1, '3', 'Rijal', '', '', 0.0, 4250.0, 0.0, 0.0, 'Aktif'),
+(10, 5, 1, '4', 'Adit', '', '', 0.0, 0.0, 0.0, 0.0, 'Aktif'),
+(11, 5, 1, '5', 'Jonathan', '', '', 0.0, 0.0, 0.0, 0.0, 'Aktif'),
+(12, 5, 1, '6', 'Irsyad', '', '', 0.0, 0.0, 0.0, 0.0, 'Aktif'),
+(13, 2, 1, '9', 'Hailkal', '', '', 0.0, 0.0, 145.0, 101.0, 'Aktif');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `mata_kuliah`
+-- Struktur dari tabel `mata_kuliah`
 --
 
 CREATE TABLE `mata_kuliah` (
-  `id_matakuliah` int NOT NULL,
-  `nama_mata_kuliah` varchar(30) COLLATE utf8mb4_general_ci NOT NULL,
-  `kode_mata_kuliah` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
-  `sks` int NOT NULL,
-  `semester` enum('1','2','3','4','5','6','7','8') COLLATE utf8mb4_general_ci NOT NULL,
-  `status_mata_kuliah` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_matakuliah` int(11) NOT NULL,
+  `nama_mata_kuliah` varchar(30) NOT NULL,
+  `kode_mata_kuliah` varchar(10) NOT NULL,
+  `sks` int(11) NOT NULL,
+  `semester` enum('1','2','3','4','5','6','7','8') NOT NULL,
+  `status_mata_kuliah` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `mata_kuliah`
+-- Dumping data untuk tabel `mata_kuliah`
 --
 
 INSERT INTO `mata_kuliah` (`id_matakuliah`, `nama_mata_kuliah`, `kode_mata_kuliah`, `sks`, `semester`, `status_mata_kuliah`) VALUES
@@ -3931,51 +3874,53 @@ INSERT INTO `mata_kuliah` (`id_matakuliah`, `nama_mata_kuliah`, `kode_mata_kulia
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pemberian_jam_minus`
+-- Struktur dari tabel `pemberian_jam_minus`
 --
 
 CREATE TABLE `pemberian_jam_minus` (
-  `id_pemberian_jam_minus` int NOT NULL,
-  `kategori_pelanggaran` enum('Akademik','Fasilitas','Lainnya') COLLATE utf8mb4_general_ci NOT NULL,
-  `id_detail_kelas_pada_mata_kuliah` int DEFAULT NULL,
-  `keterangan_absensi` enum('Izin','Sakit','Alpa') COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `id_fasilitas` int DEFAULT NULL,
+  `id_pemberian_jam_minus` int(11) NOT NULL,
+  `kategori_pelanggaran` enum('Akademik','Fasilitas','Lainnya') NOT NULL,
+  `id_detail_kelas_pada_mata_kuliah` int(11) DEFAULT NULL,
+  `keterangan_absensi` enum('Izin','Sakit','Alpa') DEFAULT NULL,
+  `id_fasilitas` int(11) DEFAULT NULL,
   `harga_fasilitas_saat_pemberian` decimal(15,2) DEFAULT NULL,
-  `nama_pelanggaran` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
-  `deskripsi_pelanggaran` text COLLATE utf8mb4_general_ci,
+  `nama_pelanggaran` varchar(100) NOT NULL,
+  `deskripsi_pelanggaran` text DEFAULT NULL,
   `jumlah_jam_minus` decimal(10,1) NOT NULL,
-  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
+  `jenis_jam` enum('Murni','Kompensasi') NOT NULL,
   `tanggal_pemberian` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `pemberian_jam_minus`
+-- Dumping data untuk tabel `pemberian_jam_minus`
 --
 
 INSERT INTO `pemberian_jam_minus` (`id_pemberian_jam_minus`, `kategori_pelanggaran`, `id_detail_kelas_pada_mata_kuliah`, `keterangan_absensi`, `id_fasilitas`, `harga_fasilitas_saat_pemberian`, `nama_pelanggaran`, `deskripsi_pelanggaran`, `jumlah_jam_minus`, `jenis_jam`, `tanggal_pemberian`) VALUES
-(1, 'Akademik', 2, 'Alpa', NULL, NULL, 'Pelanggaran Akademik', NULL, '5.0', 'Murni', '2026-07-06 19:21:40'),
-(2, 'Fasilitas', NULL, NULL, 2, '3500000.00', 'Kerusakan Fasilitas', NULL, '1750.0', 'Kompensasi', '2026-07-06 21:11:02'),
-(3, 'Fasilitas', NULL, NULL, 3, '8500000.00', 'Kerusakan Fasilitas', NULL, '4250.0', 'Kompensasi', '2026-07-07 10:04:33'),
-(4, 'Akademik', 5, 'Izin', NULL, NULL, 'Pelanggaran Akademik', NULL, '20.0', 'Murni', '2026-07-12 04:21:20');
+(1, 'Akademik', 2, 'Alpa', NULL, NULL, 'Pelanggaran Akademik', NULL, 5.0, 'Murni', '2026-07-06 19:21:40'),
+(2, 'Fasilitas', NULL, NULL, 2, 3500000.00, 'Kerusakan Fasilitas', NULL, 1750.0, 'Kompensasi', '2026-07-06 21:11:02'),
+(3, 'Fasilitas', NULL, NULL, 3, 8500000.00, 'Kerusakan Fasilitas', NULL, 4250.0, 'Kompensasi', '2026-07-07 10:04:33'),
+(4, 'Akademik', 5, 'Izin', NULL, NULL, 'Pelanggaran Akademik', NULL, 20.0, 'Murni', '2026-07-12 04:21:20'),
+(5, 'Fasilitas', NULL, NULL, 2, 3500000.00, 'Kerusakan Fasilitas', NULL, 1750.0, 'Kompensasi', '2026-07-14 11:31:43'),
+(6, 'Lainnya', NULL, NULL, NULL, NULL, 'Pelanggaran Lainnya', 'eaaa', 1000.0, 'Kompensasi', '2026-07-14 12:15:35');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pengaduan_kerusakan_fasilitas`
+-- Struktur dari tabel `pengaduan_kerusakan_fasilitas`
 --
 
 CREATE TABLE `pengaduan_kerusakan_fasilitas` (
-  `id_pengaduan_kerusakan_fasilitas` int NOT NULL,
-  `id_fasilitas` int NOT NULL,
-  `deskripsi_kerusakan` text COLLATE utf8mb4_general_ci NOT NULL,
+  `id_pengaduan_kerusakan_fasilitas` int(11) NOT NULL,
+  `id_fasilitas` int(11) NOT NULL,
+  `deskripsi_kerusakan` text NOT NULL,
   `tanggal_pengaduan` datetime NOT NULL,
-  `bukti_kerusakan_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `pelaku_kerusakan` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengaduan` enum('Menunggu Verifikasi','Diterima','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
+  `bukti_kerusakan_url` varchar(2048) DEFAULT NULL,
+  `pelaku_kerusakan` varchar(50) DEFAULT NULL,
+  `status_pengaduan` enum('Menunggu Verifikasi','Diterima','Ditolak') DEFAULT 'Menunggu Verifikasi'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `pengaduan_kerusakan_fasilitas`
+-- Dumping data untuk tabel `pengaduan_kerusakan_fasilitas`
 --
 
 INSERT INTO `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`, `id_fasilitas`, `deskripsi_kerusakan`, `tanggal_pengaduan`, `bukti_kerusakan_url`, `pelaku_kerusakan`, `status_pengaduan`) VALUES
@@ -3990,20 +3935,20 @@ INSERT INTO `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pengajar`
+-- Struktur dari tabel `pengajar`
 --
 
 CREATE TABLE `pengajar` (
-  `id_pengajar` int NOT NULL,
-  `nip` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
-  `nama_pengajar` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `no_hp` varchar(20) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengajar` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_pengajar` int(11) NOT NULL,
+  `nip` varchar(20) NOT NULL,
+  `nama_pengajar` varchar(50) NOT NULL,
+  `email` varchar(50) DEFAULT NULL,
+  `no_hp` varchar(20) DEFAULT NULL,
+  `status_pengajar` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `pengajar`
+-- Dumping data untuk tabel `pengajar`
 --
 
 INSERT INTO `pengajar` (`id_pengajar`, `nip`, `nama_pengajar`, `email`, `no_hp`, `status_pengajar`) VALUES
@@ -4019,56 +3964,61 @@ INSERT INTO `pengajar` (`id_pengajar`, `nip`, `nama_pengajar`, `email`, `no_hp`,
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pengajuan_jam_plus`
+-- Struktur dari tabel `pengajuan_jam_plus`
 --
 
 CREATE TABLE `pengajuan_jam_plus` (
-  `id_pengajuan_jam_plus` int NOT NULL,
-  `id_kegiatan` int DEFAULT NULL,
+  `id_pengajuan_jam_plus` int(11) NOT NULL,
+  `id_kegiatan` int(11) DEFAULT NULL,
   `jumlah_jam_plus` decimal(6,1) NOT NULL,
-  `jenis_jam` enum('Murni','Kompensasi') COLLATE utf8mb4_general_ci NOT NULL,
-  `sumber_jam` enum('Prodi','Luar') COLLATE utf8mb4_general_ci NOT NULL,
+  `jenis_jam` enum('Murni','Kompensasi') NOT NULL,
+  `sumber_jam` enum('Prodi','Luar') NOT NULL,
   `tanggal_pengajuan` datetime NOT NULL,
-  `deskripsi_pekerjaan` text COLLATE utf8mb4_general_ci,
-  `nama_pemberi` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `dokumen_url` varchar(2048) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `status_pengajuan` enum('Menunggu Verifikasi','Disetujui','Ditolak') COLLATE utf8mb4_general_ci DEFAULT 'Menunggu Verifikasi'
+  `deskripsi_pekerjaan` text DEFAULT NULL,
+  `nama_pemberi` varchar(50) DEFAULT NULL,
+  `dokumen_url` varchar(2048) DEFAULT NULL,
+  `status_pengajuan` enum('Menunggu Verifikasi','Disetujui','Ditolak') DEFAULT 'Menunggu Verifikasi',
+  `alasan_penolakan` varchar(255) DEFAULT NULL,
+  `catatan_verifikasi` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `pengajuan_jam_plus`
+-- Dumping data untuk tabel `pengajuan_jam_plus`
 --
 
-INSERT INTO `pengajuan_jam_plus` (`id_pengajuan_jam_plus`, `id_kegiatan`, `jumlah_jam_plus`, `jenis_jam`, `sumber_jam`, `tanggal_pengajuan`, `deskripsi_pekerjaan`, `nama_pemberi`, `dokumen_url`, `status_pengajuan`) VALUES
-(1, 1, '100.0', 'Murni', 'Prodi', '2026-06-25 23:03:13', 'Olahraga', 'Fahri', 'abc', 'Disetujui'),
-(2, 1, '50.0', 'Kompensasi', 'Luar', '2026-06-25 23:55:15', 'Menyapu', 'Agoy', 'abc', 'Disetujui'),
-(3, 1, '100.0', 'Murni', 'Prodi', '2026-06-25 23:55:35', 'Mengepel', 'Agoy', 'abc', 'Ditolak'),
-(4, NULL, '100.0', 'Kompensasi', 'Prodi', '2026-07-02 09:06:26', 'Pulang', 'Adit', 'abc', 'Menunggu Verifikasi'),
-(5, 2, '90.0', 'Murni', 'Luar', '2026-07-02 09:07:26', 'a', 'Fahri', 'a', 'Menunggu Verifikasi'),
-(6, NULL, '1.0', 'Murni', 'Prodi', '2026-07-02 09:13:53', 'aa', 'Agoy', 'a', 'Menunggu Verifikasi'),
-(7, NULL, '50.0', 'Murni', 'Prodi', '2026-07-03 13:32:05', 'abc', 'Rafi', 'abc', 'Menunggu Verifikasi'),
-(8, NULL, '20.0', 'Murni', 'Prodi', '2026-07-03 14:47:18', 'Panitia', 'Yoga', 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Disetujui'),
-(9, NULL, '10.0', 'Murni', 'Prodi', '2026-07-11 18:15:33', 'a', 'Fahri', 'a', 'Menunggu Verifikasi'),
-(10, NULL, '10.0', 'Kompensasi', 'Prodi', '2026-07-11 18:16:51', 'a', 'a', 'a', 'Disetujui');
+INSERT INTO `pengajuan_jam_plus` (`id_pengajuan_jam_plus`, `id_kegiatan`, `jumlah_jam_plus`, `jenis_jam`, `sumber_jam`, `tanggal_pengajuan`, `deskripsi_pekerjaan`, `nama_pemberi`, `dokumen_url`, `status_pengajuan`, `alasan_penolakan`, `catatan_verifikasi`) VALUES
+(1, 1, 100.0, 'Murni', 'Prodi', '2026-06-25 23:03:13', 'Olahraga', 'Fahri', 'abc', 'Disetujui', NULL, NULL),
+(2, 1, 50.0, 'Kompensasi', 'Luar', '2026-06-25 23:55:15', 'Menyapu', 'Agoy', 'abc', 'Disetujui', NULL, NULL),
+(3, 1, 100.0, 'Murni', 'Prodi', '2026-06-25 23:55:35', 'Mengepel', 'Agoy', 'abc', 'Ditolak', NULL, NULL),
+(4, NULL, 100.0, 'Kompensasi', 'Prodi', '2026-07-02 09:06:26', 'Pulang', 'Adit', 'abc', 'Disetujui', NULL, NULL),
+(5, 2, 90.0, 'Murni', 'Luar', '2026-07-02 09:07:26', 'a', 'Fahri', 'a', 'Disetujui', NULL, NULL),
+(6, NULL, 1.0, 'Murni', 'Prodi', '2026-07-02 09:13:53', 'aa', 'Agoy', 'a', 'Menunggu Verifikasi', NULL, NULL),
+(7, NULL, 50.0, 'Murni', 'Prodi', '2026-07-03 13:32:05', 'abc', 'Rafi', 'abc', 'Ditolak', 'okelah', NULL),
+(8, NULL, 20.0, 'Murni', 'Prodi', '2026-07-03 14:47:18', 'Panitia', 'Yoga', 'https://www.bing.com/search?pglt=299&q=apa&cvid=d715390a2ba542ac8f692dee3df6f0fe&gs_lcrp=EgRlZGdlKgYIABBFGDkyBggAEEUYOTIGCAEQRRg80gEHNjU2ajBqN6gCALACAA&FORM=ANNTA1&PC=U531', 'Disetujui', NULL, NULL),
+(9, NULL, 10.0, 'Murni', 'Prodi', '2026-07-11 18:15:33', 'a', 'Fahri', 'a', 'Disetujui', NULL, NULL),
+(10, NULL, 10.0, 'Kompensasi', 'Prodi', '2026-07-11 18:16:51', 'a', 'a', 'a', 'Disetujui', NULL, NULL),
+(11, 2, 100.0, 'Murni', 'Luar', '2026-07-13 23:16:06', 'qw', 'lokal', 'qw', 'Menunggu Verifikasi', NULL, NULL),
+(12, 2, 1000.0, 'Murni', 'Luar', '2026-07-13 23:32:01', 'jj', 'asas', 'https://www.google.com/search?q=kucing&oq=kucing&gs_lcrp=EgZjaHJvbWUqDQgAEAAY4wIYsQMYgAQyDQgAEAAY4wIYsQMYgAQyCggBEC4YsQMYgAQyCggCEAAYsQMYgAQyBwgDEAAYgAQyCggEEC4YsQMYgAQyCggFEC4YsQMYgAQyCggGEC4YsQMYgAQyCggHEC4YsQMYgAQyCggIEC4YsQMYgAQyCggJEC4YsQMYgATSAQc5MDlqMGo0qAIAsAIB&sourceid=chrome&source=chrome.ob&ie=UTF-8', 'Disetujui', NULL, NULL),
+(13, NULL, 1000.0, 'Kompensasi', 'Prodi', '2026-07-14 12:17:23', 'aspijdas', 'mas bray', 'https://www.google.com/search?q=kucing&oq=kucing&gs_lcrp=EgZjaHJvbWUqDQgAEAAY4wIYsQMYgAQyDQgAEAAY4wIYsQMYgAQyCggBEC4YsQMYgAQyCggCEAAYsQMYgAQyBwgDEAAYgAQyCggEEC4YsQMYgAQyCggFEC4YsQMYgAQyCggGEC4YsQMYgAQyCggHEC4YsQMYgAQyCggIEC4YsQMYgAQyCggJEC4YsQMYgATSAQc5MDlqMGo0qAIAsAIB&sourceid=chrome&source=chrome.ob&ie=UTF-8', 'Disetujui', NULL, NULL);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `pengguna`
+-- Struktur dari tabel `pengguna`
 --
 
 CREATE TABLE `pengguna` (
-  `id_pengguna` int NOT NULL,
-  `id_mahasiswa` int DEFAULT NULL,
-  `id_pengajar` int DEFAULT NULL,
-  `username` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `password` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `role` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi') COLLATE utf8mb4_general_ci NOT NULL,
-  `status_akun` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `id_pengguna` int(11) NOT NULL,
+  `id_mahasiswa` int(11) DEFAULT NULL,
+  `id_pengajar` int(11) DEFAULT NULL,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi') NOT NULL,
+  `status_akun` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `pengguna`
+-- Dumping data untuk tabel `pengguna`
 --
 
 INSERT INTO `pengguna` (`id_pengguna`, `id_mahasiswa`, `id_pengajar`, `username`, `password`, `role`, `status_akun`) VALUES
@@ -4095,123 +4045,37 @@ INSERT INTO `pengguna` (`id_pengguna`, `id_mahasiswa`, `id_pengajar`, `username`
 -- --------------------------------------------------------
 
 --
--- Table structure for table `periode_akademik`
+-- Struktur dari tabel `periode_akademik`
 --
 
 CREATE TABLE `periode_akademik` (
-  `id_periode_akademik` int NOT NULL,
-  `tahun_akademik` varchar(10) COLLATE utf8mb4_general_ci NOT NULL,
-  `semester` enum('Ganjil','Genap') COLLATE utf8mb4_general_ci NOT NULL,
+  `id_periode_akademik` int(11) NOT NULL,
+  `tahun_akademik` varchar(10) NOT NULL,
+  `semester` enum('Ganjil','Genap') NOT NULL,
   `tanggal_mulai` datetime NOT NULL,
   `tanggal_selesai` datetime NOT NULL,
-  `status_periode` enum('Aktif','Tidak Aktif') COLLATE utf8mb4_general_ci DEFAULT 'Aktif'
+  `status_periode` enum('Aktif','Tidak Aktif') DEFAULT 'Aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `periode_akademik`
+-- Dumping data untuk tabel `periode_akademik`
 --
 
 INSERT INTO `periode_akademik` (`id_periode_akademik`, `tahun_akademik`, `semester`, `tanggal_mulai`, `tanggal_selesai`, `status_periode`) VALUES
 (1, '2025/2026', 'Genap', '2026-02-01 00:00:00', '2026-07-31 23:59:59', 'Aktif');
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `vw_laporan_bursa_jobdesc`
--- (See below for the actual view)
---
-CREATE TABLE `vw_laporan_bursa_jobdesc` (
-`deskripsi_jobdesc` text
-,`id_bursa_jobdesc` int
-,`id_pemberi` int
-,`jam_plus` decimal(6,1)
-,`kuota` int
-,`kuota_terisi` varchar(23)
-,`nama_pemberi` varchar(50)
-,`nama_penerima_jobdesc` mediumtext
-,`role_pemberi` enum('Mahasiswa','Pengajar','PIC Tata Tertib','PIC Aset Fasilitas','PIC Kemahasiswaan','Kepala Prodi')
-,`status_jobdesc` enum('Dibuka','Dikerjakan','Selesai')
-,`tanggal_pemberian_jobdesc` datetime
-,`target_penerima_jobdesc` enum('Semua Mahasiswa','Mahasiswa dengan Jam Minus')
-,`terisi` int
-,`username_pemberi` varchar(50)
-);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `vw_laporan_pengaduan_fasilitas`
--- (See below for the actual view)
---
-CREATE TABLE `vw_laporan_pengaduan_fasilitas` (
-`deskripsi_kerusakan` text
-,`id_fasilitas` int
-,`id_kelas` int
-,`id_mahasiswa` int
-,`id_pengaduan_kerusakan_fasilitas` int
-,`nama_fasilitas` varchar(50)
-,`nama_kelas` varchar(5)
-,`nama_mahasiswa` varchar(50)
-,`nim` varchar(20)
-,`tanggal_pengaduan` datetime
-);
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `vw_laporan_total_jam_mahasiswa`
--- (See below for the actual view)
---
-CREATE TABLE `vw_laporan_total_jam_mahasiswa` (
-`id_kelas` int
-,`id_mahasiswa` int
-,`nama_kelas` varchar(5)
-,`nama_mahasiswa` varchar(50)
-,`nim` varchar(20)
-,`total_jam_kompensasi` decimal(10,1)
-,`total_jam_mahasiswa` decimal(10,1)
-,`total_jam_murni` decimal(10,1)
-);
-
--- --------------------------------------------------------
-
---
--- Structure for view `vw_laporan_bursa_jobdesc`
---
-DROP TABLE IF EXISTS `vw_laporan_bursa_jobdesc`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_bursa_jobdesc`  AS SELECT `bj`.`id_bursa_jobdesc` AS `id_bursa_jobdesc`, `bj`.`deskripsi_jobdesc` AS `deskripsi_jobdesc`, `bj`.`penerima_jobdesc` AS `target_penerima_jobdesc`, coalesce(`data_penerima`.`nama_penerima_jobdesc`,'Belum ada penerima') AS `nama_penerima_jobdesc`, `bj`.`jam_plus` AS `jam_plus`, `bj`.`tanggal_pemberian_jobdesc` AS `tanggal_pemberian_jobdesc`, `bj`.`jumlah_mahasiswa_diperlukan` AS `kuota`, `bj`.`jumlah_mahasiswa_mengambil` AS `terisi`, concat(`bj`.`jumlah_mahasiswa_mengambil`,'/',`bj`.`jumlah_mahasiswa_diperlukan`) AS `kuota_terisi`, `bj`.`status_jobdesc` AS `status_jobdesc`, `p_pemberi`.`id_pengguna` AS `id_pemberi`, `p_pemberi`.`username` AS `username_pemberi`, `p_pemberi`.`role` AS `role_pemberi`, coalesce(`pg_pemberi`.`nama_pengajar`,`m_pemberi`.`nama_mahasiswa`,`p_pemberi`.`username`) AS `nama_pemberi` FROM (((((`bursa_jobdesc` `bj` join `detail_pengguna_pada_bursa_jobdesc` `dp_pemberi` on(((`bj`.`id_bursa_jobdesc` = `dp_pemberi`.`id_bursa_jobdesc`) and (`dp_pemberi`.`peran_pengguna` = 'Pemberi')))) join `pengguna` `p_pemberi` on((`dp_pemberi`.`id_pengguna` = `p_pemberi`.`id_pengguna`))) left join `pengajar` `pg_pemberi` on((`p_pemberi`.`id_pengajar` = `pg_pemberi`.`id_pengajar`))) left join `mahasiswa` `m_pemberi` on((`p_pemberi`.`id_mahasiswa` = `m_pemberi`.`id_mahasiswa`))) left join (select `dp`.`id_bursa_jobdesc` AS `id_bursa_jobdesc`,group_concat(coalesce(`m`.`nama_mahasiswa`,`p`.`username`) order by coalesce(`m`.`nama_mahasiswa`,`p`.`username`) ASC separator ', ') AS `nama_penerima_jobdesc` from ((`detail_pengguna_pada_bursa_jobdesc` `dp` join `pengguna` `p` on((`dp`.`id_pengguna` = `p`.`id_pengguna`))) left join `mahasiswa` `m` on((`p`.`id_mahasiswa` = `m`.`id_mahasiswa`))) where (`dp`.`peran_pengguna` = 'Penerima') group by `dp`.`id_bursa_jobdesc`) `data_penerima` on((`bj`.`id_bursa_jobdesc` = `data_penerima`.`id_bursa_jobdesc`)))  ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `vw_laporan_pengaduan_fasilitas`
---
-DROP TABLE IF EXISTS `vw_laporan_pengaduan_fasilitas`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_pengaduan_fasilitas`  AS SELECT `pkf`.`id_pengaduan_kerusakan_fasilitas` AS `id_pengaduan_kerusakan_fasilitas`, `m`.`id_mahasiswa` AS `id_mahasiswa`, `m`.`nim` AS `nim`, `m`.`nama_mahasiswa` AS `nama_mahasiswa`, `k`.`id_kelas` AS `id_kelas`, coalesce(`k`.`nama_kelas`,'-') AS `nama_kelas`, `f`.`id_fasilitas` AS `id_fasilitas`, `f`.`nama_fasilitas` AS `nama_fasilitas`, `pkf`.`deskripsi_kerusakan` AS `deskripsi_kerusakan`, `pkf`.`tanggal_pengaduan` AS `tanggal_pengaduan` FROM (((((`pengaduan_kerusakan_fasilitas` `pkf` join `fasilitas` `f` on((`pkf`.`id_fasilitas` = `f`.`id_fasilitas`))) join `detail_pengguna_pada_pengaduan_kerusakan_fasilitas` `dp` on(((`pkf`.`id_pengaduan_kerusakan_fasilitas` = `dp`.`id_pengaduan_kerusakan_fasilitas`) and (`dp`.`peran_pengguna` = 'Pelapor')))) join `pengguna` `p` on((`dp`.`id_pengguna` = `p`.`id_pengguna`))) join `mahasiswa` `m` on((`p`.`id_mahasiswa` = `m`.`id_mahasiswa`))) left join `kelas` `k` on((`m`.`id_kelas` = `k`.`id_kelas`)))  ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `vw_laporan_total_jam_mahasiswa`
---
-DROP TABLE IF EXISTS `vw_laporan_total_jam_mahasiswa`;
-
-CREATE ALGORITHM=UNDEFINED SQL SECURITY INVOKER VIEW `vw_laporan_total_jam_mahasiswa`  AS SELECT `m`.`id_mahasiswa` AS `id_mahasiswa`, `m`.`nim` AS `nim`, `m`.`nama_mahasiswa` AS `nama_mahasiswa`, `k`.`id_kelas` AS `id_kelas`, `k`.`nama_kelas` AS `nama_kelas`, cast(`ufn_hitung_total_jam_kompensasi_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_kompensasi`, cast(`ufn_hitung_total_jam_murni_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_murni`, cast(`ufn_hitung_total_jam_mahasiswa`(`m`.`id_mahasiswa`) as decimal(10,1)) AS `total_jam_mahasiswa` FROM (`mahasiswa` `m` join `kelas` `k` on((`k`.`id_kelas` = `m`.`id_kelas`))) WHERE (`m`.`status_mahasiswa` = 'Aktif')  ;
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `bursa_jobdesc`
+-- Indeks untuk tabel `bursa_jobdesc`
 --
 ALTER TABLE `bursa_jobdesc`
   ADD PRIMARY KEY (`id_bursa_jobdesc`);
 
 --
--- Indexes for table `detail_fasilitas_pada_kelas`
+-- Indeks untuk tabel `detail_fasilitas_pada_kelas`
 --
 ALTER TABLE `detail_fasilitas_pada_kelas`
   ADD PRIMARY KEY (`id_detail_fasilitas_pada_kelas`),
@@ -4219,7 +4083,7 @@ ALTER TABLE `detail_fasilitas_pada_kelas`
   ADD KEY `fk_detail_fasilitas_fasilitas` (`id_fasilitas`);
 
 --
--- Indexes for table `detail_kelas_pada_mata_kuliah`
+-- Indeks untuk tabel `detail_kelas_pada_mata_kuliah`
 --
 ALTER TABLE `detail_kelas_pada_mata_kuliah`
   ADD PRIMARY KEY (`id_detail_kelas_pada_mata_kuliah`),
@@ -4228,7 +4092,7 @@ ALTER TABLE `detail_kelas_pada_mata_kuliah`
   ADD KEY `fk_detail_kelas_mk_kelas` (`id_kelas`);
 
 --
--- Indexes for table `detail_pengajar_pada_mata_kuliah`
+-- Indeks untuk tabel `detail_pengajar_pada_mata_kuliah`
 --
 ALTER TABLE `detail_pengajar_pada_mata_kuliah`
   ADD PRIMARY KEY (`id_detail_pengajar_pada_mata_kuliah`),
@@ -4237,7 +4101,7 @@ ALTER TABLE `detail_pengajar_pada_mata_kuliah`
   ADD KEY `fk_detail_pengajar_pengajar` (`id_pengajar`);
 
 --
--- Indexes for table `detail_pengguna_pada_bursa_jobdesc`
+-- Indeks untuk tabel `detail_pengguna_pada_bursa_jobdesc`
 --
 ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
   ADD PRIMARY KEY (`id_detail_pengguna_pada_bursa_jobdesc`),
@@ -4246,7 +4110,7 @@ ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
   ADD KEY `idx_laporan_bursa_pemberi` (`peran_pengguna`,`id_pengguna`,`id_bursa_jobdesc`);
 
 --
--- Indexes for table `detail_pengguna_pada_pemberian_jam_minus`
+-- Indeks untuk tabel `detail_pengguna_pada_pemberian_jam_minus`
 --
 ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
   ADD PRIMARY KEY (`id_detail_pengguna_pada_pemberian_jam_minus`),
@@ -4255,7 +4119,7 @@ ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
   ADD KEY `fk_detail_jam_minus_pengguna` (`id_pengguna`);
 
 --
--- Indexes for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+-- Indeks untuk tabel `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
   ADD PRIMARY KEY (`id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas`),
@@ -4264,7 +4128,7 @@ ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
   ADD KEY `idx_laporan_pengaduan_pelapor` (`peran_pengguna`,`id_pengaduan_kerusakan_fasilitas`,`id_pengguna`);
 
 --
--- Indexes for table `detail_pengguna_pada_pengajuan_jam_plus`
+-- Indeks untuk tabel `detail_pengguna_pada_pengajuan_jam_plus`
 --
 ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
   ADD PRIMARY KEY (`id_detail_pengguna_pada_pengajuan_jam_plus`),
@@ -4272,25 +4136,25 @@ ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
   ADD KEY `fk_detail_pengajuan_pengguna` (`id_pengguna`);
 
 --
--- Indexes for table `fasilitas`
+-- Indeks untuk tabel `fasilitas`
 --
 ALTER TABLE `fasilitas`
   ADD PRIMARY KEY (`id_fasilitas`);
 
 --
--- Indexes for table `kegiatan`
+-- Indeks untuk tabel `kegiatan`
 --
 ALTER TABLE `kegiatan`
   ADD PRIMARY KEY (`id_kegiatan`);
 
 --
--- Indexes for table `kelas`
+-- Indeks untuk tabel `kelas`
 --
 ALTER TABLE `kelas`
   ADD PRIMARY KEY (`id_kelas`);
 
 --
--- Indexes for table `mahasiswa`
+-- Indeks untuk tabel `mahasiswa`
 --
 ALTER TABLE `mahasiswa`
   ADD PRIMARY KEY (`id_mahasiswa`),
@@ -4299,7 +4163,7 @@ ALTER TABLE `mahasiswa`
   ADD KEY `fk_mahasiswa_periode` (`id_periode_akademik`);
 
 --
--- Indexes for table `mata_kuliah`
+-- Indeks untuk tabel `mata_kuliah`
 --
 ALTER TABLE `mata_kuliah`
   ADD PRIMARY KEY (`id_matakuliah`),
@@ -4307,7 +4171,7 @@ ALTER TABLE `mata_kuliah`
   ADD UNIQUE KEY `uq_kode_mata_kuliah` (`kode_mata_kuliah`);
 
 --
--- Indexes for table `pemberian_jam_minus`
+-- Indeks untuk tabel `pemberian_jam_minus`
 --
 ALTER TABLE `pemberian_jam_minus`
   ADD PRIMARY KEY (`id_pemberian_jam_minus`),
@@ -4317,28 +4181,28 @@ ALTER TABLE `pemberian_jam_minus`
   ADD KEY `idx_pjm_tanggal` (`tanggal_pemberian`);
 
 --
--- Indexes for table `pengaduan_kerusakan_fasilitas`
+-- Indeks untuk tabel `pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `pengaduan_kerusakan_fasilitas`
   ADD PRIMARY KEY (`id_pengaduan_kerusakan_fasilitas`),
   ADD KEY `fk_pengaduan_fasilitas` (`id_fasilitas`);
 
 --
--- Indexes for table `pengajar`
+-- Indeks untuk tabel `pengajar`
 --
 ALTER TABLE `pengajar`
   ADD PRIMARY KEY (`id_pengajar`),
   ADD UNIQUE KEY `nip` (`nip`);
 
 --
--- Indexes for table `pengajuan_jam_plus`
+-- Indeks untuk tabel `pengajuan_jam_plus`
 --
 ALTER TABLE `pengajuan_jam_plus`
   ADD PRIMARY KEY (`id_pengajuan_jam_plus`),
   ADD KEY `fk_pengajuan_jam_plus_kegiatan` (`id_kegiatan`);
 
 --
--- Indexes for table `pengguna`
+-- Indeks untuk tabel `pengguna`
 --
 ALTER TABLE `pengguna`
   ADD PRIMARY KEY (`id_pengguna`),
@@ -4347,217 +4211,216 @@ ALTER TABLE `pengguna`
   ADD KEY `fk_pengguna_pengajar` (`id_pengajar`);
 
 --
--- Indexes for table `periode_akademik`
+-- Indeks untuk tabel `periode_akademik`
 --
 ALTER TABLE `periode_akademik`
   ADD PRIMARY KEY (`id_periode_akademik`);
 
 --
--- AUTO_INCREMENT for dumped tables
+-- AUTO_INCREMENT untuk tabel yang dibuang
 --
 
 --
--- AUTO_INCREMENT for table `bursa_jobdesc`
+-- AUTO_INCREMENT untuk tabel `bursa_jobdesc`
 --
 ALTER TABLE `bursa_jobdesc`
-  MODIFY `id_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_bursa_jobdesc` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
--- AUTO_INCREMENT for table `detail_fasilitas_pada_kelas`
+-- AUTO_INCREMENT untuk tabel `detail_fasilitas_pada_kelas`
 --
 ALTER TABLE `detail_fasilitas_pada_kelas`
-  MODIFY `id_detail_fasilitas_pada_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_detail_fasilitas_pada_kelas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT for table `detail_kelas_pada_mata_kuliah`
+-- AUTO_INCREMENT untuk tabel `detail_kelas_pada_mata_kuliah`
 --
 ALTER TABLE `detail_kelas_pada_mata_kuliah`
-  MODIFY `id_detail_kelas_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_detail_kelas_pada_mata_kuliah` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `detail_pengajar_pada_mata_kuliah`
+-- AUTO_INCREMENT untuk tabel `detail_pengajar_pada_mata_kuliah`
 --
 ALTER TABLE `detail_pengajar_pada_mata_kuliah`
-  MODIFY `id_detail_pengajar_pada_mata_kuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id_detail_pengajar_pada_mata_kuliah` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
--- AUTO_INCREMENT for table `detail_pengguna_pada_bursa_jobdesc`
+-- AUTO_INCREMENT untuk tabel `detail_pengguna_pada_bursa_jobdesc`
 --
 ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
-  MODIFY `id_detail_pengguna_pada_bursa_jobdesc` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id_detail_pengguna_pada_bursa_jobdesc` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
--- AUTO_INCREMENT for table `detail_pengguna_pada_pemberian_jam_minus`
+-- AUTO_INCREMENT untuk tabel `detail_pengguna_pada_pemberian_jam_minus`
 --
 ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
-  MODIFY `id_detail_pengguna_pada_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_detail_pengguna_pada_pemberian_jam_minus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
--- AUTO_INCREMENT for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+-- AUTO_INCREMENT untuk tabel `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
-  MODIFY `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id_detail_pengguna_pada_pengaduan_kerusakan_fasilitas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
--- AUTO_INCREMENT for table `detail_pengguna_pada_pengajuan_jam_plus`
+-- AUTO_INCREMENT untuk tabel `detail_pengguna_pada_pengajuan_jam_plus`
 --
 ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
-  MODIFY `id_detail_pengguna_pada_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id_detail_pengguna_pada_pengajuan_jam_plus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
--- AUTO_INCREMENT for table `fasilitas`
+-- AUTO_INCREMENT untuk tabel `fasilitas`
 --
 ALTER TABLE `fasilitas`
-  MODIFY `id_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_fasilitas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT for table `kegiatan`
+-- AUTO_INCREMENT untuk tabel `kegiatan`
 --
 ALTER TABLE `kegiatan`
-  MODIFY `id_kegiatan` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_kegiatan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT for table `kelas`
+-- AUTO_INCREMENT untuk tabel `kelas`
 --
 ALTER TABLE `kelas`
-  MODIFY `id_kelas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_kelas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT for table `mahasiswa`
+-- AUTO_INCREMENT untuk tabel `mahasiswa`
 --
 ALTER TABLE `mahasiswa`
-  MODIFY `id_mahasiswa` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id_mahasiswa` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
--- AUTO_INCREMENT for table `mata_kuliah`
+-- AUTO_INCREMENT untuk tabel `mata_kuliah`
 --
 ALTER TABLE `mata_kuliah`
-  MODIFY `id_matakuliah` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_matakuliah` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT for table `pemberian_jam_minus`
+-- AUTO_INCREMENT untuk tabel `pemberian_jam_minus`
 --
 ALTER TABLE `pemberian_jam_minus`
-  MODIFY `id_pemberian_jam_minus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_pemberian_jam_minus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- AUTO_INCREMENT for table `pengaduan_kerusakan_fasilitas`
+-- AUTO_INCREMENT untuk tabel `pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `pengaduan_kerusakan_fasilitas`
-  MODIFY `id_pengaduan_kerusakan_fasilitas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id_pengaduan_kerusakan_fasilitas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `pengajar`
+-- AUTO_INCREMENT untuk tabel `pengajar`
 --
 ALTER TABLE `pengajar`
-  MODIFY `id_pengajar` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_pengajar` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT for table `pengajuan_jam_plus`
+-- AUTO_INCREMENT untuk tabel `pengajuan_jam_plus`
 --
 ALTER TABLE `pengajuan_jam_plus`
-  MODIFY `id_pengajuan_jam_plus` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_pengajuan_jam_plus` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
--- AUTO_INCREMENT for table `pengguna`
+-- AUTO_INCREMENT untuk tabel `pengguna`
 --
 ALTER TABLE `pengguna`
-  MODIFY `id_pengguna` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id_pengguna` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
--- AUTO_INCREMENT for table `periode_akademik`
+-- AUTO_INCREMENT untuk tabel `periode_akademik`
 --
 ALTER TABLE `periode_akademik`
-  MODIFY `id_periode_akademik` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_periode_akademik` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- Constraints for dumped tables
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
 --
 
 --
--- Constraints for table `detail_fasilitas_pada_kelas`
+-- Ketidakleluasaan untuk tabel `detail_fasilitas_pada_kelas`
 --
 ALTER TABLE `detail_fasilitas_pada_kelas`
   ADD CONSTRAINT `fk_detail_fasilitas_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_fasilitas_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_kelas_pada_mata_kuliah`
+-- Ketidakleluasaan untuk tabel `detail_kelas_pada_mata_kuliah`
 --
 ALTER TABLE `detail_kelas_pada_mata_kuliah`
   ADD CONSTRAINT `fk_detail_kelas_mk_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_kelas_mk_mk` FOREIGN KEY (`id_mata_kuliah`) REFERENCES `mata_kuliah` (`id_matakuliah`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_pengajar_pada_mata_kuliah`
+-- Ketidakleluasaan untuk tabel `detail_pengajar_pada_mata_kuliah`
 --
 ALTER TABLE `detail_pengajar_pada_mata_kuliah`
   ADD CONSTRAINT `fk_detail_pengajar_mk` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_pengajar_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_pengguna_pada_bursa_jobdesc`
+-- Ketidakleluasaan untuk tabel `detail_pengguna_pada_bursa_jobdesc`
 --
 ALTER TABLE `detail_pengguna_pada_bursa_jobdesc`
   ADD CONSTRAINT `fk_detail_bursa_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_pengguna_bursa` FOREIGN KEY (`id_bursa_jobdesc`) REFERENCES `bursa_jobdesc` (`id_bursa_jobdesc`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_pengguna_pada_pemberian_jam_minus`
+-- Ketidakleluasaan untuk tabel `detail_pengguna_pada_pemberian_jam_minus`
 --
 ALTER TABLE `detail_pengguna_pada_pemberian_jam_minus`
   ADD CONSTRAINT `fk_detail_jam_minus_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_pengguna_jam_minus` FOREIGN KEY (`id_pemberian_jam_minus`) REFERENCES `pemberian_jam_minus` (`id_pemberian_jam_minus`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
+-- Ketidakleluasaan untuk tabel `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `detail_pengguna_pada_pengaduan_kerusakan_fasilitas`
   ADD CONSTRAINT `fk_detail_pengaduan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_pengguna_pengaduan` FOREIGN KEY (`id_pengaduan_kerusakan_fasilitas`) REFERENCES `pengaduan_kerusakan_fasilitas` (`id_pengaduan_kerusakan_fasilitas`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `detail_pengguna_pada_pengajuan_jam_plus`
+-- Ketidakleluasaan untuk tabel `detail_pengguna_pada_pengajuan_jam_plus`
 --
 ALTER TABLE `detail_pengguna_pada_pengajuan_jam_plus`
   ADD CONSTRAINT `fk_detail_pengajuan_pengguna` FOREIGN KEY (`id_pengguna`) REFERENCES `pengguna` (`id_pengguna`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_detail_pengguna_pengajuan` FOREIGN KEY (`id_pengajuan_jam_plus`) REFERENCES `pengajuan_jam_plus` (`id_pengajuan_jam_plus`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `mahasiswa`
+-- Ketidakleluasaan untuk tabel `mahasiswa`
 --
 ALTER TABLE `mahasiswa`
   ADD CONSTRAINT `fk_mahasiswa_kelas` FOREIGN KEY (`id_kelas`) REFERENCES `kelas` (`id_kelas`) ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_mahasiswa_periode` FOREIGN KEY (`id_periode_akademik`) REFERENCES `periode_akademik` (`id_periode_akademik`) ON UPDATE CASCADE;
 
 --
--- Constraints for table `pemberian_jam_minus`
+-- Ketidakleluasaan untuk tabel `pemberian_jam_minus`
 --
 ALTER TABLE `pemberian_jam_minus`
-  ADD CONSTRAINT `fk_pjm_detail_kelas_mata_kuliah` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_pjm_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_pjm_detail_kelas_mata_kuliah` FOREIGN KEY (`id_detail_kelas_pada_mata_kuliah`) REFERENCES `detail_kelas_pada_mata_kuliah` (`id_detail_kelas_pada_mata_kuliah`) ON DELETE NO ACTION ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_pjm_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON DELETE NO ACTION ON UPDATE CASCADE;
 
 --
--- Constraints for table `pengaduan_kerusakan_fasilitas`
+-- Ketidakleluasaan untuk tabel `pengaduan_kerusakan_fasilitas`
 --
 ALTER TABLE `pengaduan_kerusakan_fasilitas`
   ADD CONSTRAINT `fk_pengaduan_fasilitas` FOREIGN KEY (`id_fasilitas`) REFERENCES `fasilitas` (`id_fasilitas`) ON UPDATE CASCADE;
 
 --
--- Constraints for table `pengajuan_jam_plus`
+-- Ketidakleluasaan untuk tabel `pengajuan_jam_plus`
 --
 ALTER TABLE `pengajuan_jam_plus`
   ADD CONSTRAINT `fk_pengajuan_jam_plus_kegiatan` FOREIGN KEY (`id_kegiatan`) REFERENCES `kegiatan` (`id_kegiatan`) ON UPDATE CASCADE;
 
 --
--- Constraints for table `pengguna`
+-- Ketidakleluasaan untuk tabel `pengguna`
 --
 ALTER TABLE `pengguna`
   ADD CONSTRAINT `fk_pengguna_mahasiswa` FOREIGN KEY (`id_mahasiswa`) REFERENCES `mahasiswa` (`id_mahasiswa`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_pengguna_pengajar` FOREIGN KEY (`id_pengajar`) REFERENCES `pengajar` (`id_pengajar`) ON DELETE SET NULL ON UPDATE CASCADE;
 COMMIT;
 
-/*!40101 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

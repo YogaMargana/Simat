@@ -27,4 +27,24 @@ function cek_role_bukan_mahasiswa()
         exit;
     }
 }
+
+function boleh_membuat_jobdesc($role) {
+    $role_pembuat_jobdesc = [
+        'Pengajar',
+        'Kepala Prodi',
+        'PIC Tata Tertib',
+        'PIC Aset Fasilitas',
+        'PIC Kemahasiswaan'
+    ];
+    return in_array($role, $role_pembuat_jobdesc, true);
+}
+
+function cek_role_pembuat_jobdesc() {
+    $role = $_SESSION['role'] ?? '';
+
+    if (!boleh_membuat_jobdesc($role)) {
+        header("Location: /SIMAT/index.php");
+        exit;
+    }
+}
 ?>
