@@ -6,9 +6,6 @@ if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
 }
 session_start();
 
-if (empty($_SESSION['csrf_login'])) {
-    $_SESSION['csrf_login'] = bin2hex(random_bytes(32));
-}
 
 require_once "config/koneksi.php";
 require_once "config/function.php";
@@ -20,42 +17,32 @@ if (isset($_SESSION['id_pengguna'])) {
 
 $error = "";
 if (isset($_POST['login'])) {
-    $token_login = (string) ($_POST['csrf_token'] ?? '');
-    if ($token_login === '' || !hash_equals($_SESSION['csrf_login'], $token_login)) {
-        $error = 'Permintaan login tidak valid. Silakan muat ulang halaman.';
-    }
-
     $username = trim($_POST['username'] ?? '');
     $password = (string) ($_POST['password'] ?? '');
 
-    if ($error !== '') {
-        // Pesan token login dipertahankan.
-    } elseif ($username === '' || $password === '') {
+    if ($username === '' || $password === '') {
         $error = "Username dan password wajib diisi!";
     } elseif (mb_strlen($username) > 20) {
         $error = "Username maksimal 20 karakter.";
     } else {
-        $pengguna = ambil_satu_procedure_prepared($koneksi, "CALL usp_login_pengguna(?)", "s", [$username]);
-        $password_valid = false;
-        $password_legacy = false;
+        $pengguna = ambil_satu_procedure_prepared(
+            $koneksi,
+            "CALL usp_login_pengguna(?)",
+            "s",
+            [$username]
+        );
 
-        if ($pengguna) {
-            $hash_info = password_get_info((string) $pengguna['password']);
-            if (($hash_info['algo'] ?? null) !== null) {
-                $password_valid = password_verify($password, (string) $pengguna['password']);
-            } else {
-                $password_valid = hash_equals((string) $pengguna['password'], $password);
-                $password_legacy = $password_valid;
-            }
-        }
-
-        if ($pengguna && $password_valid) {
-            if ($password_legacy || password_needs_rehash((string) $pengguna['password'], PASSWORD_DEFAULT)) {
-                $hash_baru = password_hash($password, PASSWORD_DEFAULT);
-                $stmt_hash = mysqli_prepare($koneksi, "CALL usp_update_password_pengguna(?, ?)");
-                mysqli_stmt_bind_param($stmt_hash, "is", $pengguna['id_pengguna'], $hash_baru);
-                mysqli_stmt_execute($stmt_hash);
-                mysqli_stmt_close($stmt_hash);
+        if ($pengguna && $password === (string) $pengguna['password']) {
+            /* Pencatatan login dilakukan melalui procedure yang memicu trigger
+             * histori login. Kegagalan pencatatan tidak menggagalkan login. */
+            $stmt_histori = mysqli_prepare($koneksi, "CALL usp_catat_login_pengguna(?)");
+            if ($stmt_histori) {
+                $id_pengguna_login = (int) $pengguna['id_pengguna'];
+                mysqli_stmt_bind_param($stmt_histori, "i", $id_pengguna_login);
+                if (!mysqli_stmt_execute($stmt_histori)) {
+                    error_log('Gagal mencatat histori login: ' . mysqli_stmt_error($stmt_histori));
+                }
+                mysqli_stmt_close($stmt_histori);
                 bersihkan_hasil_procedure($koneksi);
             }
 
@@ -69,6 +56,7 @@ if (isset($_POST['login'])) {
             header("Location: " . arahkan_dashboard($pengguna['role']));
             exit;
         }
+
         $error = "Username atau password salah!";
     }
 }
@@ -186,7 +174,6 @@ if (isset($_POST['login'])) {
                     </div>
 
                     <form method="post" action="">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_login'], ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="mb-3">
                             <label class="form-label">Username <span class="text-danger">*</span></label>
                             <div class="input-group">
