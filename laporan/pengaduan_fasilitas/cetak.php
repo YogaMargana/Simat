@@ -9,31 +9,37 @@ cek_role_dashboard("PIC Aset Fasilitas");
 
 date_default_timezone_set("Asia/Jakarta");
 
+$jenis_filter = $_GET['filter'] ?? 'semua';
+$nilai_filter = trim($_GET['nilai'] ?? '');
+if (!in_array($jenis_filter, ['semua', 'tanggal', 'bulan', 'tahun'], true)) {
+    $jenis_filter = 'semua';
+}
+$pesan_filter = '';
+$rentang = rentang_filter_tanggal($jenis_filter, $nilai_filter, $pesan_filter);
+if ($rentang === false) {
+    die('Filter laporan tidak valid.');
+}
+[$tanggal_mulai, $tanggal_selesai] = $rentang;
+
 $data_laporan = [];
-
-$query = mysqli_query(
-    $koneksi,
-    "CALL usp_select_laporan_pengaduan_fasilitas()"
-);
-
-if (!$query) {
-    error_log('Laporan pengaduan gagal: ' . mysqli_error($koneksi));
+$stmt = mysqli_prepare($koneksi, "CALL usp_select_laporan_pengaduan_fasilitas_filter(?, ?)");
+if (!$stmt) {
+    die('Gagal menyiapkan laporan.');
+}
+mysqli_stmt_bind_param($stmt, "ss", $tanggal_mulai, $tanggal_selesai);
+if (!mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
     die('Gagal mengambil data laporan.');
 }
-
-while ($row = mysqli_fetch_assoc($query)) {
+$result = mysqli_stmt_get_result($stmt);
+while ($result && $row = mysqli_fetch_assoc($result)) {
     $data_laporan[] = $row;
 }
-
-mysqli_free_result($query);
-
-while (mysqli_more_results($koneksi)) {
-    mysqli_next_result($koneksi);
-
-    if ($extra_result = mysqli_store_result($koneksi)) {
-        mysqli_free_result($extra_result);
-    }
+if ($result) {
+    mysqli_free_result($result);
 }
+mysqli_stmt_close($stmt);
+bersihkan_hasil_procedure($koneksi);
 
 function pdf_text($text)
 {

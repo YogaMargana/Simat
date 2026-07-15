@@ -84,7 +84,6 @@ require_once "../../includes/sidebar.php";
                     action="proses_tambah.php"
                     method="post"
                     id="form_pemberian_jam_minus">
-                    <?= csrf_input(); ?>
 
                     <div class="mb-3">
 

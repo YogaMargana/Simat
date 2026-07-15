@@ -60,27 +60,6 @@ $_SESSION['username'] = $data_session['username'];
 $_SESSION['role'] = $data_session['role'];
 
 
-function csrf_token()
-{
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    return $_SESSION['csrf_token'];
-}
-
-function csrf_input()
-{
-    return '<input type="hidden" name="csrf_token" value="' .
-        htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8') . '">';
-}
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $token_dikirim = (string) ($_POST['csrf_token'] ?? '');
-    if ($token_dikirim === '' || !hash_equals(csrf_token(), $token_dikirim)) {
-        http_response_code(419);
-        exit('Permintaan tidak valid atau sesi formulir sudah berakhir. Silakan muat ulang halaman.');
-    }
-}
 
 function cek_role_dashboard($role_diizinkan)
 {

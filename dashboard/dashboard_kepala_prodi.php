@@ -5,29 +5,27 @@ require_once "../includes/auth_dashboard.php";
 
 cek_role_dashboard("Kepala Prodi");
 
-//
-
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
 $ringkasan = ambil_satu_procedure_prepared(
     $koneksi,
     "CALL usp_dashboard_ringkasan(?)",
     "i",
-    [(int) ($_SESSION['id_pengguna'] ?? 0)]
+    [$id_pengguna]
 ) ?? [];
+
 $total_pengguna = (int) ($ringkasan['total_pengguna'] ?? 0);
 $total_mahasiswa_aktif = (int) ($ringkasan['total_mahasiswa'] ?? 0);
 $total_pengajar = (int) ($ringkasan['total_pengajar'] ?? 0);
-$total_fasilitas = (int) ($ringkasan['total_fasilitas'] ?? 0);
 $total_kelas = (int) ($ringkasan['total_kelas'] ?? 0);
-$total_pengaduan = (int) ($ringkasan['total_pengaduan'] ?? 0);
-$pengaduan_menunggu = (int) ($ringkasan['pengaduan_menunggu'] ?? 0);
-$fasilitas_rusak = (int) ($ringkasan['fasilitas_rusak'] ?? 0);
+$total_mata_kuliah_aktif = (int) ($ringkasan['total_mata_kuliah_aktif'] ?? 0);
+$jobdesc_dikerjakan_saya = (int) ($ringkasan['jobdesc_dikerjakan_saya'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
+
 <div class="outer-container">
     <?php require_once "../includes/sidebar.php"; ?>
     <main class="main-content">
@@ -48,7 +46,7 @@ require_once "../includes/dashboard_header.php";
         <div class="content-wrapper">
             <div class="welcome-card">
                 <h2>Selamat Datang di SIMAT</h2>
-                <p>Kelola data pengguna, mahasiswa, pengajar, fasilitas, dan pengaduan kerusakan fasilitas melalui sistem ini.</p>
+                <p>Kelola data pengguna, mahasiswa, pengajar, kelas, mata kuliah, dan aktivitas akademik melalui sistem ini.</p>
             </div>
 
             <div class="row g-3">
@@ -59,7 +57,7 @@ require_once "../includes/dashboard_header.php";
                         </div>
                         <div class="stat-label">Total Pengguna</div>
                         <h3 class="stat-value"><?= $total_pengguna; ?></h3>
-                        <div class="stat-desc">Akun yang terdaftar di sistem</div>
+                        <div class="stat-desc">Akun aktif yang terdaftar di sistem</div>
                     </div>
                 </div>
 
@@ -81,18 +79,7 @@ require_once "../includes/dashboard_header.php";
                         </div>
                         <div class="stat-label">Total Pengajar</div>
                         <h3 class="stat-value"><?= $total_pengajar; ?></h3>
-                        <div class="stat-desc">Pengajar dan PIC yang terdaftar</div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fa-solid fa-boxes-stacked"></i>
-                        </div>
-                        <div class="stat-label">Total Fasilitas</div>
-                        <h3 class="stat-value"><?= $total_fasilitas; ?></h3>
-                        <div class="stat-desc">Fasilitas yang tercatat di sistem</div>
+                        <div class="stat-desc">Data pengajar aktif</div>
                     </div>
                 </div>
 
@@ -103,40 +90,29 @@ require_once "../includes/dashboard_header.php";
                         </div>
                         <div class="stat-label">Total Kelas</div>
                         <h3 class="stat-value"><?= $total_kelas; ?></h3>
-                        <div class="stat-desc">Kelas yang terdaftar di sistem</div>
+                        <div class="stat-desc">Kelas aktif yang terdaftar di sistem</div>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fa-solid fa-file-circle-exclamation"></i>
+                            <i class="fa-solid fa-book-open"></i>
                         </div>
-                        <div class="stat-label">Total Pengaduan</div>
-                        <h3 class="stat-value"><?= $total_pengaduan; ?></h3>
-                        <div class="stat-desc">Seluruh pengaduan fasilitas</div>
+                        <div class="stat-label">Total Mata Kuliah Aktif</div>
+                        <h3 class="stat-value"><?= $total_mata_kuliah_aktif; ?></h3>
+                        <div class="stat-desc">Mata kuliah yang berstatus aktif</div>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fa-solid fa-clock"></i>
+                            <i class="fa-solid fa-clipboard-check"></i>
                         </div>
-                        <div class="stat-label">Menunggu Verifikasi</div>
-                        <h3 class="stat-value"><?= $pengaduan_menunggu; ?></h3>
-                        <div class="stat-desc">Pengaduan yang belum diverifikasi</div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fa-solid fa-clock"></i>
-                        </div>
-                        <div class="stat-label">Fasilitas Rusak</div>
-                        <h3 class="stat-value"><?= $fasilitas_rusak; ?></h3>
-                        <div class="stat-desc">Fasilitas yang dalam kondisi rusak</div>
+                        <div class="stat-label">Bursa Jobdesc Dikerjakan</div>
+                        <h3 class="stat-value"><?= $jobdesc_dikerjakan_saya; ?></h3>
+                        <div class="stat-desc">Jobdesc yang saya buat dan sedang dikerjakan</div>
                     </div>
                 </div>
             </div>

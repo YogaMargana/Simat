@@ -91,8 +91,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Pengguna</h4>
 
                 <form action="proses_edit.php" method="post">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_pengguna" value="<?= aman($pengguna['id_pengguna']); ?>">
+                                        <input type="hidden" name="id_pengguna" value="<?= aman($pengguna['id_pengguna']); ?>">
 
                     <div class="mb-3">
                         <label class="form-label">Role <span class="text-danger">*</span></label>
@@ -138,7 +137,7 @@ require_once "../../includes/sidebar.php";
                     <div class="mb-3">
                         <label class="form-label">Password Baru</label>
                         <input type="text" name="password" class="form-control" maxlength="255">
-                        <small class="text-muted">Kosongkan jika password tidak ingin diubah.</small>
+                        <small class="text-muted">Kosongkan jika password tidak ingin diubah. Password disimpan sesuai input tanpa proses hash.</small>
                     </div>
 
                     <div class="d-flex gap-2">

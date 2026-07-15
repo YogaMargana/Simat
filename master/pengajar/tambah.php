@@ -37,8 +37,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Pengajar</h4>
 
                 <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
-                    <div class="mb-3">
+                                        <div class="mb-3">
                         <label class="form-label">NIP <span class="text-danger">*</span>
 </label>
                         <input type="text" inputmode="numeric" pattern="[0-9A-Za-z]+" name="nip" class="form-control" maxlength="20" required>

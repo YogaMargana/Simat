@@ -24,8 +24,8 @@ $pesan_status = [
 <script>
     const statusNotif = <?= json_encode($status); ?>;
     const errorNotif = <?= json_encode($error); ?>;
+    const dataTableOrdering = <?= isset($data_table_ordering) ? ($data_table_ordering ? 'true' : 'false') : 'true'; ?>;
     const pesanStatus = <?= json_encode($pesan_status); ?>;
-    const csrfToken = <?= json_encode(csrf_token()); ?>;
 
     if (statusNotif && pesanStatus[statusNotif]) {
         Swal.fire({
@@ -83,12 +83,6 @@ $pesan_status = [
                     form.method = 'post';
                     form.action = url;
 
-                    const token = document.createElement('input');
-                    token.type = 'hidden';
-                    token.name = 'csrf_token';
-                    token.value = csrfToken;
-                    form.appendChild(token);
-
                     document.body.appendChild(form);
                     form.submit();
                 }
@@ -102,7 +96,7 @@ const tabelData = document.getElementById('myTable');
 
 if (tabelData) {
     new DataTable('#myTable', {
-        ordering: true,
+        ordering: dataTableOrdering,
         paging: true,
         searching: true,
         info: true,

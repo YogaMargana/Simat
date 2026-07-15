@@ -42,8 +42,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Mahasiswa</h4>
 
                 <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
-                    <div class="mb-3">
+                                        <div class="mb-3">
                         <label class="form-label">Kelas <span class="text-danger">*</span>
 </label>
                         <select name="id_kelas" class="form-select" required>

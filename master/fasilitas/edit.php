@@ -67,8 +67,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Fasilitas</h4>
 
                 <form action="proses_edit.php" method="post" id="form-fasilitas">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_fasilitas" value="<?= (int) $fasilitas['id_fasilitas']; ?>">
+                                        <input type="hidden" name="id_fasilitas" value="<?= (int) $fasilitas['id_fasilitas']; ?>">
 
                     <div class="mb-3">
                         <label class="form-label">Nama Fasilitas <span class="text-danger">*</span>
@@ -128,8 +127,7 @@ require_once "../../includes/sidebar.php";
                 <?php foreach ($data_kelas as $kelas) { ?>
                     <?php if (($kelas['status_detail_fasilitas_pada_kelas'] ?? null) === 'Rusak') { ?>
                         <form id="pulihkan-<?= (int) $kelas['id_detail_fasilitas_pada_kelas']; ?>" action="pulihkan_kondisi.php" method="post" onsubmit="return confirm('Yakin fasilitas pada kelas ini sudah diperbaiki?');">
-                            <?= csrf_input(); ?>
-                            <input type="hidden" name="id_fasilitas" value="<?= (int) $id_fasilitas; ?>">
+                                                        <input type="hidden" name="id_fasilitas" value="<?= (int) $id_fasilitas; ?>">
                             <input type="hidden" name="id_detail_fasilitas_pada_kelas" value="<?= (int) $kelas['id_detail_fasilitas_pada_kelas']; ?>">
                         </form>
                     <?php } ?>

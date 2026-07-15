@@ -8,17 +8,18 @@ cek_role_dashboard("PIC Tata Tertib");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-
 $id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
-$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
-$total_pengguna = (int) ($ringkasan['total_pengguna'] ?? 0);
-$total_mahasiswa = (int) ($ringkasan['total_mahasiswa'] ?? 0);
-$total_pengajar = (int) ($ringkasan['total_pengajar'] ?? 0);
-$total_fasilitas = (int) ($ringkasan['total_fasilitas'] ?? 0);
-$total_pengaduan = (int) ($ringkasan['total_pengaduan'] ?? 0);
-$pengaduan_menunggu = (int) ($ringkasan['pengaduan_menunggu'] ?? 0);
-$jobdesc_saya = (int) ($ringkasan['jobdesc_saya'] ?? 0);
-$jam_plus_menunggu = (int) ($ringkasan['jam_plus_menunggu'] ?? 0);
+$ringkasan = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_dashboard_ringkasan(?)",
+    "i",
+    [$id_pengguna]
+) ?? [];
+
+$jobdesc_dikerjakan_saya = (int) ($ringkasan['jobdesc_dikerjakan_saya'] ?? 0);
+$total_pengajuan_jam_plus_menunggu = (int) ($ringkasan['total_pengajuan_jam_plus_menunggu'] ?? 0);
+$total_mahasiswa_jam_negatif = (int) ($ringkasan['total_mahasiswa_jam_negatif'] ?? 0);
+$total_mahasiswa_jam_positif = (int) ($ringkasan['total_mahasiswa_jam_positif'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -44,7 +45,7 @@ require_once "../includes/dashboard_header.php";
             <div class="welcome-card">
                 <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
                 <p class="text-muted mb-0">
-                    Kelola aktivitas Bursa Jobdesc dan Pengajuan Jam Plus melalui sistem ini.
+                    Kelola Bursa Jobdesc, pengajuan jam plus, pemberian jam minus, dan total jam mahasiswa melalui sistem ini.
                 </p>
             </div>
 
@@ -52,96 +53,49 @@ require_once "../includes/dashboard_header.php";
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fa-solid fa-clipboard-list"></i>
+                            <i class="fa-solid fa-clipboard-check"></i>
                         </div>
-                        <div class="stat-label">Jobdesc Saya</div>
-                        <h3 class="stat-value"><?= $jobdesc_saya; ?></h3>
-                        <div class="stat-desc">Data jobdesc yang saya buat</div>
+                        <div class="stat-label">Bursa Jobdesc Dikerjakan</div>
+                        <h3 class="stat-value"><?= $jobdesc_dikerjakan_saya; ?></h3>
+                        <div class="stat-desc">Jobdesc yang saya buat dan sedang dikerjakan</div>
                     </div>
                 </div>
 
-                <!-- <div class="col-md-4">
+                <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
                             <i class="fa-solid fa-clock"></i>
                         </div>
-                        <div class="stat-label">Menunggu Verifikasi</div>
-                        <h3 class="stat-value"><?= $jam_plus_menunggu; ?></h3>
-                        <div class="stat-desc">Pengajuan Jam Plus yang belum diverifikasi</div>
+                        <div class="stat-label">Pengajuan Jam Plus Menunggu</div>
+                        <h3 class="stat-value"><?= $total_pengajuan_jam_plus_menunggu; ?></h3>
+                        <div class="stat-desc">Pengajuan berstatus Menunggu Verifikasi</div>
                     </div>
-                </div>  -->
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-arrow-trend-down"></i>
+                        </div>
+                        <div class="stat-label">Mahasiswa dengan Total Jam &lt; 0</div>
+                        <h3 class="stat-value"><?= $total_mahasiswa_jam_negatif; ?></h3>
+                        <div class="stat-desc">Mahasiswa aktif dengan total jam negatif</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                        </div>
+                        <div class="stat-label">Mahasiswa dengan Total Jam &gt; 0</div>
+                        <h3 class="stat-value"><?= $total_mahasiswa_jam_positif; ?></h3>
+                        <div class="stat-desc">Mahasiswa aktif dengan total jam positif</div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 </div>
-
-
-
-
-
-        <!-- <div class="content-wrapper">
-            <div class="welcome-card">
-                <h2>Selamat Datang di SIMAT</h2>
-                <p>Kelola data pengguna, mahasiswa, pengajar, fasilitas, dan pengaduan kerusakan fasilitas melalui sistem ini.</p>
-            </div>
-
-            <div class="stat-grid">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-users"></i>
-                    </div>
-                    <div class="stat-label">Total Pengguna</div>
-                    <h3 class="stat-value"><?= $total_pengguna; ?></h3>
-                    <div class="stat-desc">Akun yang terdaftar di sistem</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-user-graduate"></i>
-                    </div>
-                    <div class="stat-label">Total Mahasiswa</div>
-                    <h3 class="stat-value"><?= $total_mahasiswa; ?></h3>
-                    <div class="stat-desc">Data mahasiswa aktif dan tidak aktif</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
-                    <div class="stat-label">Total Pengajar</div>
-                    <h3 class="stat-value"><?= $total_pengajar; ?></h3>
-                    <div class="stat-desc">Pengajar dan PIC yang terdaftar</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-boxes-stacked"></i>
-                    </div>
-                    <div class="stat-label">Total Fasilitas</div>
-                    <h3 class="stat-value"><?= $total_fasilitas; ?></h3>
-                    <div class="stat-desc">Fasilitas yang tercatat di sistem</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-file-circle-exclamation"></i>
-                    </div>
-                    <div class="stat-label">Total Pengaduan</div>
-                    <h3 class="stat-value"><?= $total_pengaduan; ?></h3>
-                    <div class="stat-desc">Seluruh pengaduan fasilitas</div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-clock"></i>
-                    </div>
-                    <div class="stat-label">Menunggu Verifikasi</div>
-                    <h3 class="stat-value"><?= $pengaduan_menunggu; ?></h3>
-                    <div class="stat-desc">Pengaduan yang belum diverifikasi</div>
-                </div>
-            </div>
-        </div>
-    </main>
-</div> -->
 
 <?php require_once "../includes/dashboard_footer.php"; ?>

@@ -54,6 +54,11 @@ if ($role == "Pengajar") {
                 <span>Data Pengguna</span>
             </a>
 
+            <a href="/SIMAT/laporan/histori_login/index.php" class="menu-link <?= $active_menu == 'histori_login' ? 'active' : ''; ?>">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <span>Histori Login</span>
+            </a>
+
             <a href="/SIMAT/master/pengajar/index.php" class="menu-link <?= $active_menu == 'pengajar' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-chalkboard-user"></i>
                 <span>Data Pengajar</span>
@@ -175,13 +180,6 @@ if ($role == "Pengajar") {
                 <span>Pengaduan Saya</span>
             </a>
 
-        <!-- Sidebar relasi mata kuliah pada kelas -->
-            <a href="/SIMAT/transaksi/mata_kuliah_saya/index.php" class="menu-link <?= $active_menu == 'mata_kuliah_saya' ? 'active' : ''; ?>">
-                <i class="fa-solid fa-book"></i>
-                <span>Mata Kuliah Saya</span>
-            </a>
-        <!-- Sidebar relasi mata kuliah pada kelas -->
-
         <!-- Sidebar Pengajuan Jam Plus -->
             <a href="/SIMAT/transaksi/pengajuan_jam_plus/index.php" class="menu-link <?= $active_menu == 'pengajuan_jam_plus' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-circle-plus"></i>
@@ -189,13 +187,22 @@ if ($role == "Pengajar") {
             </a>
         <!-- Sidebar Pengajuan Jam Plus -->
 
+
+
+            <a
+                href="/SIMAT/laporan/histori_transaksi_jam_mahasiswa/index.php"
+                class="menu-link <?= $active_menu === 'laporan_histori_transaksi_jam' ? 'active' : ''; ?>"
+            >
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Laporan Histori Jam</span>
+            </a>
+
         <?php } ?>
     </nav>
 
     <div class="sidebar-footer">
         <form action="/SIMAT/logout.php" method="post">
-            <?= csrf_input(); ?>
-            <button type="submit" class="logout-btn">
+                        <button type="submit" class="logout-btn">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Keluar</span>
             </button>

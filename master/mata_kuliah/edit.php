@@ -34,6 +34,15 @@ if ($matakuliah['status_mata_kuliah'] === "Tidak Aktif") {
     exit;
 }
 
+$data_kelas = ambil_data_procedure($koneksi, "CALL usp_select_kelas_aktif()");
+$data_kelas_terpilih = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_kelas_mata_kuliah_by_id(?)",
+    "i",
+    [(int) $id_matakuliah]
+);
+$id_kelas_terpilih = array_map('intval', array_column($data_kelas_terpilih, 'id_kelas'));
+
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
 ?>
@@ -63,8 +72,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Mata Kuliah</h4>
 
                 <form action="proses_edit.php" method="post">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_matakuliah" value="<?= aman($matakuliah['id_matakuliah']); ?>">
+                                        <input type="hidden" name="id_matakuliah" value="<?= aman($matakuliah['id_matakuliah']); ?>">
 
                     <div class="mb-3">
                         <label class="form-label">Nama Mata Kuliah <span class="text-danger">*</span>
@@ -106,8 +114,39 @@ require_once "../../includes/sidebar.php";
                         </select>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label">Kelas Aktif <span class="text-danger">*</span></label>
+                        <div class="border rounded p-3">
+                            <?php if (count($data_kelas) > 0) { ?>
+                                <div class="row g-2">
+                                    <?php foreach ($data_kelas as $kelas) { ?>
+                                        <?php $dipilih = in_array((int) $kelas['id_kelas'], $id_kelas_terpilih, true); ?>
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="form-check">
+                                                <input
+                                                    class="form-check-input kelas-checkbox"
+                                                    type="checkbox"
+                                                    name="id_kelas[]"
+                                                    value="<?= (int) $kelas['id_kelas']; ?>"
+                                                    id="kelas_<?= (int) $kelas['id_kelas']; ?>"
+                                                    <?= $dipilih ? 'checked' : ''; ?>
+                                                >
+                                                <label class="form-check-label" for="kelas_<?= (int) $kelas['id_kelas']; ?>">
+                                                    <?= aman($kelas['nama_kelas']); ?> - Tingkat <?= aman($kelas['tingkat']); ?>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    <?php } ?>
+                                </div>
+                                <small class="text-muted d-block mt-2">Pilih minimal satu kelas aktif. Relasi yang sudah dipakai transaksi jam minus tidak dapat dilepas.</small>
+                            <?php } else { ?>
+                                <div class="text-danger">Belum ada kelas aktif.</div>
+                            <?php } ?>
+                        </div>
+                    </div>
+
                     <div class="d-flex gap-2">
-                        <button type="submit" name="update" class="btn btn-primary">
+                        <button type="submit" name="update" class="btn btn-primary" <?= count($data_kelas) === 0 ? 'disabled' : ''; ?>>
                             <i class="fa-solid fa-floppy-disk me-1"></i>
                             Simpan Perubahan
                         </button>
@@ -121,5 +160,19 @@ require_once "../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+<script>
+document.querySelector('form').addEventListener('submit', function (event) {
+    if (document.querySelectorAll('.kelas-checkbox:checked').length < 1) {
+        event.preventDefault();
+        Swal.fire({
+            icon: 'warning',
+            title: 'Kelas Wajib Dipilih',
+            text: 'Pilih minimal satu kelas aktif.',
+            confirmButtonColor: '#0d6efd'
+        });
+    }
+});
+</script>
 
 <?php require_once "../../includes/dashboard_footer.php"; ?>

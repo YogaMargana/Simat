@@ -67,8 +67,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Periode</h4>
 
                 <form action="proses_edit.php" method="post">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_periode_akademik" value="<?= aman($periode['id_periode_akademik']); ?>">
+                                        <input type="hidden" name="id_periode_akademik" value="<?= aman($periode['id_periode_akademik']); ?>">
 
                     <div class="mb-3">
                         <label class="form-label fw-bold">Tahun Akademik <span class="text-danger">*</span></label>

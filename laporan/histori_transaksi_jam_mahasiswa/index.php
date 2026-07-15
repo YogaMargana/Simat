@@ -3,11 +3,13 @@ require_once "../../config/koneksi.php";
 require_once "../../config/function.php";
 require_once "../../includes/auth_dashboard.php";
 
-cek_role_dashboard("PIC Aset Fasilitas");
+cek_role_dashboard("Mahasiswa");
 
-$page_title = "Laporan Pengaduan";
-$active_menu = "laporan_pengaduan_fasilitas";
+$page_title = "Laporan Histori Transaksi Jam";
+$active_menu = "laporan_histori_transaksi_jam";
+$data_table_ordering = false;
 
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
 $jenis_filter = $_GET['filter'] ?? 'semua';
 $nilai_filter = trim($_GET['nilai'] ?? '');
 if (!in_array($jenis_filter, ['semua', 'tanggal', 'bulan', 'tahun'], true)) {
@@ -25,9 +27,9 @@ if ($rentang === false) {
 [$tanggal_mulai, $tanggal_selesai] = $rentang;
 
 $data_laporan = [];
-$stmt = mysqli_prepare($koneksi, "CALL usp_select_laporan_pengaduan_fasilitas_filter(?, ?)");
+$stmt = mysqli_prepare($koneksi, "CALL usp_select_laporan_histori_jam_mahasiswa_filter(?, ?, ?)");
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "ss", $tanggal_mulai, $tanggal_selesai);
+    mysqli_stmt_bind_param($stmt, "iss", $id_pengguna, $tanggal_mulai, $tanggal_selesai);
     if (mysqli_stmt_execute($stmt)) {
         $result = mysqli_stmt_get_result($stmt);
         while ($result && $row = mysqli_fetch_assoc($result)) {
@@ -37,15 +39,15 @@ if ($stmt) {
             mysqli_free_result($result);
         }
     } else {
-        $error_laporan = pesan_error_statement($stmt, 'Gagal mengambil data laporan.');
+        $error_laporan = pesan_error_statement($stmt, 'Data laporan gagal dimuat.');
     }
     mysqli_stmt_close($stmt);
     bersihkan_hasil_procedure($koneksi);
 } else {
-    $error_laporan = 'Gagal menyiapkan laporan.';
+    $error_laporan = 'Data laporan gagal dimuat.';
 }
 
-function format_tanggal_laporan_pengaduan($tanggal)
+function format_tanggal_histori_jam($tanggal)
 {
     if (empty($tanggal)) {
         return '-';
@@ -65,7 +67,7 @@ require_once "../../includes/sidebar.php";
 
 <main class="main-content">
     <div class="topbar">
-        <h1 class="page-title">Laporan Pengaduan</h1>
+        <h1 class="page-title">Laporan Histori Transaksi Jam</h1>
         <div class="user-info">
             <div class="user-detail">
                 <div class="user-name"><?= aman($_SESSION['username']); ?></div>
@@ -84,8 +86,8 @@ require_once "../../includes/sidebar.php";
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end mb-4 gap-3">
                     <div>
-                        <h4 class="fw-bold mb-1">Data Laporan Pengaduan Fasilitas</h4>
-                        <p class="text-muted mb-0">Filter berdasarkan tanggal, bulan, atau tahun pengaduan.</p>
+                        <h4 class="fw-bold mb-1">Histori Transaksi Jam Saya</h4>
+                        <p class="text-muted mb-0">Filter berdasarkan tanggal, bulan, atau tahun transaksi.</p>
                     </div>
 
                     <div class="d-flex flex-column flex-lg-row gap-2 align-items-lg-end">
@@ -114,37 +116,40 @@ require_once "../../includes/sidebar.php";
                     </div>
                 </div>
 
+                <div class="alert alert-info">
+                    Nilai pada empat kolom jam merupakan jumlah jam dari setiap transaksi pengajuan jam plus, pemberian jam minus, dan bursa jobdesc yang telah selesai, bukan saldo jam yang sedang dimiliki mahasiswa.
+                </div>
+
                 <div class="table-responsive">
                     <?php if (count($data_laporan) > 0) { ?>
                         <table id="myTable" class="table table-hover table-bordered table-striped align-middle">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="text-center" style="width:60px;">No</th>
-                                    <th>NIM</th>
-                                    <th>Nama Mahasiswa</th>
-                                    <th>Kelas</th>
-                                    <th>Nama Fasilitas</th>
-                                    <th>Deskripsi Kerusakan</th>
-                                    <th class="text-center">Tanggal Pengaduan</th>
+                                    <th class="text-center">Tanggal</th>
+                                    <th>Jenis Transaksi</th>
+                                    <th>Deskripsi</th>
+                                    <th class="text-end">Jam Plus Kompensasi</th>
+                                    <th class="text-end">Jam Minus Kompensasi</th>
+                                    <th class="text-end">Jam Plus Murni</th>
+                                    <th class="text-end">Jam Minus Murni</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php $no = 1; ?>
                                 <?php foreach ($data_laporan as $row) { ?>
                                     <tr>
-                                        <td class="text-center"><?= $no++; ?></td>
-                                        <td><?= aman($row['nim']); ?></td>
-                                        <td><?= aman($row['nama_mahasiswa']); ?></td>
-                                        <td><?= aman($row['nama_kelas']); ?></td>
-                                        <td><?= aman($row['nama_fasilitas']); ?></td>
-                                        <td><?= aman($row['deskripsi_kerusakan']); ?></td>
-                                        <td class="text-center"><?= aman(format_tanggal_laporan_pengaduan($row['tanggal_pengaduan'])); ?></td>
+                                        <td class="text-center text-nowrap"><?= aman(format_tanggal_histori_jam($row['tanggal_transaksi'])); ?></td>
+                                        <td><?= aman($row['jenis_transaksi']); ?></td>
+                                        <td style="min-width:320px;white-space:normal;"><?= nl2br(aman($row['deskripsi'])); ?></td>
+                                        <td class="text-end fw-bold text-success"><?= format_jam($row['saldo_jam_plus_kompensasi']); ?></td>
+                                        <td class="text-end fw-bold text-danger"><?= format_jam($row['saldo_jam_minus_kompensasi']); ?></td>
+                                        <td class="text-end fw-bold text-success"><?= format_jam($row['saldo_jam_plus_murni']); ?></td>
+                                        <td class="text-end fw-bold text-danger"><?= format_jam($row['saldo_jam_minus_murni']); ?></td>
                                     </tr>
                                 <?php } ?>
                             </tbody>
                         </table>
                     <?php } else { ?>
-                        <div class="text-center text-muted py-4 border rounded">Tidak ada data pengaduan sesuai filter.</div>
+                        <div class="text-center text-muted py-4 border rounded">Tidak ada histori transaksi jam sesuai filter.</div>
                     <?php } ?>
                 </div>
             </div>

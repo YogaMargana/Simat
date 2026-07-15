@@ -99,8 +99,7 @@ require_once "../../includes/sidebar.php";
 
                 <?php } else { ?>
                     <form action="proses_selesai.php" method="post">
-                    <?= csrf_input(); ?>
-                        <input type="hidden" name="id_bursa_jobdesc" value="<?= aman($data_jobdesc['id_bursa_jobdesc']); ?>">
+                                            <input type="hidden" name="id_bursa_jobdesc" value="<?= aman($data_jobdesc['id_bursa_jobdesc']); ?>">
 
                         <div class="mb-4">
                             <label class="form-label">Link Foto Bukti Selesai <span class="text-danger">*</span>

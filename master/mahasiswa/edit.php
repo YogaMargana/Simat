@@ -66,8 +66,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Mahasiswa</h4>
 
                 <form action="proses_edit.php" method="post">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_mahasiswa" value="<?= aman($mahasiswa['id_mahasiswa']); ?>">
+                                        <input type="hidden" name="id_mahasiswa" value="<?= aman($mahasiswa['id_mahasiswa']); ?>">
 
                     <div class="mb-3">
                         <label class="form-label">Kelas <span class="text-danger">*</span>
@@ -93,6 +92,7 @@ require_once "../../includes/sidebar.php";
                                 </option>
                             <?php } ?>
                         </select>
+                        <small class="text-warning d-block mt-1">Perubahan periode akademik akan mereset saldo jam plus murni dan jam plus kompensasi menjadi 0.</small>
                     </div>
 
                     <div class="mb-3">

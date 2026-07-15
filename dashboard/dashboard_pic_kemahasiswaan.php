@@ -8,12 +8,17 @@ cek_role_dashboard("PIC Kemahasiswaan");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-
-
 $id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
-$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
+$ringkasan = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_dashboard_ringkasan(?)",
+    "i",
+    [$id_pengguna]
+) ?? [];
+
 $total_mahasiswa_aktif = (int) ($ringkasan['total_mahasiswa'] ?? 0);
-$jobdesc_saya = (int) ($ringkasan['jobdesc_saya'] ?? 0);
+$total_kegiatan_aktif = (int) ($ringkasan['total_kegiatan_aktif'] ?? 0);
+$jobdesc_dikerjakan_saya = (int) ($ringkasan['jobdesc_dikerjakan_saya'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -39,7 +44,7 @@ require_once "../includes/dashboard_header.php";
             <div class="welcome-card">
                 <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
                 <p class="text-muted mb-0">
-                    Kelola aktivitas Bursa Jobdesc, Pengaduan Fasilitas dan Pengajuan Jam Plus melalui sistem ini.
+                    Kelola kegiatan mahasiswa dan Bursa Jobdesc melalui sistem ini.
                 </p>
             </div>
 
@@ -58,16 +63,26 @@ require_once "../includes/dashboard_header.php";
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fa-solid fa-clipboard-list"></i>
+                            <i class="fa-solid fa-calendar-check"></i>
                         </div>
-                        <div class="stat-label">Jobdesc Saya</div>
-                        <h3 class="stat-value"><?= $jobdesc_saya; ?></h3>
-                        <div class="stat-desc">Data jobdesc yang saya buat</div>
+                        <div class="stat-label">Total Kegiatan Aktif</div>
+                        <h3 class="stat-value"><?= $total_kegiatan_aktif; ?></h3>
+                        <div class="stat-desc">Kegiatan aktif yang tercatat di sistem</div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                        <div class="stat-label">Bursa Jobdesc Dikerjakan</div>
+                        <h3 class="stat-value"><?= $jobdesc_dikerjakan_saya; ?></h3>
+                        <div class="stat-desc">Jobdesc yang saya buat dan sedang dikerjakan</div>
                     </div>
                 </div>
             </div>
         </div>
-
     </main>
 </div>
 

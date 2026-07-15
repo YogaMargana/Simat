@@ -39,8 +39,7 @@ require_once "../../includes/sidebar.php";
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <form action="proses_tambah.php" method="POST">
-                    <?= csrf_input(); ?>
-                    <div class="mb-3">
+                                        <div class="mb-3">
                         <label class="form-label fw-bold">Tahun Akademik <span class="text-danger">*</span></label>
                         <input type="text" name="tahun_akademik" class="form-control"
                                placeholder="Contoh: 2025/2026" maxlength="9" pattern="[0-9]{4}/[0-9]{4}" required>

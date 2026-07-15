@@ -9,9 +9,14 @@ $page_title = "Dashboard";
 $active_menu = "dashboard";
 
 $id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
-$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
-$jobdesc_saya = (int) ($ringkasan['jobdesc_saya'] ?? 0);
-$bursa_jobdesc_tersedia = (int) ($ringkasan['jobdesc_tersedia'] ?? 0);
+$ringkasan = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_dashboard_ringkasan(?)",
+    "i",
+    [$id_pengguna]
+) ?? [];
+
+$jobdesc_dikerjakan_saya = (int) ($ringkasan['jobdesc_dikerjakan_saya'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -34,38 +39,27 @@ require_once "../includes/dashboard_header.php";
         </div>
 
         <div class="content-wrapper">
-        <div class="welcome-card">
-            <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
-            <p class="text-muted mb-0">
-                Kelola aktivitas Bursa Jobdesc melalui sistem ini.
-            </p>
-        </div>
-
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-clipboard-list"></i>
-                    </div>
-                    <div class="stat-label">Jobdesc Saya</div>
-                    <h3 class="stat-value"><?= $jobdesc_saya; ?></h3>
-                    <div class="stat-desc">Data jobdesc yang saya buat</div>
-                </div>
+            <div class="welcome-card">
+                <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
+                <p class="text-muted mb-0">
+                    Kelola aktivitas Bursa Jobdesc melalui sistem ini.
+                </p>
             </div>
 
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fa-solid fa-briefcase"></i>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fa-solid fa-clipboard-check"></i>
+                        </div>
+                        <div class="stat-label">Bursa Jobdesc Dikerjakan</div>
+                        <h3 class="stat-value"><?= $jobdesc_dikerjakan_saya; ?></h3>
+                        <div class="stat-desc">Jobdesc yang saya buat dan sedang dikerjakan</div>
                     </div>
-                    <div class="stat-label">Jobdesc Tersedia</div>
-                    <h3 class="stat-value"><?= $bursa_jobdesc_tersedia; ?></h3>
-                    <div class="stat-desc">Data jobdesc yang tersedia</div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
-
+    </main>
+</div>
 
 <?php require_once "../includes/dashboard_footer.php"; ?>

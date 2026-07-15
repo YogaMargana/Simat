@@ -61,8 +61,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Kegiatan</h4>
 
                 <form action="proses_edit.php" method="post">
-                    <?= csrf_input(); ?>
-                    <input type="hidden" name="id_kegiatan" value="<?= aman($kegiatan['id_kegiatan']); ?>">
+                                        <input type="hidden" name="id_kegiatan" value="<?= aman($kegiatan['id_kegiatan']); ?>">
 
                     <div class="mb-3">
                         <label class="form-label">Nama Kegiatan <span class="text-danger">*</span>

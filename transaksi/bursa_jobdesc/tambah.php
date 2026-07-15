@@ -52,8 +52,7 @@ require_once "../../includes/sidebar.php";
                 <?php } ?>
 
            <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
-                <div class="mb-3">
+                                    <div class="mb-3">
                     <label
                         for="deskripsi_jobdesc"
                         class="form-label fw-bold"

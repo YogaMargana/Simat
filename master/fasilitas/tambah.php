@@ -36,8 +36,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Fasilitas</h4>
 
                 <form action="proses_tambah.php" method="post" id="form-fasilitas">
-                    <?= csrf_input(); ?>
-                    <div class="mb-3">
+                                        <div class="mb-3">
                         <label class="form-label">Nama Fasilitas <span class="text-danger">*</span>
 </label>
                         <input type="text" name="nama_fasilitas" class="form-control" maxlength="50" required>

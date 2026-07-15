@@ -33,9 +33,8 @@ if ($role === "Mahasiswa") {
     $id_pengajar = (int) $id_pengajar; $id_mahasiswa = null;
 }
 
-$password_hash = password_hash($password, PASSWORD_DEFAULT);
 $stmt = mysqli_prepare($koneksi, "CALL usp_insert_pengguna(?, ?, ?, ?, ?)");
-mysqli_stmt_bind_param($stmt, "iisss", $id_mahasiswa, $id_pengajar, $username, $password_hash, $role);
+mysqli_stmt_bind_param($stmt, "iisss", $id_mahasiswa, $id_pengajar, $username, $password, $role);
 if (mysqli_stmt_execute($stmt)) { mysqli_stmt_close($stmt); header("Location: index.php?status=berhasil_tambah"); exit; }
 $error = pesan_error_statement($stmt, "Data pengguna gagal ditambahkan."); mysqli_stmt_close($stmt);
 header("Location: tambah.php?error=" . urlencode($error)); exit;

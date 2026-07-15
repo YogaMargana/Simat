@@ -67,8 +67,7 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Pengguna</h4>
 
                 <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
-                    <div class="mb-3">
+                                        <div class="mb-3">
                         <label class="form-label">Role <span class="text-danger">*</span></label>
                         <select name="role" id="role" class="form-select" required>
                             <option value="">Pilih Role</option>
@@ -115,7 +114,7 @@ require_once "../../includes/sidebar.php";
                     <div class="mb-3">
                         <label class="form-label">Password <span class="text-danger">*</span></label>
                         <input type="text" name="password" class="form-control" maxlength="255" required>
-                        <small class="text-muted">Sementara masih plain text, contoh: 123.</small>
+                        <small class="text-muted">Password disimpan sesuai input tanpa proses hash.</small>
                     </div>
 
                     <div class="d-flex gap-2">

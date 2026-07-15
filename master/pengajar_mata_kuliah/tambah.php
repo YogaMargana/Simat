@@ -26,8 +26,7 @@ require_once "../../includes/sidebar.php";
         <div class="card border-0 shadow-sm rounded-4"><div class="card-body p-4">
             <h4 class="fw-bold mb-4">Form Tambah Mata Kuliah Kelas</h4>
             <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
-                <div class="mb-3">
+                                    <div class="mb-3">
                     <label class="form-label">Kelas <span class="text-danger">*</span></label>
                     <select name="id_kelas" class="form-select" required>
                         <option value="">Pilih Kelas</option>

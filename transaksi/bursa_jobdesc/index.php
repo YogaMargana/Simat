@@ -109,7 +109,6 @@ require_once "../../includes/sidebar.php";
 
                             <?php if ($role !== "Mahasiswa") { ?>
                                 <th class="text-center">Penerima</th>
-                                <th class="text-center">Bukti Selesai</th>
                             <?php } ?>
 
                             <th style="width: 170px;" class="text-center">Aksi</th>
@@ -184,20 +183,21 @@ require_once "../../includes/sidebar.php";
                                                 <td>
                                                     <?= aman($jobdesc['nama_penerima'] ?? '-'); ?>
                                                 </td>
-
-                                                <td class="text-center">
-                                                    <?php if (!empty($jobdesc['bukti_selesai_url'])) { ?>
-                                                        <a href="<?= aman($jobdesc['bukti_selesai_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
-                                                            Lihat Bukti Selesai
-                                                        </a>
-                                                    <?php } else { ?>
-                                                        <span class="text-muted">-</span>
-                                                    <?php } ?>
-                                                </td>
                                             <?php } ?>
 
                                         <?php if ($role == "Mahasiswa" || $bisa_membuat_jobdesc) { ?>
                                             <td class="text-center">
+                                                <?php if ($role !== "Mahasiswa" && !empty($jobdesc['bukti_selesai_url'])) { ?>
+                                                    <a
+                                                        href="<?= aman($jobdesc['bukti_selesai_url']); ?>"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        class="btn btn-outline-primary btn-sm mb-1"
+                                                    >
+                                                        Lihat Bukti
+                                                    </a>
+                                                <?php } ?>
+
                                                 <?php if ($role == "Mahasiswa") { ?>
 
                                                     <?php
