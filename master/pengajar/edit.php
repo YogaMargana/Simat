@@ -68,7 +68,7 @@ require_once "../../includes/sidebar.php";
                     <div class="mb-3">
                         <label class="form-label">NIP <span class="text-danger">*</span>
 </label>
-                        <input type="text" inputmode="numeric" pattern="[0-9A-Za-z]+" name="nip" class="form-control" maxlength="20" value="<?= aman($pengajar['nip']); ?>" required>
+                        <input type="number" inputmode="numeric" pattern="[0-9]+" name="nip" class="form-control" maxlength="18" value="<?= aman($pengajar['nip']); ?>" required>
                     </div>
 
                     <div class="mb-3">
@@ -84,7 +84,7 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-4">
                         <label class="form-label">No HP</label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($pengajar['no_hp'] ?? ''); ?>">
+                        <input type="number" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($pengajar['no_hp'] ?? ''); ?>">
                     </div>
 
                     <div class="d-flex gap-2">
