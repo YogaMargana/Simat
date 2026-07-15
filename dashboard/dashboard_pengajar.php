@@ -7,22 +7,11 @@ cek_role_dashboard("Pengajar");
 
 $page_title = "Dashboard";
 $active_menu = "dashboard";
-//
 
-$id_pengguna = $_SESSION['id_pengguna'];
-$jobdesc_saya = mysqli_fetch_assoc(mysqli_query($koneksi,
-    "SELECT COUNT(DISTINCT bj.id_bursa_jobdesc) AS total FROM bursa_jobdesc bj
-     JOIN detail_pengguna_pada_bursa_jobdesc dpbj
-     ON bj.id_bursa_jobdesc = dpbj.id_bursa_jobdesc
-     WHERE dpbj.id_pengguna = '$id_pengguna'
-     AND dpbj.peran_pengguna = 'Pemberi'"
-))['total'];
-$bursa_jobdesc_tersedia = mysqli_fetch_assoc(mysqli_query($koneksi,
-    "SELECT COUNT(*) AS total
-     FROM bursa_jobdesc
-     WHERE status_jobdesc='Dibuka'"
-))['total'];
-
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
+$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
+$jobdesc_saya = (int) ($ringkasan['jobdesc_saya'] ?? 0);
+$bursa_jobdesc_tersedia = (int) ($ringkasan['jobdesc_tersedia'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -32,7 +21,7 @@ require_once "../includes/dashboard_header.php";
     <main class="main-content">
         <div class="topbar">
             <h1 class="page-title">Dashboard</h1>
-    
+
             <div class="user-info">
                 <div class="user-detail">
                     <div class="user-name"><?= aman($_SESSION['username']); ?></div>
@@ -46,7 +35,7 @@ require_once "../includes/dashboard_header.php";
 
         <div class="content-wrapper">
         <div class="welcome-card">
-            <h2 class="fw-bold mb-2">Selamat Datang, <?= $_SESSION['username']; ?> 🎓</h2>
+            <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
             <p class="text-muted mb-0">
                 Kelola aktivitas Bursa Jobdesc melalui sistem ini.
             </p>
@@ -62,8 +51,8 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $jobdesc_saya; ?></h3>
                     <div class="stat-desc">Data jobdesc yang saya buat</div>
                 </div>
-            </div>  
-            
+            </div>
+
             <div class="col-md-4">
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -73,10 +62,10 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $bursa_jobdesc_tersedia; ?></h3>
                     <div class="stat-desc">Data jobdesc yang tersedia</div>
                 </div>
-            </div> 
+            </div>
         </div>
-    </div>  
-</main>     
+    </div>
+</main>
 
 
 <?php require_once "../includes/dashboard_footer.php"; ?>

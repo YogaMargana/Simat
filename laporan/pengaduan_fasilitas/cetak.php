@@ -17,7 +17,8 @@ $query = mysqli_query(
 );
 
 if (!$query) {
-    die("Gagal mengambil data laporan: " . mysqli_error($koneksi));
+    error_log('Laporan pengaduan gagal: ' . mysqli_error($koneksi));
+    die('Gagal mengambil data laporan.');
 }
 
 while ($row = mysqli_fetch_assoc($query)) {

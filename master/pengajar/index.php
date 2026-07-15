@@ -12,7 +12,7 @@ $active_menu = "pengajar";
 
 $data_pengajar = [];
 
-$query = mysqli_query($koneksi, "CALL usp_select_pengajar()");
+$query = mysqli_query($koneksi, "CALL usp_select_pengajar_aktif()");
 
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {

@@ -5,7 +5,7 @@ require_once "../../includes/auth_dashboard.php";
 
 cek_role_dashboard("Kepala Prodi");
 
-$page_title = "Pengajar Mata Kuliah";
+$page_title = "Mata Kuliah Kelas";
 $active_menu = "pengajar_mata_kuliah";
 
 $data_pengajar_mk = [];
@@ -27,7 +27,7 @@ require_once "../../includes/sidebar.php";
 
 <main class="main-content">
     <div class="topbar">
-        <h1 class="page-title">Data Pengajar Mata Kuliah</h1>
+        <h1 class="page-title">Data Mata Kuliah Kelas</h1>
 
         <div class="user-info">
             <div class="user-detail">
@@ -42,15 +42,15 @@ require_once "../../includes/sidebar.php";
 
     <div class="content-wrapper">
         <?php if (isset($_GET['status']) && $_GET['status'] == "berhasil_tambah") { ?>
-            <div class="alert alert-success">Data pengajar mata kuliah berhasil ditambahkan.</div>
+            <div class="alert alert-success">Data mata kuliah kelas berhasil ditambahkan.</div>
         <?php } ?>
 
         <?php if (isset($_GET['status']) && $_GET['status'] == "berhasil_edit") { ?>
-            <div class="alert alert-success">Data pengajar mata kuliah berhasil diubah.</div>
+            <div class="alert alert-success">Data mata kuliah kelas berhasil diubah.</div>
         <?php } ?>
 
         <?php if (isset($_GET['status']) && $_GET['status'] == "berhasil_hapus") { ?>
-            <div class="alert alert-success">Data pengajar mata kuliah berhasil dihapus.</div>
+            <div class="alert alert-success">Data mata kuliah kelas berhasil dihapus.</div>
         <?php } ?>
 
         <?php if (isset($_GET['error'])) { ?>
@@ -61,13 +61,13 @@ require_once "../../includes/sidebar.php";
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <div>
-                        <h4 class="fw-bold mb-1">Daftar Pengajar Mata Kuliah</h4>
-                        <p class="text-muted mb-0">Kelola data pengajar mata kuliah TRPL.</p>
+                        <h4 class="fw-bold mb-1">Daftar Mata Kuliah pada Kelas</h4>
+                        <p class="text-muted mb-0">Kelola relasi mata kuliah yang tersedia pada setiap kelas.</p>
                     </div>
 
                     <a href="tambah.php" class="btn btn-primary">
                         <i class="fa-solid fa-plus me-1"></i>
-                        Tambah Penentuan
+                        Tambah Mata Kuliah Kelas
                     </a>
                 </div>
 
@@ -78,8 +78,6 @@ require_once "../../includes/sidebar.php";
                                 <th style="width: 60px;" class="text-center">No</th>
                                 <th class="text-center">Kelas</th>
                                 <th class="text-center">Mata Kuliah</th>
-                                <th class="text-center">Pengajar 1</th>
-                                <th class="text-center">Pengajar 2</th>
                                 <th style="width: 170px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
@@ -91,8 +89,6 @@ require_once "../../includes/sidebar.php";
                                         <td class="text-center"><?= $no++; ?></td>
                                         <td><?= aman($pengajar_mk['nama_kelas']); ?></td>
                                         <td><?= aman($pengajar_mk['nama_mata_kuliah']); ?></td>
-                                        <td><?= aman($pengajar_mk['nama_pengajar_1']); ?></td>
-                                        <td><?= aman($pengajar_mk['nama_pengajar_2']); ?></td>
                                         <td class="text-center">
                                             <a href="edit.php?id=<?= $pengajar_mk['id_detail_kelas_pada_mata_kuliah']; ?>" class="btn btn-warning btn-sm">
                                                 <i class="fa-solid fa-pen-to-square"></i>
@@ -101,7 +97,7 @@ require_once "../../includes/sidebar.php";
                                             <a href="hapus.php?id=<?= $pengajar_mk['id_detail_kelas_pada_mata_kuliah']; ?>"
                                                 class="btn btn-danger btn-sm btn-konfirmasi"
                                                 data-title="Hapus Data?"
-                                                data-text="Yakin ingin menghapus penentuan pengajar ini?"
+                                                data-text="Yakin ingin menghapus relasi mata kuliah kelas ini?"
                                                 data-icon="warning"
                                                 data-confirm-text="Ya, hapus"
                                                 data-cancel-text="Batal">
@@ -112,8 +108,8 @@ require_once "../../includes/sidebar.php";
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">
-                                        Data pengajar pada mata kuliah pada kelas belum tersedia.
+                                    <td colspan="4" class="text-center text-muted py-4">
+                                        Data mata kuliah pada kelas belum tersedia.
                                     </td>
                                 </tr>
                             <?php } ?>

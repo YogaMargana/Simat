@@ -15,63 +15,33 @@ $bisa_membuat_jobdesc = boleh_membuat_jobdesc($role);
 $page_title = "Bursa Jobdesc";
 $active_menu = "bursa_jobdesc";
 
-$data_bursa_jobdesc = [];
-
-$query = mysqli_query($koneksi, "CALL usp_select_bursa_jobdesc()");
-
-if ($query) {
-    while ($row = mysqli_fetch_assoc($query)) {
-        $data_bursa_jobdesc[] = $row;
-    }
-
-    mysqli_free_result($query);
-    mysqli_next_result($koneksi);
-}
+$data_bursa_jobdesc = ambil_data_procedure(
+    $koneksi,
+    "CALL usp_select_bursa_jobdesc()"
+);
 
 $total_jam_minus_saya = 0;
 
-if ($role == "Mahasiswa") {
-    $id_mahasiswa_login = $_SESSION['id_mahasiswa'] ?? null;
+if ($role === "Mahasiswa") {
+    $id_mahasiswa_login = (int) ($_SESSION['id_mahasiswa'] ?? 0);
 
-    if ($id_mahasiswa_login != null) {
-        $stmt_total = mysqli_prepare($koneksi, "
-            SELECT ufn_total_jam_minus_mahasiswa(?) AS total_jam_minus
-        ");
-
-        mysqli_stmt_bind_param($stmt_total, "i", $id_mahasiswa_login);
-        mysqli_stmt_execute($stmt_total);
-
-        $result_total = mysqli_stmt_get_result($stmt_total);
-        $row_total = mysqli_fetch_assoc($result_total);
-
+    if ($id_mahasiswa_login > 0) {
+        $row_total = ambil_satu_procedure_prepared(
+            $koneksi,
+            "CALL usp_get_total_jam_minus_mahasiswa(?)",
+            "i",
+            [$id_mahasiswa_login]
+        );
         $total_jam_minus_saya = (float) ($row_total['total_jam_minus'] ?? 0);
-
-        mysqli_stmt_close($stmt_total);
     }
 
     foreach ($data_bursa_jobdesc as $index => $jobdesc) {
-        $stmt_cek = mysqli_prepare($koneksi, "
-            SELECT peran_pengguna
-            FROM detail_pengguna_pada_bursa_jobdesc
-            WHERE id_bursa_jobdesc = ?
-            AND id_pengguna = ?
-            LIMIT 1
-        ");
-
-        mysqli_stmt_bind_param(
-            $stmt_cek,
+        $cek = ambil_satu_procedure_prepared(
+            $koneksi,
+            "CALL usp_get_peran_bursa_jobdesc(?, ?)",
             "ii",
-            $jobdesc['id_bursa_jobdesc'],
-            $_SESSION['id_pengguna']
+            [(int) $jobdesc['id_bursa_jobdesc'], (int) ($_SESSION['id_pengguna'] ?? 0)]
         );
-
-        mysqli_stmt_execute($stmt_cek);
-
-        $result_cek = mysqli_stmt_get_result($stmt_cek);
-        $cek = mysqli_fetch_assoc($result_cek);
-
-        mysqli_stmt_close($stmt_cek);
-
         $data_bursa_jobdesc[$index]['peran_saya'] = $cek['peran_pengguna'] ?? '';
         $data_bursa_jobdesc[$index]['sudah_daftar'] = !empty($cek);
     }
@@ -262,7 +232,7 @@ require_once "../../includes/sidebar.php";
                                                         <button type="button" class="btn btn-secondary btn-sm" disabled>
                                                             Sudah Daftar
                                                         </button>
-                                                    
+
                                                     <?php } elseif (!$boleh_daftar_berdasarkan_jam) { ?>
 
                                                         <button type="button" class="btn btn-secondary btn-sm" disabled>
@@ -332,7 +302,7 @@ require_once "../../includes/sidebar.php";
                                     </tr>
                                 <?php } ?>
 
-                    
+
                             <?php } ?>
                         </tbody>
                     </table>

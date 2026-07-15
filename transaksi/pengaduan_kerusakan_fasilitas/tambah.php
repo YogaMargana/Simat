@@ -8,40 +8,12 @@ cek_role_dashboard("Mahasiswa");
 $page_title = "Tambah Pengaduan Fasilitas";
 $active_menu = "pengaduan_fasilitas";
 
-$data_fasilitas = [];
-
-$stmt = mysqli_prepare($koneksi, "
-    SELECT 
-        f.id_fasilitas,
-        f.nama_fasilitas,
-        k.nama_kelas,
-        dfpk.jumlah_fasilitas,
-        dfpk.status_detail_fasilitas_pada_kelas
-    FROM pengguna p
-    JOIN mahasiswa m 
-        ON p.id_mahasiswa = m.id_mahasiswa
-    JOIN kelas k 
-        ON m.id_kelas = k.id_kelas
-    JOIN detail_fasilitas_pada_kelas dfpk 
-        ON m.id_kelas = dfpk.id_kelas
-    JOIN fasilitas f 
-        ON dfpk.id_fasilitas = f.id_fasilitas
-    WHERE p.id_pengguna = ?
-    AND f.status_fasilitas = 'Aktif'
-    AND dfpk.status_detail_fasilitas_pada_kelas = 'Aktif'
-    ORDER BY f.nama_fasilitas ASC
-");
-
-mysqli_stmt_bind_param($stmt, "i", $_SESSION['id_pengguna']);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-
-while ($row = mysqli_fetch_assoc($result)) {
-    $data_fasilitas[] = $row;
-}
-
-mysqli_stmt_close($stmt);
+$data_fasilitas = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_fasilitas_pengaduan_mahasiswa(?)",
+    "i",
+    [(int) ($_SESSION['id_pengguna'] ?? 0)]
+);
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
@@ -72,8 +44,10 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Pengaduan Kerusakan Fasilitas</h4>
 
                 <form action="proses_tambah.php" method="post">
+                    <?= csrf_input(); ?>
                     <div class="mb-3">
-                        <label class="form-label">Fasilitas</label>
+                        <label class="form-label">Fasilitas <span class="text-danger">*</span>
+</label>
                         <select name="id_fasilitas" class="form-select" required>
                             <option value="">Pilih Fasilitas</option>
                             <?php foreach ($data_fasilitas as $fasilitas) { ?>
@@ -88,7 +62,8 @@ require_once "../../includes/sidebar.php";
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Deskripsi Kerusakan</label>
+                        <label class="form-label">Deskripsi Kerusakan <span class="text-danger">*</span>
+</label>
                         <textarea name="deskripsi_kerusakan" class="form-control" rows="4" required></textarea>
                     </div>
 

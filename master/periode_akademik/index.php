@@ -115,8 +115,14 @@ require_once "../../includes/sidebar.php";
                                                 <i class="fa-solid fa-pen-to-square"></i>
                                             </a>
 
-                                            <?php if ($periode['status_periode'] == "Aktif") { ?>
-                                                <a href="hapus.php?id=<?= $periode['id_periode_akademik']; ?>"
+                                            <?php
+                                            $sedang_berlangsung = tanggal_sekarang_dalam_periode(
+                                                $periode['tanggal_mulai'],
+                                                $periode['tanggal_selesai']
+                                            );
+                                            ?>
+                                            <?php if ($periode['status_periode'] == "Aktif" && !$sedang_berlangsung) { ?>
+                                                <a href="hapus.php?id=<?= (int) $periode['id_periode_akademik']; ?>"
                                                 class="btn btn-danger btn-sm btn-konfirmasi"
                                                 data-title="Nonaktifkan Periode?"
                                                 data-text="Data periode akademik akan dinonaktifkan."
@@ -125,6 +131,10 @@ require_once "../../includes/sidebar.php";
                                                 data-cancel-text="Batal">
                                                     <i class="fa-solid fa-trash"></i>
                                                 </a>
+                                            <?php } elseif ($sedang_berlangsung) { ?>
+                                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Periode yang sedang berlangsung tidak dapat dinonaktifkan">
+                                                    <i class="fa-solid fa-lock"></i>
+                                                </button>
                                             <?php } else { ?>
                                                 <button type="button" class="btn btn-secondary btn-sm" disabled title="Periode sudah tidak aktif">
                                                     <i class="fa-solid fa-trash"></i>

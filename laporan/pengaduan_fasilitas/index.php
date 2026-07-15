@@ -31,7 +31,7 @@ if ($query) {
         }
     }
 } else {
-    $error_laporan = mysqli_error($koneksi);
+    $error_laporan = pesan_error_koneksi($koneksi, 'Gagal mengambil data laporan.');
 }
 
 function format_tanggal_laporan_pengaduan($tanggal)
@@ -116,6 +116,7 @@ require_once "../../includes/sidebar.php";
                     <a
                         href="cetak.php"
                         target="_blank"
+                        rel="noopener noreferrer"
                         class="btn btn-danger"
                     >
                         <i class="fa-solid fa-file-pdf me-1"></i>

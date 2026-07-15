@@ -2,6 +2,12 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit;
+}
+
+
 $role = $_SESSION['role'] ?? '';
 
 if ($role != "Mahasiswa") {
@@ -31,7 +37,7 @@ if (mysqli_stmt_execute($stmt)) {
     header("Location: index.php?status=berhasil_daftar");
     exit;
 } else {
-    $error = mysqli_error($koneksi);
+    $error = pesan_error_koneksi($koneksi, 'Proses database gagal dijalankan.');
     mysqli_stmt_close($stmt);
 
     header("Location: index.php?error=" . urlencode($error));

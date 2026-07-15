@@ -37,13 +37,16 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Pengajar</h4>
 
                 <form action="proses_tambah.php" method="post">
+                    <?= csrf_input(); ?>
                     <div class="mb-3">
-                        <label class="form-label">NIP</label>
-                        <input type="number" name="nip" class="form-control" maxlength="20" required>
+                        <label class="form-label">NIP <span class="text-danger">*</span>
+</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9A-Za-z]+" name="nip" class="form-control" maxlength="20" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Nama Pengajar</label>
+                        <label class="form-label">Nama Pengajar <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_pengajar" class="form-control" maxlength="50" required>
                     </div>
 
@@ -54,7 +57,7 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-4">
                         <label class="form-label">No HP</label>
-                        <input type="number" name="no_hp" class="form-control" maxlength="20">
+                        <input type="text" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13">
                     </div>
 
                     <div class="d-flex gap-2">

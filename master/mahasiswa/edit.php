@@ -17,38 +17,25 @@ if ($id_mahasiswa == '') {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "SELECT * FROM mahasiswa WHERE id_mahasiswa = ? LIMIT 1");
-mysqli_stmt_bind_param($stmt, "i", $id_mahasiswa);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$mahasiswa = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
+$mahasiswa = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_mahasiswa_by_id(?)",
+    "i",
+    [(int) $id_mahasiswa]
+);
 
 if (!$mahasiswa) {
     header("Location: index.php?error=" . urlencode("Data mahasiswa tidak ditemukan."));
     exit;
 }
 
-if ($mahasiswa['status_mahasiswa'] == "Tidak Aktif") {
+if ($mahasiswa['status_mahasiswa'] === "Tidak Aktif") {
     header("Location: index.php?error=" . urlencode("Data mahasiswa tidak aktif tidak dapat diedit."));
     exit;
 }
 
-$data_kelas = [];
-$query_kelas = mysqli_query($koneksi, "SELECT id_kelas, nama_kelas, tingkat FROM kelas WHERE status_kelas = 'Aktif' ORDER BY nama_kelas ASC");
-
-while ($row = mysqli_fetch_assoc($query_kelas)) {
-    $data_kelas[] = $row;
-}
-
-$data_periode = [];
-$query_periode = mysqli_query($koneksi, "SELECT id_periode_akademik, tahun_akademik, semester FROM periode_akademik WHERE status_periode = 'Aktif' ORDER BY id_periode_akademik DESC");
-
-while ($row = mysqli_fetch_assoc($query_periode)) {
-    $data_periode[] = $row;
-}
+$data_kelas = ambil_data_procedure($koneksi, "CALL usp_select_kelas_aktif()");
+$data_periode = ambil_data_procedure($koneksi, "CALL usp_select_periode_tersedia_mahasiswa()");
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
@@ -79,10 +66,12 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Mahasiswa</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_mahasiswa" value="<?= aman($mahasiswa['id_mahasiswa']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label">Kelas</label>
+                        <label class="form-label">Kelas <span class="text-danger">*</span>
+</label>
                         <select name="id_kelas" class="form-select" required>
                             <option value="">Pilih Kelas</option>
                             <?php foreach ($data_kelas as $kelas) { ?>
@@ -94,7 +83,8 @@ require_once "../../includes/sidebar.php";
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Periode Akademik</label>
+                        <label class="form-label">Periode Akademik <span class="text-danger">*</span>
+</label>
                         <select name="id_periode_akademik" class="form-select" required>
                             <option value="">Pilih Periode Akademik</option>
                             <?php foreach ($data_periode as $periode) { ?>
@@ -106,12 +96,14 @@ require_once "../../includes/sidebar.php";
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">NIM</label>
-                        <input type="number" name="nim" class="form-control" maxlength="20" value="<?= aman($mahasiswa['nim']); ?>" required>
+                        <label class="form-label">NIM <span class="text-danger">*</span>
+</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]+" name="nim" class="form-control" maxlength="20" value="<?= aman($mahasiswa['nim']); ?>" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Nama Mahasiswa</label>
+                        <label class="form-label">Nama Mahasiswa <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_mahasiswa" class="form-control" maxlength="50" value="<?= aman($mahasiswa['nama_mahasiswa']); ?>" required>
                     </div>
 
@@ -122,11 +114,12 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-3">
                         <label class="form-label">No HP</label>
-                        <input type="number" name="no_hp" class="form-control" maxlength="20" value="<?= aman($mahasiswa['no_hp'] ?? ''); ?>">
+                        <input type="text" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($mahasiswa['no_hp'] ?? ''); ?>">
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Status Mahasiswa</label>
+                        <label class="form-label">Status Mahasiswa <span class="text-danger">*</span>
+</label>
                         <select name="status_mahasiswa" class="form-select" required>
                             <option value="Aktif" <?= $mahasiswa['status_mahasiswa'] == "Aktif" ? 'selected' : ''; ?>>Aktif</option>
                             <option value="Lulus" <?= $mahasiswa['status_mahasiswa'] == "Lulus" ? 'selected' : ''; ?>>Lulus</option>

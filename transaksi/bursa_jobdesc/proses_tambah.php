@@ -210,7 +210,7 @@ mysqli_stmt_bind_param(
 );
 
 if (!mysqli_stmt_execute($stmt)) {
-    $pesan_error = mysqli_stmt_error($stmt);
+    $pesan_error = pesan_error_statement($stmt, 'Bursa jobdesc gagal disimpan.');
 
     mysqli_stmt_close($stmt);
 

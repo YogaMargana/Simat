@@ -9,21 +9,16 @@ cek_role_dashboard("PIC Tata Tertib");
 $page_title = "Tambah Pemberian Jam Minus";
 $active_menu = "pemberian_jam_minus";
 
-/* Mahasiswa aktif */
-$data_mahasiswa = ambil_data_procedure(
+/* Kelas aktif yang memiliki mahasiswa aktif */
+$data_kelas = ambil_data_procedure(
     $koneksi,
-    "CALL usp_select_mahasiswa_aktif_untuk_jam_minus()"
+    "CALL usp_select_kelas_aktif_untuk_jam_minus()"
 );
 
-/*
- * Semua fasilitas.
- *
- * Sengaja menggunakan usp_select_fasilitas(),
- * bukan usp_select_fasilitas_aktif().
- */
+/* Hanya fasilitas aktif yang dapat dipilih untuk transaksi baru. */
 $data_fasilitas = ambil_data_procedure(
     $koneksi,
-    "CALL usp_select_fasilitas()"
+    "CALL usp_select_fasilitas_aktif()"
 );
 
 require_once "../../includes/dashboard_header.php";
@@ -89,6 +84,36 @@ require_once "../../includes/sidebar.php";
                     action="proses_tambah.php"
                     method="post"
                     id="form_pemberian_jam_minus">
+                    <?= csrf_input(); ?>
+
+                    <div class="mb-3">
+
+                        <label
+                            for="id_kelas"
+                            class="form-label fw-bold">
+                            Kelas
+                            <span class="text-danger">*</span>
+                        </label>
+
+                        <select
+                            name="id_kelas"
+                            id="id_kelas"
+                            class="form-select"
+                            required>
+
+                            <option value="">
+                                Pilih Kelas
+                            </option>
+
+                            <?php foreach ($data_kelas as $kelas) { ?>
+                                <option value="<?= (int) $kelas['id_kelas']; ?>">
+                                    <?= aman($kelas['nama_kelas']); ?>
+                                    - Tingkat <?= (int) $kelas['tingkat']; ?>
+                                </option>
+                            <?php } ?>
+                        </select>
+
+                    </div>
 
                     <div class="mb-3">
 
@@ -106,36 +131,8 @@ require_once "../../includes/sidebar.php";
                             required>
 
                             <option value="">
-                                Pilih Mahasiswa
+                                Pilih kelas terlebih dahulu
                             </option>
-
-                            <?php foreach (
-                                $data_mahasiswa as $mahasiswa
-                            ) { ?>
-
-                                <option
-                                    value="<?= (int)
-                                            $mahasiswa['id_pengguna_mahasiswa']; ?>">
-
-                                    <?= aman(
-                                        $mahasiswa['nim']
-                                    ); ?>
-
-                                    -
-
-                                    <?= aman(
-                                        $mahasiswa['nama_mahasiswa']
-                                    ); ?>
-
-                                    -
-
-                                    <?= aman(
-                                        $mahasiswa['nama_kelas']
-                                    ); ?>
-
-                                </option>
-
-                            <?php } ?>
 
                         </select>
 
@@ -201,7 +198,7 @@ require_once "../../includes/sidebar.php";
                                         class="form-select">
 
                                         <option value="">
-                                            Pilih mahasiswa terlebih dahulu
+                                            Pilih kelas terlebih dahulu
                                         </option>
 
                                     </select>
@@ -347,9 +344,8 @@ require_once "../../includes/sidebar.php";
                                     </select>
 
                                     <div class="form-text">
-                                        Semua fasilitas pada tabel fasilitas
-                                        dapat dipilih, termasuk yang berstatus
-                                        Tidak Aktif.
+                                        Hanya fasilitas berstatus Aktif yang
+                                        dapat dipilih untuk transaksi baru.
                                     </div>
 
                                 </div>
@@ -527,6 +523,9 @@ require_once "../../includes/sidebar.php";
         'DOMContentLoaded',
         function() {
 
+            const kelas =
+                document.getElementById('id_kelas');
+
             const mahasiswa =
                 document.getElementById(
                     'id_pengguna_mahasiswa'
@@ -609,8 +608,8 @@ require_once "../../includes/sidebar.php";
             function formatJam(nilai) {
                 return new Intl.NumberFormat(
                     'id-ID', {
-                        minimumFractionDigits: 1,
-                        maximumFractionDigits: 1
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
                     }
                 ).format(nilai);
             }
@@ -659,21 +658,56 @@ require_once "../../includes/sidebar.php";
                 nonaktifkanSemuaFieldKategori();
             }
 
+            async function ambilMahasiswa() {
+                const idKelas = kelas.value;
+                mahasiswa.innerHTML = '<option value="">Memuat data...</option>';
+                mataKuliah.innerHTML = '<option value="">Pilih kelas terlebih dahulu</option>';
+
+                if (!idKelas) {
+                    mahasiswa.innerHTML = '<option value="">Pilih kelas terlebih dahulu</option>';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        'ambil_mahasiswa.php?id_kelas=' + encodeURIComponent(idKelas)
+                    );
+                    const result = await response.json();
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || 'Gagal mengambil mahasiswa.');
+                    }
+
+                    mahasiswa.innerHTML = '<option value="">Pilih Mahasiswa</option>';
+                    result.data.forEach(function (item) {
+                        const option = document.createElement('option');
+                        option.value = item.id_pengguna_mahasiswa;
+                        option.textContent = item.nim + ' - ' + item.nama_mahasiswa;
+                        mahasiswa.appendChild(option);
+                    });
+
+                    if (result.data.length === 0) {
+                        mahasiswa.innerHTML = '<option value="">Tidak ada mahasiswa aktif</option>';
+                    }
+                } catch (error) {
+                    console.error(error);
+                    mahasiswa.innerHTML = '<option value="">Gagal mengambil mahasiswa</option>';
+                }
+            }
+
             async function ambilMataKuliah() {
 
-                const idMahasiswa =
-                    mahasiswa.value;
+                const idKelas = kelas.value;
 
                 mataKuliah.innerHTML =
                     '<option value="">' +
                     'Memuat data...' +
                     '</option>';
 
-                if (!idMahasiswa) {
+                if (!idKelas) {
 
                     mataKuliah.innerHTML =
                         '<option value="">' +
-                        'Pilih mahasiswa terlebih dahulu' +
+                        'Pilih kelas terlebih dahulu' +
                         '</option>';
 
                     return;
@@ -683,9 +717,9 @@ require_once "../../includes/sidebar.php";
 
                     const response = await fetch(
                         'ambil_mata_kuliah.php' +
-                        '?id_pengguna_mahasiswa=' +
+                        '?id_kelas=' +
                         encodeURIComponent(
-                            idMahasiswa
+                            idKelas
                         )
                     );
 
@@ -847,19 +881,13 @@ require_once "../../includes/sidebar.php";
                 aturKategori
             );
 
-            mahasiswa.addEventListener(
-                'change',
-                function() {
+            kelas.addEventListener('change', function () {
+                ambilMahasiswa();
 
-                    if (
-                        kategori.value ===
-                        'Akademik'
-                    ) {
-                        ambilMataKuliah();
-                    }
-
+                if (kategori.value === 'Akademik') {
+                    ambilMataKuliah();
                 }
-            );
+            });
 
             fasilitas.addEventListener(
                 'change',

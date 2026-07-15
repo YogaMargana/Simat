@@ -1,84 +1,41 @@
-<<<<<<< HEAD
 <?php
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
-// /** @var mysqli $koneksi */
-
 cek_role_dashboard("Kepala Prodi");
 
-if (!isset($_POST['update'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_POST['update'])) {
     header("Location: index.php");
     exit;
 }
 
-$id_matakuliah = $_POST['id_matakuliah'] ?? '';
+$id_matakuliah = (int) ($_POST['id_matakuliah'] ?? 0);
 $nama_mata_kuliah = strtoupper(trim($_POST['nama_mata_kuliah'] ?? ''));
-$kode_mata_kuliah = trim($_POST['kode_mata_kuliah'] ?? '');
-$sks = intval($_POST['sks'] ?? 0);
-$semester = trim($_POST['semester'] ?? '');
+$kode_mata_kuliah = strtoupper(trim($_POST['kode_mata_kuliah'] ?? ''));
+$sks = (int) ($_POST['sks'] ?? 0);
+$semester = (int) ($_POST['semester'] ?? 0);
 $status_mata_kuliah = trim($_POST['status_mata_kuliah'] ?? '');
 
-if ($id_matakuliah == '' || $nama_mata_kuliah == '' || $kode_mata_kuliah == '' || $sks < 0 || $semester == '' || $status_mata_kuliah == '') {
-    header("Location: index.php?error=" . urlencode("Data edit tidak lengkap."));
+if ($id_matakuliah <= 0 || $nama_mata_kuliah === '' || $kode_mata_kuliah === '' || $sks <= 0 || $semester <= 0 || !in_array($status_mata_kuliah, ['Aktif', 'Tidak Aktif'], true)) {
+    header("Location: index.php?error=" . urlencode("Data edit tidak lengkap atau tidak valid."));
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi,"UPDATE mata_kuliah SET nama_mata_kuliah = ?, kode_mata_kuliah = ?, sks = ?, semester = ?, status_mata_kuliah = ? WHERE id_matakuliah = ?");
-mysqli_stmt_bind_param($stmt, "ssissi", $nama_mata_kuliah, $kode_mata_kuliah, $sks, $semester, $status_mata_kuliah, $id_matakuliah);
+$stmt = mysqli_prepare($koneksi, "CALL usp_update_mata_kuliah(?, ?, ?, ?, ?, ?)");
+if (!$stmt) {
+    error_log('Prepare ubah mata kuliah gagal: ' . mysqli_error($koneksi));
+    header("Location: edit.php?id={$id_matakuliah}&error=" . urlencode("Gagal menyiapkan perubahan data."));
+    exit;
+}
 
-if (mysqli_stmt_execute($stmt)) {
+mysqli_stmt_bind_param($stmt, 'issiii', $id_matakuliah, $nama_mata_kuliah, $kode_mata_kuliah, $sks, $semester, $status_mata_kuliah);
+if (!mysqli_stmt_execute($stmt)) {
+    error_log('Ubah mata kuliah gagal: ' . mysqli_stmt_error($stmt));
     mysqli_stmt_close($stmt);
-
-    header("Location: index.php?status=berhasil_edit");
-    exit;
-} else {
-    $error = mysqli_error($koneksi);
-    mysqli_stmt_close($stmt);
-
-    header("Location: edit.php?id=" . urlencode($id_matakuliah) . "&error=" . urlencode($error));
-    exit;
-}
-=======
-<?php
-require_once "../../config/koneksi.php";
-require_once "../../includes/auth_dashboard.php";
-
-// /** @var mysqli $koneksi */
-
-cek_role_dashboard("Kepala Prodi");
-
-if (!isset($_POST['update'])) {
-    header("Location: index.php");
+    header("Location: edit.php?id={$id_matakuliah}&error=" . urlencode("Mata kuliah gagal diubah. Periksa kembali datanya."));
     exit;
 }
 
-$id_matakuliah = $_POST['id_matakuliah'] ?? '';
-$nama_mata_kuliah = strtoupper(trim($_POST['nama_mata_kuliah'] ?? ''));
-$kode_mata_kuliah = trim($_POST['kode_mata_kuliah'] ?? '');
-$sks = intval($_POST['sks'] ?? 0);
-$semester = trim($_POST['semester'] ?? '');
-$status_mata_kuliah = trim($_POST['status_mata_kuliah'] ?? '');
-
-if ($id_matakuliah == '' || $nama_mata_kuliah == '' || $kode_mata_kuliah == '' || $sks < 0 || $semester == '' || $status_mata_kuliah == '') {
-    header("Location: index.php?error=" . urlencode("Data edit tidak lengkap."));
-    exit;
-}
-
-$stmt = mysqli_prepare($koneksi,"UPDATE mata_kuliah SET nama_mata_kuliah = ?, kode_mata_kuliah = ?, sks = ?, semester = ?, status_mata_kuliah = ? WHERE id_matakuliah = ?");
-mysqli_stmt_bind_param($stmt, "ssissi", $nama_mata_kuliah, $kode_mata_kuliah, $sks, $semester, $status_mata_kuliah, $id_matakuliah);
-
-if (mysqli_stmt_execute($stmt)) {
-    mysqli_stmt_close($stmt);
-
-    header("Location: index.php?status=berhasil_edit");
-    exit;
-} else {
-    $error = mysqli_error($koneksi);
-    mysqli_stmt_close($stmt);
-
-    header("Location: edit.php?id=" . urlencode($id_matakuliah) . "&error=" . urlencode($error));
-    exit;
-}
->>>>>>> 3dcb8fe0c7c8e43656d54631680baf01eeeadcf4
-?>
+mysqli_stmt_close($stmt);
+header("Location: index.php?status=berhasil_edit");
+exit;

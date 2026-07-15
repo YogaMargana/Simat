@@ -15,42 +15,12 @@ if ($id_pengaduan == '') {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "
-    SELECT
-        pkf.id_pengaduan_kerusakan_fasilitas,
-        pkf.id_fasilitas,
-        f.nama_fasilitas,
-        pkf.deskripsi_kerusakan,
-        pkf.tanggal_pengaduan,
-        pkf.bukti_kerusakan_url,
-        pkf.status_pengaduan,
-
-        dp.id_pengguna AS id_pelapor,
-        p.username AS username_pelapor,
-        COALESCE(m.nama_mahasiswa, pg.nama_pengajar) AS nama_pelapor
-    FROM pengaduan_kerusakan_fasilitas pkf
-    JOIN fasilitas f 
-        ON pkf.id_fasilitas = f.id_fasilitas
-    LEFT JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas dp
-        ON pkf.id_pengaduan_kerusakan_fasilitas = dp.id_pengaduan_kerusakan_fasilitas
-        AND dp.peran_pengguna = 'Pelapor'
-    LEFT JOIN pengguna p
-        ON dp.id_pengguna = p.id_pengguna
-    LEFT JOIN mahasiswa m
-        ON p.id_mahasiswa = m.id_mahasiswa
-    LEFT JOIN pengajar pg
-        ON p.id_pengajar = pg.id_pengajar
-    WHERE pkf.id_pengaduan_kerusakan_fasilitas = ?
-    LIMIT 1
-");
-
-mysqli_stmt_bind_param($stmt, "i", $id_pengaduan);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$pengaduan = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
+$pengaduan = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_pengaduan_by_id(?)",
+    "i",
+    [(int) $id_pengaduan]
+);
 
 if (!$pengaduan) {
     header("Location: index.php?error=" . urlencode("Data pengaduan tidak ditemukan."));
@@ -110,7 +80,7 @@ require_once "../../includes/sidebar.php";
                     <strong>Bukti Kerusakan</strong>
                     <div>
                         <?php if (!empty($pengaduan['bukti_kerusakan_url'])) { ?>
-                            <a href="<?= aman($pengaduan['bukti_kerusakan_url']); ?>" target="_blank">
+                            <a href="<?= aman($pengaduan['bukti_kerusakan_url']); ?>" target="_blank" rel="noopener noreferrer">
                                 Lihat Bukti
                             </a>
                         <?php } else { ?>
@@ -121,10 +91,11 @@ require_once "../../includes/sidebar.php";
 
                 <?php if ($pengaduan['status_pengaduan'] == "Menunggu Verifikasi") { ?>
                     <form action="proses_verifikasi.php" method="post">
+                    <?= csrf_input(); ?>
                         <input type="hidden" name="id_pengaduan_kerusakan_fasilitas" value="<?= aman($pengaduan['id_pengaduan_kerusakan_fasilitas']); ?>">
 
                         <div class="mb-4">
-                            <label class="form-label">Status Verifikasi</label>
+                            <label class="form-label">Status Verifikasi <span class="text-danger">*</span></label>
                             <select name="status_pengaduan" class="form-select" required>
                                 <option value="">Pilih Status</option>
                                 <option value="Diterima">Diterima</option>
@@ -133,6 +104,11 @@ require_once "../../includes/sidebar.php";
                             <small class="text-muted">
                                 Jika Diterima, kondisi fasilitas otomatis berubah menjadi Rusak.
                             </small>
+                        </div>
+
+                        <div class="mb-4 d-none" id="wrapper_alasan_penolakan">
+                            <label class="form-label" for="alsan_penolakan">Alasan Penolakan <span class="text-danger">*</span></label>
+                            <textarea name="alsan_penolakan" id="alsan_penolakan" class="form-control" rows="3" maxlength="255" placeholder="Jelaskan alasan pengaduan ditolak"></textarea>
                         </div>
 
                         <div class="d-flex gap-2">
@@ -160,5 +136,23 @@ require_once "../../includes/sidebar.php";
         </div>
     </div>
 </main>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const status = document.querySelector('select[name="status_pengaduan"]');
+    const wrapper = document.getElementById('wrapper_alasan_penolakan');
+    const alasan = document.getElementById('alsan_penolakan');
+    if (!status || !wrapper || !alasan) return;
+    function aturAlasan() {
+        const ditolak = status.value === 'Ditolak';
+        wrapper.classList.toggle('d-none', !ditolak);
+        alasan.required = ditolak;
+        if (!ditolak) alasan.value = '';
+    }
+    status.addEventListener('change', aturAlasan);
+    aturAlasan();
+});
+</script>
 
 <?php require_once "../../includes/dashboard_footer.php"; ?>

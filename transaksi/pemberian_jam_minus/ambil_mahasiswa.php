@@ -16,9 +16,9 @@ if ($id_kelas <= 0) {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "CALL usp_select_mata_kuliah_kelas_untuk_jam_minus(?)");
+$stmt = mysqli_prepare($koneksi, "CALL usp_select_mahasiswa_aktif_by_kelas(?)");
 if (!$stmt) {
-    error_log('Prepare mata kuliah per kelas gagal: ' . mysqli_error($koneksi));
+    error_log('Prepare mahasiswa per kelas gagal: ' . mysqli_error($koneksi));
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Gagal menyiapkan permintaan.']);
     exit;
@@ -26,10 +26,10 @@ if (!$stmt) {
 
 mysqli_stmt_bind_param($stmt, 'i', $id_kelas);
 if (!mysqli_stmt_execute($stmt)) {
-    error_log('Execute mata kuliah per kelas gagal: ' . mysqli_stmt_error($stmt));
+    error_log('Execute mahasiswa per kelas gagal: ' . mysqli_stmt_error($stmt));
     mysqli_stmt_close($stmt);
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Gagal mengambil mata kuliah.']);
+    echo json_encode(['success' => false, 'message' => 'Gagal mengambil mahasiswa.']);
     exit;
 }
 

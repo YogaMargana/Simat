@@ -8,26 +8,17 @@ cek_role_dashboard("PIC Tata Tertib");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-$id_pengguna = $_SESSION['id_pengguna'];
-$jobdesc_saya = mysqli_fetch_assoc(mysqli_query($koneksi,
-    "SELECT COUNT(DISTINCT bj.id_bursa_jobdesc) AS total FROM bursa_jobdesc bj
-     JOIN detail_pengguna_pada_bursa_jobdesc dpbj
-     ON bj.id_bursa_jobdesc = dpbj.id_bursa_jobdesc
-     WHERE dpbj.id_pengguna = '$id_pengguna'
-     AND dpbj.peran_pengguna = 'Pemberi'"
-))['total'];
 
-$id_pengguna = $_SESSION['id_pengguna'];
-$jam_plus_menunggu = mysqli_fetch_assoc(mysqli_query(
-    $koneksi,
-    "SELECT COUNT(*) AS total
-     FROM pengajuan_jam_plus pjp
-     JOIN detail_pengguna_pada_pengajuan_jam_plus dpjp
-     ON pjp.id_pengajuan_jam_plus = dpjp.id_pengajuan_jam_plus
-     WHERE dpjp.id_pengguna = '$id_pengguna'
-     AND dpjp.peran_pengguna = 'Verifikator'
-     AND pjp.status_pengajuan = 'Menunggu Verifikasi'"
-))['total'];
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
+$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
+$total_pengguna = (int) ($ringkasan['total_pengguna'] ?? 0);
+$total_mahasiswa = (int) ($ringkasan['total_mahasiswa'] ?? 0);
+$total_pengajar = (int) ($ringkasan['total_pengajar'] ?? 0);
+$total_fasilitas = (int) ($ringkasan['total_fasilitas'] ?? 0);
+$total_pengaduan = (int) ($ringkasan['total_pengaduan'] ?? 0);
+$pengaduan_menunggu = (int) ($ringkasan['pengaduan_menunggu'] ?? 0);
+$jobdesc_saya = (int) ($ringkasan['jobdesc_saya'] ?? 0);
+$jam_plus_menunggu = (int) ($ringkasan['jam_plus_menunggu'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -37,7 +28,7 @@ require_once "../includes/dashboard_header.php";
     <main class="main-content">
         <div class="topbar">
             <h1 class="page-title">Dashboard</h1>
-    
+
             <div class="user-info">
                 <div class="user-detail">
                     <div class="user-name"><?= aman($_SESSION['username']); ?></div>
@@ -51,7 +42,7 @@ require_once "../includes/dashboard_header.php";
 
         <div class="content-wrapper">
             <div class="welcome-card">
-                <h2 class="fw-bold mb-2">Selamat Datang, <?= $_SESSION['username']; ?> 🎓</h2>
+                <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
                 <p class="text-muted mb-0">
                     Kelola aktivitas Bursa Jobdesc dan Pengajuan Jam Plus melalui sistem ini.
                 </p>
@@ -80,20 +71,20 @@ require_once "../includes/dashboard_header.php";
                     </div>
                 </div>  -->
             </div>
-        </div>       
+        </div>
     </main>
 </div>
 
-        
 
-        
-    
+
+
+
         <!-- <div class="content-wrapper">
             <div class="welcome-card">
                 <h2>Selamat Datang di SIMAT</h2>
                 <p>Kelola data pengguna, mahasiswa, pengajar, fasilitas, dan pengaduan kerusakan fasilitas melalui sistem ini.</p>
             </div>
-    
+
             <div class="stat-grid">
                 <div class="stat-card">
                     <div class="stat-icon">
@@ -103,7 +94,7 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $total_pengguna; ?></h3>
                     <div class="stat-desc">Akun yang terdaftar di sistem</div>
                 </div>
-    
+
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-user-graduate"></i>
@@ -112,7 +103,7 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $total_mahasiswa; ?></h3>
                     <div class="stat-desc">Data mahasiswa aktif dan tidak aktif</div>
                 </div>
-    
+
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-chalkboard-user"></i>
@@ -121,7 +112,7 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $total_pengajar; ?></h3>
                     <div class="stat-desc">Pengajar dan PIC yang terdaftar</div>
                 </div>
-    
+
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-boxes-stacked"></i>
@@ -130,7 +121,7 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $total_fasilitas; ?></h3>
                     <div class="stat-desc">Fasilitas yang tercatat di sistem</div>
                 </div>
-    
+
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-file-circle-exclamation"></i>
@@ -139,7 +130,7 @@ require_once "../includes/dashboard_header.php";
                     <h3 class="stat-value"><?= $total_pengaduan; ?></h3>
                     <div class="stat-desc">Seluruh pengaduan fasilitas</div>
                 </div>
-    
+
                 <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fa-solid fa-clock"></i>

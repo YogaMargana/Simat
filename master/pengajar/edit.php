@@ -3,7 +3,7 @@ require_once "../../config/koneksi.php";
 require_once "../../config/function.php";
 require_once "../../includes/auth_dashboard.php";
 
-// /** @var mysqli $koneksi */ anjing
+// /** @var mysqli $koneksi */
 
 cek_role_dashboard("Kepala Prodi");
 
@@ -17,17 +17,20 @@ if ($id_pengajar == '') {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "SELECT * FROM pengajar WHERE id_pengajar = ? LIMIT 1");
-mysqli_stmt_bind_param($stmt, "i", $id_pengajar);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$pengajar = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
+$pengajar = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_pengajar_by_id(?)",
+    "i",
+    [(int) $id_pengajar]
+);
 
 if (!$pengajar) {
     header("Location: index.php?error=" . urlencode("Data pengajar tidak ditemukan."));
+    exit;
+}
+
+if ($pengajar['status_pengajar'] !== 'Aktif') {
+    header("Location: index.php?error=" . urlencode("Data pengajar tidak aktif tidak dapat diedit."));
     exit;
 }
 
@@ -60,15 +63,18 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Pengajar</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_pengajar" value="<?= aman($pengajar['id_pengajar']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label">NIP</label>
-                        <input type="number" name="nip" class="form-control" maxlength="20" value="<?= aman($pengajar['nip']); ?>" required>
+                        <label class="form-label">NIP <span class="text-danger">*</span>
+</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9A-Za-z]+" name="nip" class="form-control" maxlength="20" value="<?= aman($pengajar['nip']); ?>" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Nama Pengajar</label>
+                        <label class="form-label">Nama Pengajar <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_pengajar" class="form-control" maxlength="50" value="<?= aman($pengajar['nama_pengajar']); ?>" required>
                     </div>
 
@@ -79,7 +85,7 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-4">
                         <label class="form-label">No HP</label>
-                        <input type="number" name="no_hp" class="form-control" maxlength="20" value="<?= aman($pengajar['no_hp'] ?? ''); ?>">
+                        <input type="text" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($pengajar['no_hp'] ?? ''); ?>">
                     </div>
 
                     <div class="d-flex gap-2">

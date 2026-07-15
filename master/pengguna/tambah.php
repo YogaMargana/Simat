@@ -10,39 +10,33 @@ cek_role_dashboard("Kepala Prodi");
 $page_title = "Tambah Pengguna";
 $active_menu = "pengguna";
 
-$data_mahasiswa = [];
-$query_mahasiswa = mysqli_query($koneksi, "
-    SELECT 
-        m.id_mahasiswa,
-        m.nim,
-        m.nama_mahasiswa
-    FROM mahasiswa m
-    LEFT JOIN pengguna p ON m.id_mahasiswa = p.id_mahasiswa AND p.status_akun = 'Aktif'
-    WHERE m.status_mahasiswa = 'Aktif'
-    AND p.id_pengguna IS NULL
-    ORDER BY m.nama_mahasiswa ASC
-");
+$data_mahasiswa_raw = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_identitas_pengguna_tersedia(?, ?)",
+    "si",
+    ['Mahasiswa', null]
+);
+$data_mahasiswa = array_map(static function ($row) {
+    return [
+        'id_mahasiswa' => $row['id_identitas'],
+        'nim' => $row['nomor_identitas'],
+        'nama_mahasiswa' => $row['nama_identitas'],
+    ];
+}, $data_mahasiswa_raw);
 
-while ($row = mysqli_fetch_assoc($query_mahasiswa)) {
-    $data_mahasiswa[] = $row;
-}
-
-$data_pengajar = [];
-$query_pengajar = mysqli_query($koneksi, "
-    SELECT 
-        pg.id_pengajar,
-        pg.nip,
-        pg.nama_pengajar
-    FROM pengajar pg 
-    LEFT JOIN pengguna p ON pg.id_pengajar = p.id_pengajar AND p.status_akun = 'Aktif'
-    WHERE pg.status_pengajar = 'Aktif'
-    AND p.id_pengguna IS NULL
-    ORDER BY pg.nama_pengajar ASC
-");
-
-while ($row = mysqli_fetch_assoc($query_pengajar)) {
-    $data_pengajar[] = $row;
-}
+$data_pengajar_raw = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_identitas_pengguna_tersedia(?, ?)",
+    "si",
+    ['Pengajar', null]
+);
+$data_pengajar = array_map(static function ($row) {
+    return [
+        'id_pengajar' => $row['id_identitas'],
+        'nip' => $row['nomor_identitas'],
+        'nama_pengajar' => $row['nama_identitas'],
+    ];
+}, $data_pengajar_raw);
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
@@ -73,8 +67,9 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Pengguna</h4>
 
                 <form action="proses_tambah.php" method="post">
+                    <?= csrf_input(); ?>
                     <div class="mb-3">
-                        <label class="form-label">Role</label>
+                        <label class="form-label">Role <span class="text-danger">*</span></label>
                         <select name="role" id="role" class="form-select" required>
                             <option value="">Pilih Role</option>
                             <option value="Mahasiswa">Mahasiswa</option>
@@ -113,12 +108,12 @@ require_once "../../includes/sidebar.php";
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" maxlength="50" required>
+                        <label class="form-label">Username <span class="text-danger">*</span></label>
+                        <input type="text" name="username" class="form-control" maxlength="20" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Password</label>
+                        <label class="form-label">Password <span class="text-danger">*</span></label>
                         <input type="text" name="password" class="form-control" maxlength="255" required>
                         <small class="text-muted">Sementara masih plain text, contoh: 123.</small>
                     </div>

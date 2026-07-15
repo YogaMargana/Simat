@@ -2,6 +2,12 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit;
+}
+
+
 // /** @var mysqli $koneksi */
 
 cek_role_dashboard("Kepala Prodi");
@@ -22,7 +28,7 @@ if (mysqli_stmt_execute($stmt)) {
     header("Location: index.php?status=berhasil_hapus");
     exit;
 } else {
-    $error = mysqli_error($koneksi);
+    $error = pesan_error_koneksi($koneksi, 'Proses database gagal dijalankan.');
     mysqli_stmt_close($stmt);
 
     header("Location: index.php?error=" . urlencode($error));

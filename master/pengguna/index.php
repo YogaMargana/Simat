@@ -12,7 +12,7 @@ $active_menu = "pengguna";
 
 $data_pengguna = [];
 
-$query = mysqli_query($koneksi, "CALL usp_select_pengguna()");
+$query = mysqli_query($koneksi, "CALL usp_select_pengguna_aktif()");
 
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {

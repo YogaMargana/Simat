@@ -17,54 +17,50 @@ if ($id_pengguna == '') {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "SELECT * FROM pengguna WHERE id_pengguna = ? LIMIT 1");
-mysqli_stmt_bind_param($stmt, "i", $id_pengguna);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$pengguna = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
+$pengguna = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_pengguna_by_id(?)",
+    "i",
+    [(int) $id_pengguna]
+);
 
 if (!$pengguna) {
     header("Location: index.php?error=" . urlencode("Data pengguna tidak ditemukan."));
     exit;
 }
 
-if ($pengguna['status_akun'] == "Tidak Aktif") {
+if ($pengguna['status_akun'] === "Tidak Aktif") {
     header("Location: index.php?error=" . urlencode("Akun tidak aktif tidak dapat diedit."));
     exit;
 }
 
-$data_mahasiswa = [];
-$query_mahasiswa = mysqli_query($koneksi, "
-    SELECT 
-        m.id_mahasiswa,
-        m.nim,
-        m.nama_mahasiswa
-    FROM mahasiswa m
-    WHERE m.status_mahasiswa = 'Aktif'
-    ORDER BY m.nama_mahasiswa ASC
-");
+$data_mahasiswa_raw = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_identitas_pengguna_tersedia(?, ?)",
+    "si",
+    ['Mahasiswa', (int) $id_pengguna]
+);
+$data_mahasiswa = array_map(static function ($row) {
+    return [
+        'id_mahasiswa' => $row['id_identitas'],
+        'nim' => $row['nomor_identitas'],
+        'nama_mahasiswa' => $row['nama_identitas'],
+    ];
+}, $data_mahasiswa_raw);
 
-while ($row = mysqli_fetch_assoc($query_mahasiswa)) {
-    $data_mahasiswa[] = $row;
-}
-
-$data_pengajar = [];
-$query_pengajar = mysqli_query($koneksi, "
-    SELECT 
-        pg.id_pengajar,
-        pg.nip,
-        pg.nama_pengajar
-    FROM pengajar pg
-    WHERE pg.status_pengajar = 'Aktif'
-    ORDER BY pg.nama_pengajar ASC
-");
-
-while ($row = mysqli_fetch_assoc($query_pengajar)) {
-    $data_pengajar[] = $row;
-}
+$data_pengajar_raw = ambil_data_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_identitas_pengguna_tersedia(?, ?)",
+    "si",
+    ['Pengajar', (int) $id_pengguna]
+);
+$data_pengajar = array_map(static function ($row) {
+    return [
+        'id_pengajar' => $row['id_identitas'],
+        'nip' => $row['nomor_identitas'],
+        'nama_pengajar' => $row['nama_identitas'],
+    ];
+}, $data_pengajar_raw);
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";
@@ -95,11 +91,11 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Pengguna</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_pengguna" value="<?= aman($pengguna['id_pengguna']); ?>">
-                    <input type="hidden" name="password_lama" value="<?= aman($pengguna['password']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label">Role</label>
+                        <label class="form-label">Role <span class="text-danger">*</span></label>
                         <select name="role" id="role" class="form-select" required>
                             <option value="Mahasiswa" <?= $pengguna['role'] == "Mahasiswa" ? "selected" : ""; ?>>Mahasiswa</option>
                             <option value="Pengajar" <?= $pengguna['role'] == "Pengajar" ? "selected" : ""; ?>>Pengajar</option>
@@ -135,8 +131,8 @@ require_once "../../includes/sidebar.php";
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input type="text" name="username" class="form-control" maxlength="50" value="<?= aman($pengguna['username']); ?>" required>
+                        <label class="form-label">Username <span class="text-danger">*</span></label>
+                        <input type="text" name="username" class="form-control" maxlength="20" value="<?= aman($pengguna['username']); ?>" required>
                     </div>
 
                     <div class="mb-3">

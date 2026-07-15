@@ -113,7 +113,7 @@ require_once "../../includes/sidebar.php";
 
                                         <td class="text-center">
                                             <?php if (!empty($pengaduan['bukti_kerusakan_url'])) { ?>
-                                                <a href="<?= aman($pengaduan['bukti_kerusakan_url']); ?>" target="_blank" class="btn btn-outline-primary btn-sm">
+                                                <a href="<?= aman($pengaduan['bukti_kerusakan_url']); ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
                                                     Lihat
                                                 </a>
                                             <?php } else { ?>
@@ -130,6 +130,9 @@ require_once "../../includes/sidebar.php";
                                                 <span class="badge bg-success">Diterima</span>
                                             <?php } else { ?>
                                                 <span class="badge bg-danger">Ditolak</span>
+                                            <?php } ?>
+                                            <?php if ($pengaduan['status_pengaduan'] === 'Ditolak' && !empty($pengaduan['alsan_penolakan'])) { ?>
+                                                <div class="small text-danger mt-1"><?= aman($pengaduan['alsan_penolakan']); ?></div>
                                             <?php } ?>
                                         </td>
 

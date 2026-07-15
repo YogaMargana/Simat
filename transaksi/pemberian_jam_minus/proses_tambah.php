@@ -100,6 +100,8 @@ if (!isset($_POST['simpan'])) {
 $id_pemberi =
     (int) $_SESSION['id_pengguna'];
 
+$id_kelas = (int) ($_POST['id_kelas'] ?? 0);
+
 $id_penerima =
     (int) (
         $_POST['id_pengguna_mahasiswa']
@@ -130,6 +132,10 @@ $jumlah_jam_minus_input = 0.0;
 /* ===================================
    VALIDASI UMUM
    =================================== */
+if ($id_kelas <= 0) {
+    kembali_dengan_error("Kelas wajib dipilih.");
+}
+
 if ($id_penerima <= 0) {
 
     header(
@@ -334,6 +340,7 @@ $stmt = mysqli_prepare(
         ?,
         ?,
         ?,
+        ?,
         ?
     )"
 );
@@ -360,6 +367,7 @@ if (!$stmt) {
  *
  * i = id pemberi
  * i = id penerima
+ * i = id kelas
  * s = kategori
  * i = id detail mata kuliah
  * s = absensi
@@ -370,11 +378,13 @@ if (!$stmt) {
  */
 mysqli_stmt_bind_param(
     $stmt,
-    "iisisissd",
+    "iiisisissd",
 
     $id_pemberi,
 
     $id_penerima,
+
+    $id_kelas,
 
     $kategori,
 
@@ -393,22 +403,16 @@ mysqli_stmt_bind_param(
 
 if (!mysqli_stmt_execute($stmt)) {
 
-    $error_teknis =
-        mysqli_stmt_error($stmt);
-
-    error_log(
-        "Pemberian jam minus gagal: "
-        . $error_teknis
+    $pesan_error = pesan_error_statement(
+        $stmt,
+        "Pemberian jam minus gagal disimpan. Periksa kembali data."
     );
 
     mysqli_stmt_close($stmt);
 
     header(
         "Location: tambah.php?error="
-        . urlencode(
-            "Pemberian jam minus gagal "
-            . "disimpan. Periksa kembali data."
-        )
+        . urlencode($pesan_error)
     );
 
     exit;

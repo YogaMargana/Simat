@@ -2,6 +2,12 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit;
+}
+
+
 $role = $_SESSION['role'] ?? '';
 
 if ($role == "Mahasiswa" || $role == '') {
@@ -17,6 +23,10 @@ if ($id_bursa_jobdesc == '') {
 }
 
 $stmt = mysqli_prepare($koneksi, "CALL usp_selesaikan_bursa_jobdesc(?, ?)");
+if (!$stmt) {
+    header("Location: index.php?error=" . urlencode("Gagal menyiapkan proses verifikasi jobdesc."));
+    exit;
+}
 
 mysqli_stmt_bind_param(
     $stmt,
@@ -31,7 +41,7 @@ if (mysqli_stmt_execute($stmt)) {
     header("Location: index.php?status=berhasil_selesaikan_jobdesc");
     exit;
 } else {
-    $error = mysqli_error($koneksi);
+    $error = pesan_error_statement($stmt, 'Proses database gagal dijalankan.');
     mysqli_stmt_close($stmt);
 
     header("Location: index.php?error=" . urlencode($error));

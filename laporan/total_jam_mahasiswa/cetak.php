@@ -10,30 +10,28 @@ cek_role_dashboard("PIC Tata Tertib");
 date_default_timezone_set("Asia/Jakarta");
 
 $data_laporan = [];
-
-$sql = "
-    SELECT
-        nim,
-        nama_mahasiswa,
-        nama_kelas,
-        total_jam_kompensasi,
-        total_jam_murni,
-        total_jam_mahasiswa
-    FROM vw_laporan_total_jam_mahasiswa
-    ORDER BY nama_kelas ASC, nim ASC, nama_mahasiswa ASC
-";
-
-$query = mysqli_query($koneksi, $sql);
-
-if (!$query) {
-    die("Gagal mengambil data laporan: " . mysqli_error($koneksi));
+$sort_valid = ['nim', 'nama', 'total_tertinggi', 'total_terendah'];
+$sort = $_GET['sort'] ?? 'nim';
+if (!in_array($sort, $sort_valid, true)) {
+    $sort = 'nim';
 }
 
-while ($row = mysqli_fetch_assoc($query)) {
+$stmt = mysqli_prepare($koneksi, "CALL usp_select_laporan_total_jam(?)");
+if (!$stmt) {
+    die("Gagal menyiapkan laporan.");
+}
+mysqli_stmt_bind_param($stmt, "s", $sort);
+if (!mysqli_stmt_execute($stmt)) {
+    mysqli_stmt_close($stmt);
+    die("Gagal mengambil data laporan.");
+}
+$result = mysqli_stmt_get_result($stmt);
+while ($result && $row = mysqli_fetch_assoc($result)) {
     $data_laporan[] = $row;
 }
-
-mysqli_free_result($query);
+if ($result) mysqli_free_result($result);
+mysqli_stmt_close($stmt);
+bersihkan_hasil_procedure($koneksi);
 
 function pdf_text($text)
 {

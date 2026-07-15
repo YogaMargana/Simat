@@ -12,7 +12,7 @@ $active_menu = "mahasiswa";
 
 $data_mahasiswa = [];
 
-$query = mysqli_query($koneksi, "CALL usp_select_mahasiswa()");
+$query = mysqli_query($koneksi, "CALL usp_select_mahasiswa_aktif()");
 
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {

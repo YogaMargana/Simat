@@ -10,7 +10,7 @@ $active_menu = "fasilitas";
 
 $data_fasilitas = [];
 
-$query = mysqli_query($koneksi, "CALL usp_select_fasilitas()");
+$query = mysqli_query($koneksi, "CALL usp_select_fasilitas_aktif()");
 
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {
@@ -41,6 +41,17 @@ require_once "../../includes/sidebar.php";
     </div>
 
     <div class="content-wrapper">
+        <?php if (isset($_GET['status']) && $_GET['status'] === 'berhasil_tambah') { ?>
+            <div class="alert alert-success">Data fasilitas berhasil ditambahkan.</div>
+        <?php } elseif (isset($_GET['status']) && $_GET['status'] === 'berhasil_edit') { ?>
+            <div class="alert alert-success">Data fasilitas berhasil diperbarui.</div>
+        <?php } elseif (isset($_GET['status']) && $_GET['status'] === 'berhasil_hapus') { ?>
+            <div class="alert alert-success">Data fasilitas berhasil dinonaktifkan.</div>
+        <?php } ?>
+        <?php if (isset($_GET['error'])) { ?>
+            <div class="alert alert-danger"><?= aman($_GET['error']); ?></div>
+        <?php } ?>
+
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">

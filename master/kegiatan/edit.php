@@ -61,15 +61,18 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Kegiatan</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_kegiatan" value="<?= aman($kegiatan['id_kegiatan']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label">Nama Kegiatan</label>
+                        <label class="form-label">Nama Kegiatan <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_kegiatan" class="form-control" maxlength="50" value="<?= aman($kegiatan['nama_kegiatan']); ?>" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Penyelenggara</label>
+                        <label class="form-label">Penyelenggara <span class="text-danger">*</span>
+</label>
                         <select name="penyelenggara" class="form-select" required>
                             <option value="">Pilih Penyelenggara</option>
                             <option value="ASTRAtech" <?= $kegiatan['penyelenggara'] == 'ASTRAtech' ? 'selected' : ''; ?>>ASTRAtech</option>
@@ -77,6 +80,7 @@ require_once "../../includes/sidebar.php";
                             <option value="MPM" <?= $kegiatan['penyelenggara'] == 'MPM' ? 'selected' : ''; ?>>MPM</option>
                             <option value="HIMMA" <?= $kegiatan['penyelenggara'] == 'HIMMA' ? 'selected' : ''; ?>>HIMMA</option>
                             <option value="UKM" <?= $kegiatan['penyelenggara'] == 'UKM' ? 'selected' : ''; ?>>UKM</option>
+                            <option value="Prodi" <?= $kegiatan['penyelenggara'] == 'Prodi' ? 'selected' : ''; ?>>Prodi</option>
                         </select>
                     </div>
 

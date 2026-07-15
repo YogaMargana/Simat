@@ -10,7 +10,7 @@ $active_menu = "kelas";
 
 $data_kelas = [];
 
-$query = mysqli_query($koneksi, "CALL usp_select_kelas()");
+$query = mysqli_query($koneksi, "CALL usp_select_kelas_aktif()");
 
 if ($query) {
     while ($row = mysqli_fetch_assoc($query)) {

@@ -17,41 +17,12 @@ if ($id_bursa_jobdesc == '') {
     exit;
 }
 
-$data_jobdesc = null;
-
-$stmt = mysqli_prepare($koneksi, "
-    SELECT
-        bj.id_bursa_jobdesc,
-        bj.deskripsi_jobdesc,
-        bj.jam_plus,
-        bj.tanggal_pemberian_jobdesc,
-        bj.jumlah_mahasiswa_diperlukan,
-        bj.jumlah_mahasiswa_mengambil,
-        bj.bukti_selesai_url,
-        bj.status_jobdesc,
-        dp.peran_pengguna
-    FROM bursa_jobdesc bj
-    JOIN detail_pengguna_pada_bursa_jobdesc dp
-        ON bj.id_bursa_jobdesc = dp.id_bursa_jobdesc
-    WHERE bj.id_bursa_jobdesc = ?
-    AND dp.id_pengguna = ?
-    AND dp.peran_pengguna = 'Penerima'
-    LIMIT 1
-");
-
-mysqli_stmt_bind_param(
-    $stmt,
+$data_jobdesc = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_bursa_jobdesc_penerima_by_id(?, ?)",
     "ii",
-    $id_bursa_jobdesc,
-    $_SESSION['id_pengguna']
+    [(int) $id_bursa_jobdesc, (int) ($_SESSION['id_pengguna'] ?? 0)]
 );
-
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$data_jobdesc = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
 
 if (!$data_jobdesc) {
     header("Location: index.php?error=" . urlencode("Kamu bukan penerima jobdesc ini."));
@@ -108,7 +79,7 @@ require_once "../../includes/sidebar.php";
                     <div class="alert alert-info">
                         Bukti selesai untuk jobdesc ini sudah dikirim.
                         <br>
-                        <a href="<?= aman($data_jobdesc['bukti_selesai_url']); ?>" target="_blank">
+                        <a href="<?= aman($data_jobdesc['bukti_selesai_url']); ?>" target="_blank" rel="noopener noreferrer">
                             Lihat Bukti
                         </a>
                     </div>
@@ -128,10 +99,12 @@ require_once "../../includes/sidebar.php";
 
                 <?php } else { ?>
                     <form action="proses_selesai.php" method="post">
+                    <?= csrf_input(); ?>
                         <input type="hidden" name="id_bursa_jobdesc" value="<?= aman($data_jobdesc['id_bursa_jobdesc']); ?>">
 
                         <div class="mb-4">
-                            <label class="form-label">Link Foto Bukti Selesai</label>
+                            <label class="form-label">Link Foto Bukti Selesai <span class="text-danger">*</span>
+</label>
                             <input type="url" name="bukti_selesai_url" class="form-control" placeholder="Contoh: link Google Drive foto bukti" required>
                             <small class="text-muted">
                                 Masukkan link foto bukti selesai, misalnya link Google Drive atau link gambar.

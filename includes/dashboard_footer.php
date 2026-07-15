@@ -19,13 +19,13 @@ $pesan_status = [
 ];
 ?>
 
-<script src="/SIMAT/assets/vendor/datatables/datatables.js"></script>
 <script src="/SIMAT/assets/vendor/datatables/datatables.min.js"></script>
 
 <script>
     const statusNotif = <?= json_encode($status); ?>;
     const errorNotif = <?= json_encode($error); ?>;
     const pesanStatus = <?= json_encode($pesan_status); ?>;
+    const csrfToken = <?= json_encode(csrf_token()); ?>;
 
     if (statusNotif && pesanStatus[statusNotif]) {
         Swal.fire({
@@ -33,7 +33,7 @@ $pesan_status = [
             title: 'Berhasil',
             text: pesanStatus[statusNotif],
             confirmButtonText: 'OK',
-            confirmButtonColor: '#12c5df'
+            confirmButtonColor: '#198754'
         });
     }
 
@@ -43,7 +43,7 @@ $pesan_status = [
             title: 'Terjadi Kesalahan',
             text: errorNotif,
             confirmButtonText: 'OK',
-            confirmButtonColor: '#12c5df'
+            confirmButtonColor: '#dc3545'
         });
     }
 
@@ -64,6 +64,8 @@ $pesan_status = [
             const icon = this.dataset.icon || 'warning';
             const confirmText = this.dataset.confirmText || 'Ya, lanjutkan';
             const cancelText = this.dataset.cancelText || 'Batal';
+            const destructive = this.classList.contains('btn-danger') ||
+                icon === 'error' || /hapus|nonaktif/i.test(title + ' ' + text);
 
             Swal.fire({
                 title: title,
@@ -72,12 +74,23 @@ $pesan_status = [
                 showCancelButton: true,
                 confirmButtonText: confirmText,
                 cancelButtonText: cancelText,
-                confirmButtonColor: '#dc3545',
+                confirmButtonColor: destructive ? '#dc3545' : '#0d6efd',
                 cancelButtonColor: '#6c757d',
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = url;
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = url;
+
+                    const token = document.createElement('input');
+                    token.type = 'hidden';
+                    token.name = 'csrf_token';
+                    token.value = csrfToken;
+                    form.appendChild(token);
+
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             });
         });

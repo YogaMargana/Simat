@@ -79,12 +79,12 @@ if ($role == "Pengajar") {
                 <span>Mata Kuliah</span>
             </a>
 
-        <!-- Sidebar Penentuan 2 Pengajar Pada Suatu Mata Kuliah Pada Suatu Kelas -->
+        <!-- Sidebar relasi mata kuliah pada kelas -->
             <a href="/SIMAT/master/pengajar_mata_kuliah/index.php" class="menu-link <?= $active_menu == 'pengajar_mata_kuliah' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-book-open-reader"></i>
-                <span>Pengajar Mata Kuliah</span>
+                <span>Mata Kuliah Kelas</span>
             </a>
-        <!-- Sidebar Penentuan 2 Pengajar Pada Suatu Mata Kuliah Pada Suatu Kelas -->
+        <!-- Sidebar relasi mata kuliah pada kelas -->
 
         <?php } ?>
 
@@ -94,7 +94,7 @@ if ($role == "Pengajar") {
                 <i class="fa-solid fa-boxes-stacked"></i>
                 <span>Data Fasilitas</span>
             </a>
-            
+
             <a href="/SIMAT/transaksi/pengaduan_kerusakan_fasilitas/index.php" class="menu-link <?= $active_menu == 'pengaduan_fasilitas' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Pengaduan Fasilitas</span>
@@ -175,13 +175,13 @@ if ($role == "Pengajar") {
                 <span>Pengaduan Saya</span>
             </a>
 
-        <!-- Sidebar Penentuan 2 Pengajar Pada Suatu Mata Kuliah Pada Suatu Kelas -->
+        <!-- Sidebar relasi mata kuliah pada kelas -->
             <a href="/SIMAT/transaksi/mata_kuliah_saya/index.php" class="menu-link <?= $active_menu == 'mata_kuliah_saya' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-book"></i>
                 <span>Mata Kuliah Saya</span>
             </a>
-        <!-- Sidebar Penentuan 2 Pengajar Pada Suatu Mata Kuliah Pada Suatu Kelas -->
-            
+        <!-- Sidebar relasi mata kuliah pada kelas -->
+
         <!-- Sidebar Pengajuan Jam Plus -->
             <a href="/SIMAT/transaksi/pengajuan_jam_plus/index.php" class="menu-link <?= $active_menu == 'pengajuan_jam_plus' ? 'active' : ''; ?>">
                 <i class="fa-solid fa-circle-plus"></i>
@@ -193,9 +193,12 @@ if ($role == "Pengajar") {
     </nav>
 
     <div class="sidebar-footer">
-        <a href="/SIMAT/logout.php" class="logout-btn">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span>Keluar</span>
-        </a>
+        <form action="/SIMAT/logout.php" method="post">
+            <?= csrf_input(); ?>
+            <button type="submit" class="logout-btn">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Keluar</span>
+            </button>
+        </form>
     </div>
 </aside>

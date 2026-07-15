@@ -37,13 +37,16 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Tambah Kelas</h4>
 
                 <form action="proses_tambah.php" method="post">
+                    <?= csrf_input(); ?>
                     <div class="mb-3">
-                        <label class="form-label">Nama Kelas</label>
+                        <label class="form-label">Nama Kelas <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_kelas" class="form-control" maxlength="5" placeholder="Contoh: TR1A" required>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Tingkat</label>
+                        <label class="form-label">Tingkat <span class="text-danger">*</span>
+</label>
                         <select name="tingkat" class="form-select" required>
                             <option value="">Pilih Tingkat</option>
                             <option value="1">Tingkat 1</option>

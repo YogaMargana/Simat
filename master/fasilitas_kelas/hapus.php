@@ -2,28 +2,12 @@
 require_once "../../config/koneksi.php";
 require_once "../../includes/auth_dashboard.php";
 
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: index.php");
+    exit;
+}
+
 cek_role_dashboard("PIC Aset Fasilitas");
-
-$id_detail = (int) ($_GET['id'] ?? 0);
-
-if ($id_detail <= 0) {
-    header("Location: index.php?error=" . urlencode("ID fasilitas kelas tidak valid."));
-    exit;
-}
-
-$stmt = mysqli_prepare($koneksi, "CALL usp_soft_delete_fasilitas_kelas(?)");
-mysqli_stmt_bind_param($stmt, "i", $id_detail);
-
-if (mysqli_stmt_execute($stmt)) {
-    mysqli_stmt_close($stmt);
-
-    header("Location: index.php?status=berhasil_hapus");
-    exit;
-} else {
-    $error = mysqli_error($koneksi);
-    mysqli_stmt_close($stmt);
-
-    header("Location: index.php?error=" . urlencode($error));
-    exit;
-}
+header("Location: index.php?error=" . urlencode("Menu Fasilitas Kelas hanya dapat digunakan untuk melihat data. Kelola kelas fasilitas melalui menu Data Fasilitas."));
+exit;
 ?>

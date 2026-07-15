@@ -17,21 +17,19 @@ if ($id_kelas == '') {
     exit;
 }
 
-$stmt = mysqli_prepare($koneksi, "SELECT * FROM kelas WHERE id_kelas = ? LIMIT 1");
-mysqli_stmt_bind_param($stmt, "i", $id_kelas);
-mysqli_stmt_execute($stmt);
-
-$result = mysqli_stmt_get_result($stmt);
-$kelas = mysqli_fetch_assoc($result);
-
-mysqli_stmt_close($stmt);
+$kelas = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_select_kelas_by_id(?)",
+    "i",
+    [(int) $id_kelas]
+);
 
 if (!$kelas) {
     header("Location: index.php?error=" . urlencode("Data kelas tidak ditemukan."));
     exit;
 }
 
-if ($kelas['status_kelas'] == "Tidak Aktif") {
+if ($kelas['status_kelas'] === "Tidak Aktif") {
     header("Location: index.php?error=" . urlencode("Data kelas tidak aktif tidak dapat diedit."));
     exit;
 }
@@ -65,15 +63,18 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Kelas</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_kelas" value="<?= aman($kelas['id_kelas']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label">Nama Kelas</label>
+                        <label class="form-label">Nama Kelas <span class="text-danger">*</span>
+</label>
                         <input type="text" name="nama_kelas" class="form-control" maxlength="5" value="<?= aman($kelas['nama_kelas']); ?>" required>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Tingkat</label>
+                        <label class="form-label">Tingkat <span class="text-danger">*</span>
+</label>
                         <select name="tingkat" class="form-select" required>
                             <option value="">Pilih Tingkat</option>
                             <option value="1" <?= $kelas['tingkat'] == "1" ? "selected" : ""; ?>>Tingkat 1</option>

@@ -10,14 +10,21 @@ cek_role_dashboard("Kepala Prodi");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-$total_pengguna = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengguna"))['total'];
-$total_mahasiswa_aktif = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM mahasiswa WHERE status_mahasiswa = 'Aktif'"))['total'];
-$total_pengajar = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengajar"))['total'];
-$total_fasilitas = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM fasilitas"))['total'];
-$total_kelas = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM kelas"))['total'];
-$total_pengaduan = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengaduan_kerusakan_fasilitas"))['total'];
-$pengaduan_menunggu = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM pengaduan_kerusakan_fasilitas WHERE status_pengaduan = 'Menunggu Verifikasi'"))['total'];
-$fasilitas_rusak = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM detail_fasilitas_pada_kelas  d JOIN fasilitas f ON d.id_fasilitas = f.id_fasilitas WHERE status_detail_fasilitas_pada_kelas = 'Rusak'"))['total'];
+
+$ringkasan = ambil_satu_procedure_prepared(
+    $koneksi,
+    "CALL usp_dashboard_ringkasan(?)",
+    "i",
+    [(int) ($_SESSION['id_pengguna'] ?? 0)]
+) ?? [];
+$total_pengguna = (int) ($ringkasan['total_pengguna'] ?? 0);
+$total_mahasiswa_aktif = (int) ($ringkasan['total_mahasiswa'] ?? 0);
+$total_pengajar = (int) ($ringkasan['total_pengajar'] ?? 0);
+$total_fasilitas = (int) ($ringkasan['total_fasilitas'] ?? 0);
+$total_kelas = (int) ($ringkasan['total_kelas'] ?? 0);
+$total_pengaduan = (int) ($ringkasan['total_pengaduan'] ?? 0);
+$pengaduan_menunggu = (int) ($ringkasan['pengaduan_menunggu'] ?? 0);
+$fasilitas_rusak = (int) ($ringkasan['fasilitas_rusak'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -66,7 +73,7 @@ require_once "../includes/dashboard_header.php";
                         <div class="stat-desc">Data mahasiswa aktif</div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
@@ -88,7 +95,7 @@ require_once "../includes/dashboard_header.php";
                         <div class="stat-desc">Fasilitas yang tercatat di sistem</div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">

@@ -67,17 +67,18 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Edit Periode</h4>
 
                 <form action="proses_edit.php" method="post">
+                    <?= csrf_input(); ?>
                     <input type="hidden" name="id_periode_akademik" value="<?= aman($periode['id_periode_akademik']); ?>">
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tahun Akademik</label>
-                        <input type="text" name="tahun_akademik" class="form-control" 
-                               value="<?= aman($periode['tahun_akademik']); ?>" 
-                               placeholder="Contoh: 2025/2026" maxlength="10" required>
+                        <label class="form-label fw-bold">Tahun Akademik <span class="text-danger">*</span></label>
+                        <input type="text" name="tahun_akademik" class="form-control"
+                               value="<?= aman($periode['tahun_akademik']); ?>"
+                               placeholder="Contoh: 2025/2026" maxlength="9" pattern="[0-9]{4}/[0-9]{4}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Semester</label>
+                        <label class="form-label fw-bold">Semester <span class="text-danger">*</span></label>
                         <select name="semester" class="form-select" required>
                             <option value="Ganjil" <?= $periode['semester'] == "Ganjil" ? 'selected' : ''; ?>>Ganjil</option>
                             <option value="Genap" <?= $periode['semester'] == "Genap" ? 'selected' : ''; ?>>Genap</option>
@@ -86,28 +87,17 @@ require_once "../../includes/sidebar.php";
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tanggal Mulai</label>
-                            <input type="datetime-local" name="tanggal_mulai" class="form-control" 
+                            <label class="form-label fw-bold">Tanggal Mulai <span class="text-danger">*</span></label>
+                            <input type="date" name="tanggal_mulai" class="form-control"
                                    value="<?= $tgl_mulai; ?>" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tanggal Selesai</label>
-                            <input type="datetime-local" name="tanggal_selesai" class="form-control" 
+                            <label class="form-label fw-bold">Tanggal Selesai <span class="text-danger">*</span></label>
+                            <input type="date" name="tanggal_selesai" class="form-control"
                                    value="<?= $tgl_selesai; ?>" required>
                         </div>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Status Periode</label>
-                        <select name="status_periode" class="form-select" required>
-                            <option value="Aktif" <?= $periode['status_periode'] == "Aktif" ? 'selected' : ''; ?>>Aktif</option>
-                            <option value="Tidak Aktif" <?= $periode['status_periode'] == "Tidak Aktif" ? 'selected' : ''; ?>>Tidak Aktif</option>
-                        </select>
-                        <div class="form-text text-warning">
-                            <i class="fa-solid fa-triangle-exclamation me-1"></i>
-                            Menonaktifkan periode dapat mempengaruhi input data mahasiswa baru.
-                        </div>
-                    </div>
+                    <div class="alert alert-info mb-4">Status periode tetap <strong>Aktif</strong>. Penonaktifan hanya dapat dilakukan melalui tombol soft delete pada daftar periode.</div>
 
                     <hr class="my-4">
 

@@ -8,7 +8,7 @@ cek_role_dashboard("PIC Kemahasiswaan");
 $page_title = "Data Kegiatan";
 $active_menu = "kegiatan";
 
-$data_kegiatan = ambil_data_procedure($koneksi, "CALL usp_select_kegiatan()");
+$data_kegiatan = ambil_data_procedure($koneksi, "CALL usp_select_kegiatan_aktif()");
 
 require_once "../../includes/dashboard_header.php";
 require_once "../../includes/sidebar.php";

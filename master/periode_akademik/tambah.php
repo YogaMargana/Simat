@@ -39,14 +39,15 @@ require_once "../../includes/sidebar.php";
         <div class="card border-0 shadow-sm rounded-4">
             <div class="card-body p-4">
                 <form action="proses_tambah.php" method="POST">
+                    <?= csrf_input(); ?>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Tahun Akademik</label>
-                        <input type="text" name="tahun_akademik" class="form-control" 
-                               placeholder="Contoh: 2025/2026" maxlength="10" required>
+                        <label class="form-label fw-bold">Tahun Akademik <span class="text-danger">*</span></label>
+                        <input type="text" name="tahun_akademik" class="form-control"
+                               placeholder="Contoh: 2025/2026" maxlength="9" pattern="[0-9]{4}/[0-9]{4}" required>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Semester</label>
+                        <label class="form-label fw-bold">Semester <span class="text-danger">*</span></label>
                         <select name="semester" class="form-select" required>
                             <option value="" selected disabled>-- Pilih Semester --</option>
                             <option value="Ganjil">Ganjil</option>
@@ -56,12 +57,12 @@ require_once "../../includes/sidebar.php";
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tanggal Mulai</label>
+                            <label class="form-label fw-bold">Tanggal Mulai <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_mulai" class="form-control" required>
                         </div>
 
                         <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Tanggal Selesai</label>
+                            <label class="form-label fw-bold">Tanggal Selesai <span class="text-danger">*</span></label>
                             <input type="date" name="tanggal_selesai" class="form-control" required>
                         </div>
                     </div>

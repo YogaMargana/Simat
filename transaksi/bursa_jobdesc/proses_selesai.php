@@ -22,12 +22,16 @@ if ($id_bursa_jobdesc == '' || $bukti_selesai_url == '') {
     exit;
 }
 
-if ($bukti_selesai_url == '') {
-    header("Location: selesai.php?id=" . urlencode($id_bursa_jobdesc) . "&error=" . urlencode("Format link bukti selesai tidak valid."));
+if (!url_http_valid($bukti_selesai_url)) {
+    header("Location: selesai.php?id=" . urlencode($id_bursa_jobdesc) . "&error=" . urlencode("Tautan bukti harus berupa URL HTTP atau HTTPS yang valid."));
     exit;
 }
 
 $stmt = mysqli_prepare($koneksi, "CALL usp_update_bukti_selesai_url_bursa_jobdesc(?, ?, ?)");
+if (!$stmt) {
+    header("Location: selesai.php?id=" . urlencode($id_bursa_jobdesc) . "&error=" . urlencode("Gagal menyiapkan penyimpanan bukti selesai."));
+    exit;
+}
 
 mysqli_stmt_bind_param(
     $stmt,
@@ -43,7 +47,7 @@ if (mysqli_stmt_execute($stmt)) {
     header("Location: index.php?status=berhasil_selesai");
     exit;
 } else {
-    $error = mysqli_error($koneksi);
+    $error = pesan_error_statement($stmt, 'Proses database gagal dijalankan.');
     mysqli_stmt_close($stmt);
 
     header("Location: selesai.php?id=" . urlencode($id_bursa_jobdesc) . "&error=" . urlencode($error));

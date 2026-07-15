@@ -33,7 +33,7 @@ require_once "../../includes/sidebar.php";
 
 <main class="main-content">
     <div class="topbar">
-        <h1 class="page-title">Data Pengajar Mata Kuliah</h1>
+        <h1 class="page-title">Mata Kuliah Saya</h1>
 
         <div class="user-info">
             <div class="user-detail">
@@ -51,8 +51,8 @@ require_once "../../includes/sidebar.php";
             <div class="card-body p-4">
                 <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
                     <div>
-                        <h4 class="fw-bold mb-1">Daftar Pengajar Mata Kuliah</h4>
-                        <p class="text-muted mb-0">Data pengajar mata kuliah kelas.</p>
+                        <h4 class="fw-bold mb-1">Daftar Mata Kuliah Saya</h4>
+                        <p class="text-muted mb-0">Mata kuliah aktif yang tersedia untuk kelas Anda.</p>
                     </div>
                 </div>
 
@@ -63,8 +63,6 @@ require_once "../../includes/sidebar.php";
                                 <th style="width: 60px;" class="text-center">No</th>
                                 <th class="text-center">Kelas</th>
                                 <th class="text-center">Mata Kuliah</th>
-                                <th class="text-center">Pengajar 1</th>
-                                <th class="text-center">Pengajar 2</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -75,14 +73,12 @@ require_once "../../includes/sidebar.php";
                                         <td class="text-center"><?= $no++; ?></td>
                                         <td><?= aman($mata_kuliah['nama_kelas']); ?></td>
                                         <td><?= aman($mata_kuliah['nama_mata_kuliah']); ?></td>
-                                        <td><?= aman($mata_kuliah['nama_pengajar_1']); ?></td>
-                                        <td><?= aman($mata_kuliah['nama_pengajar_2']); ?></td>
                                     </tr>
                                 <?php } ?>
                             <?php } else { ?>
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">
-                                        Data pengajar pada mata kuliah pada kelas belum tersedia.
+                                    <td colspan="3" class="text-center text-muted py-4">
+                                        Data mata kuliah untuk kelas Anda belum tersedia.
                                     </td>
                                 </tr>
                             <?php } ?>

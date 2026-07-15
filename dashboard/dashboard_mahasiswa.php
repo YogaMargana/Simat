@@ -8,40 +8,13 @@ cek_role_dashboard("Mahasiswa");
 $page_title = "Dashboard";
 $active_menu = "dashboard";
 
-//ini aku edit bang//
 
-$id_pengguna = $_SESSION['id_pengguna'];
-$pengaduan_saya = mysqli_fetch_assoc(mysqli_query(
-    $koneksi,
-    "SELECT COUNT(*) AS total
-     FROM pengaduan_kerusakan_fasilitas pkf
-     JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas dppkf
-     ON pkf.id_pengaduan_kerusakan_fasilitas = dppkf.id_pengaduan_kerusakan_fasilitas
-     WHERE dppkf.id_pengguna = '$id_pengguna'
-     AND dppkf.peran_pengguna = 'Pelapor'"
-))['total'];
-$id_pengguna = $_SESSION['id_pengguna'];
-$pengaduan_menunggu_saya = mysqli_fetch_assoc(mysqli_query(
-    $koneksi,
-    "SELECT COUNT(*) AS total
-     FROM pengaduan_kerusakan_fasilitas pkf
-     JOIN detail_pengguna_pada_pengaduan_kerusakan_fasilitas dppkf
-     ON pkf.id_pengaduan_kerusakan_fasilitas = dppkf.id_pengaduan_kerusakan_fasilitas
-     WHERE dppkf.id_pengguna = '$id_pengguna'
-     AND dppkf.peran_pengguna = 'Pelapor'
-     AND pkf.status_pengaduan = 'Menunggu Verifikasi'"
-))['total'];
-$jobdesc_tersedia = mysqli_fetch_assoc(mysqli_query($koneksi, "SELECT COUNT(*) AS total FROM bursa_jobdesc WHERE status_jobdesc = 'Dibuka'"))['total'];
-$jam_plus_menunggu = mysqli_fetch_assoc(mysqli_query(
-    $koneksi,
-    "SELECT COUNT(*) AS total
-     FROM pengajuan_jam_plus pjp
-     JOIN detail_pengguna_pada_pengajuan_jam_plus dpjp
-     ON pjp.id_pengajuan_jam_plus = dpjp.id_pengajuan_jam_plus
-     WHERE dpjp.id_pengguna = '$id_pengguna'
-     AND dpjp.peran_pengguna = 'Pengaju'
-     AND pjp.status_pengajuan = 'Menunggu Verifikasi'"
-))['total'];
+$id_pengguna = (int) ($_SESSION['id_pengguna'] ?? 0);
+$ringkasan = ambil_satu_procedure_prepared($koneksi, "CALL usp_dashboard_ringkasan(?)", "i", [$id_pengguna]) ?? [];
+$pengaduan_saya = (int) ($ringkasan['pengaduan_saya'] ?? 0);
+$pengaduan_menunggu_saya = (int) ($ringkasan['pengaduan_menunggu_saya'] ?? 0);
+$jobdesc_tersedia = (int) ($ringkasan['jobdesc_tersedia'] ?? 0);
+$jam_plus_menunggu = (int) ($ringkasan['jam_plus_menunggu'] ?? 0);
 
 require_once "../includes/dashboard_header.php";
 ?>
@@ -50,22 +23,22 @@ require_once "../includes/dashboard_header.php";
     <?php require_once "../includes/sidebar.php"; ?>
     <main class="main-content">
         <div class="topbar">
-            <h1 class="page-title">Dashboard</h1> 
+            <h1 class="page-title">Dashboard</h1>
 
             <div class="user-info">
                 <div class="user-detail">
                     <div class="user-name"><?= aman($_SESSION['username']); ?></div>
-                    <div class="user-role"><?= aman($_SESSION['role']); ?></div> 
+                    <div class="user-role"><?= aman($_SESSION['role']); ?></div>
                 </div>
                 <div class="user-avatar">
                     <?= strtoupper(substr($_SESSION['username'], 0, 1)); ?>
                 </div>
             </div>
-        </div> 
+        </div>
 
         <div class="content-wrapper">
             <div class="welcome-card">
-                <h2 class="fw-bold mb-2">Selamat Datang, <?= $_SESSION['username']; ?> 🎓</h2>
+                <h2 class="fw-bold mb-2">Selamat Datang, <?= aman($_SESSION['username']); ?> 🎓</h2>
                 <p class="text-muted mb-0">
                     Kelola aktivitas Bursa Jobdesc, Pengaduan Fasilitas dan Pengajuan Jam Plus melalui sistem ini.
                 </p>
@@ -92,7 +65,7 @@ require_once "../includes/dashboard_header.php";
                         <h3 class="stat-value"><?= $pengaduan_saya; ?></h3>
                         <div class="stat-desc">Pengaduan yang diajukan oleh saya</div>
                     </div>
-                </div>    
+                </div>
 
                 <div class="col-md-4">
                     <div class="stat-card">
@@ -103,8 +76,8 @@ require_once "../includes/dashboard_header.php";
                         <h3 class="stat-value"><?= $pengaduan_menunggu_saya; ?></h3>
                         <div class="stat-desc">Pengaduan yang belum diverifikasi</div>
                     </div>
-                </div>  
-                
+                </div>
+
                 <div class="col-md-4">
                     <div class="stat-card">
                         <div class="stat-icon">
@@ -116,8 +89,8 @@ require_once "../includes/dashboard_header.php";
                     </div>
                 </div>
             </div>
-        </div>       
+        </div>
     </main>
 </div>
-       
-<?php require_once "../includes/dashboard_footer.php"; ?> 
+
+<?php require_once "../includes/dashboard_footer.php"; ?>
