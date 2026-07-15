@@ -98,7 +98,7 @@ require_once "../../includes/sidebar.php";
                     <div class="mb-3">
                         <label class="form-label">NIM <span class="text-danger">*</span>
 </label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]+" name="nim" class="form-control" maxlength="20" value="<?= aman($mahasiswa['nim']); ?>" required>
+                        <input type="number" inputmode="numeric" pattern="[0-9]+" name="nim" class="form-control" maxlength="20" value="<?= aman($mahasiswa['nim']); ?>" required>
                     </div>
 
                     <div class="mb-3">
@@ -114,7 +114,7 @@ require_once "../../includes/sidebar.php";
 
                     <div class="mb-3">
                         <label class="form-label">No HP</label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($mahasiswa['no_hp'] ?? ''); ?>">
+                        <input type="number" inputmode="numeric" pattern="[0-9]{10,13}" name="no_hp" class="form-control" minlength="10" maxlength="13" value="<?= aman($mahasiswa['no_hp'] ?? ''); ?>">
                     </div>
 
                     <div class="mb-4">
