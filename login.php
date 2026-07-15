@@ -1,63 +1,75 @@
 <?php
+ini_set('session.cookie_httponly', '1');
+ini_set('session.cookie_samesite', 'Lax');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    ini_set('session.cookie_secure', '1');
+}
 session_start();
+
+if (empty($_SESSION['csrf_login'])) {
+    $_SESSION['csrf_login'] = bin2hex(random_bytes(32));
+}
 
 require_once "config/koneksi.php";
 require_once "config/function.php";
 
-if(isset($_SESSION['id_pengguna'])) {
-    $dashboard = arahkan_dashboard($_SESSION['role']);
-    header("Location: " . $dashboard);
+if (isset($_SESSION['id_pengguna'])) {
+    header("Location: " . arahkan_dashboard($_SESSION['role']));
     exit;
 }
 
 $error = "";
-
 if (isset($_POST['login'])) {
+    $token_login = (string) ($_POST['csrf_token'] ?? '');
+    if ($token_login === '' || !hash_equals($_SESSION['csrf_login'], $token_login)) {
+        $error = 'Permintaan login tidak valid. Silakan muat ulang halaman.';
+    }
+
     $username = trim($_POST['username'] ?? '');
-    $password = trim($_POST['password'] ?? '');
+    $password = (string) ($_POST['password'] ?? '');
 
-    if ($username == '' || $password == '') {
+    if ($error !== '') {
+        // Pesan token login dipertahankan.
+    } elseif ($username === '' || $password === '') {
         $error = "Username dan password wajib diisi!";
+    } elseif (mb_strlen($username) > 20) {
+        $error = "Username maksimal 20 karakter.";
     } else {
-        $query = "
-            SELECT 
-                p.*,
-                m.nim,
-                m.nama_mahasiswa,
-                pg.nip,
-                pg.nama_pengajar
-            FROM pengguna p
-            LEFT JOIN mahasiswa m 
-                ON p.id_mahasiswa = m.id_mahasiswa
-            LEFT JOIN pengajar pg 
-                ON p.id_pengajar = pg.id_pengajar
-            WHERE p.username = ?
-            AND p.status_akun = 'Aktif'
-            LIMIT 1
-        ";
+        $pengguna = ambil_satu_procedure_prepared($koneksi, "CALL usp_login_pengguna(?)", "s", [$username]);
+        $password_valid = false;
+        $password_legacy = false;
 
-        $stmt = mysqli_prepare($koneksi, $query);
-        mysqli_stmt_bind_param($stmt, "s", $username);
-        mysqli_stmt_execute($stmt);
+        if ($pengguna) {
+            $hash_info = password_get_info((string) $pengguna['password']);
+            if (($hash_info['algo'] ?? null) !== null) {
+                $password_valid = password_verify($password, (string) $pengguna['password']);
+            } else {
+                $password_valid = hash_equals((string) $pengguna['password'], $password);
+                $password_legacy = $password_valid;
+            }
+        }
 
-        $result = mysqli_stmt_get_result($stmt);
-        $pengguna = mysqli_fetch_assoc($result);
+        if ($pengguna && $password_valid) {
+            if ($password_legacy || password_needs_rehash((string) $pengguna['password'], PASSWORD_DEFAULT)) {
+                $hash_baru = password_hash($password, PASSWORD_DEFAULT);
+                $stmt_hash = mysqli_prepare($koneksi, "CALL usp_update_password_pengguna(?, ?)");
+                mysqli_stmt_bind_param($stmt_hash, "is", $pengguna['id_pengguna'], $hash_baru);
+                mysqli_stmt_execute($stmt_hash);
+                mysqli_stmt_close($stmt_hash);
+                bersihkan_hasil_procedure($koneksi);
+            }
 
-        mysqli_stmt_close($stmt);
-
-        if ($pengguna && $password == $pengguna['password']) {
+            session_regenerate_id(true);
             $_SESSION['id_pengguna'] = $pengguna['id_pengguna'];
             $_SESSION['id_mahasiswa'] = $pengguna['id_mahasiswa'];
             $_SESSION['id_pengajar'] = $pengguna['id_pengajar'];
             $_SESSION['username'] = $pengguna['username'];
             $_SESSION['role'] = $pengguna['role'];
-
-            $dashboard = arahkan_dashboard($pengguna['role']);
-            header("Location: " . $dashboard);
+            $_SESSION['aktivitas_terakhir'] = time();
+            header("Location: " . arahkan_dashboard($pengguna['role']));
             exit;
-        } else {
-            $error = "Username atau password salah!";
         }
+        $error = "Username atau password salah!";
     }
 }
 ?>
@@ -174,18 +186,19 @@ if (isset($_POST['login'])) {
                     </div>
 
                     <form method="post" action="">
+                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION['csrf_login'], ENT_QUOTES, 'UTF-8'); ?>">
                         <div class="mb-3">
-                            <label class="form-label">Username</label>
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fa-solid fa-user"></i>
                                 </span>
-                                <input type="text" name="username" class="form-control" placeholder="Masukkan Username" required>
+                                <input type="text" name="username" maxlength="20" class="form-control" placeholder="Masukkan Username" required>
                             </div>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label">Password</label>
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">
                                     <i class="fa-solid fa-lock"></i>
@@ -216,7 +229,7 @@ if (isset($_POST['login'])) {
             title: 'Login Gagal',
             text: <?= json_encode($error); ?>,
             confirmButtonText: 'Coba Lagi',
-            confirmButtonColor: '#12c5df'
+            confirmButtonColor: '#dc3545'
         });
     </script>
 <?php } ?>
