@@ -44,7 +44,6 @@ require_once "../../includes/sidebar.php";
                 <h4 class="fw-bold mb-4">Form Pengaduan Kerusakan Fasilitas</h4>
 
                 <form action="proses_tambah.php" method="post">
-                    <?= csrf_input(); ?>
                     <div class="mb-3">
                         <label class="form-label">Fasilitas <span class="text-danger">*</span>
 </label>

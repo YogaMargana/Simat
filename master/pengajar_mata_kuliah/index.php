@@ -64,11 +64,6 @@ require_once "../../includes/sidebar.php";
                         <h4 class="fw-bold mb-1">Daftar Mata Kuliah pada Kelas</h4>
                         <p class="text-muted mb-0">Kelola relasi mata kuliah yang tersedia pada setiap kelas.</p>
                     </div>
-
-                    <a href="tambah.php" class="btn btn-primary">
-                        <i class="fa-solid fa-plus me-1"></i>
-                        Tambah Mata Kuliah Kelas
-                    </a>
                 </div>
 
                 <div class="table-responsive">
@@ -78,7 +73,6 @@ require_once "../../includes/sidebar.php";
                                 <th style="width: 60px;" class="text-center">No</th>
                                 <th class="text-center">Kelas</th>
                                 <th class="text-center">Mata Kuliah</th>
-                                <th style="width: 170px;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -89,21 +83,6 @@ require_once "../../includes/sidebar.php";
                                         <td class="text-center"><?= $no++; ?></td>
                                         <td><?= aman($pengajar_mk['nama_kelas']); ?></td>
                                         <td><?= aman($pengajar_mk['nama_mata_kuliah']); ?></td>
-                                        <td class="text-center">
-                                            <a href="edit.php?id=<?= $pengajar_mk['id_detail_kelas_pada_mata_kuliah']; ?>" class="btn btn-warning btn-sm">
-                                                <i class="fa-solid fa-pen-to-square"></i>
-                                            </a>
-
-                                            <a href="hapus.php?id=<?= $pengajar_mk['id_detail_kelas_pada_mata_kuliah']; ?>"
-                                                class="btn btn-danger btn-sm btn-konfirmasi"
-                                                data-title="Hapus Data?"
-                                                data-text="Yakin ingin menghapus relasi mata kuliah kelas ini?"
-                                                data-icon="warning"
-                                                data-confirm-text="Ya, hapus"
-                                                data-cancel-text="Batal">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </a>
-                                        </td>
                                     </tr>
                                 <?php } ?>
                             <?php } else { ?>

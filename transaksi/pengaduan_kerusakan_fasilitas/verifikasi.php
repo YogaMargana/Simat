@@ -91,7 +91,6 @@ require_once "../../includes/sidebar.php";
 
                 <?php if ($pengaduan['status_pengaduan'] == "Menunggu Verifikasi") { ?>
                     <form action="proses_verifikasi.php" method="post">
-                    <?= csrf_input(); ?>
                         <input type="hidden" name="id_pengaduan_kerusakan_fasilitas" value="<?= aman($pengaduan['id_pengaduan_kerusakan_fasilitas']); ?>">
 
                         <div class="mb-4">
